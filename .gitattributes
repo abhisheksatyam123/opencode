@@ -1,0 +1,11 @@
+# Default: auto-detect text vs binary, normalize CRLF → LF on commit.
+* text=auto eol=lf
+
+# Lockfiles: treat as binary so diffs aren't generated and merges can't try.
+bun.lock binary
+flake.lock binary
+
+# Generated / vendored files: collapse in PR diffs (linguist hint).
+dist/** linguist-generated
+node_modules/** linguist-vendored
+patches/*.patch linguist-generated

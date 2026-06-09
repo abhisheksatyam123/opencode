@@ -1,0 +1,73 @@
+# Dependencies
+node_modules/
+bun.lockb
+
+# Build outputs
+dist/
+*.js
+*.js.map
+*.d.ts
+!test-*.mjs
+
+# Logs
+*.log
+logs/
+clangd-mcp.log
+clangd-mcp-bridge.log
+
+# Runtime state
+.clangd-mcp-state.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+coverage/
+.nyc_output/
+# clangd index caches generated during test runs
+test/fixtures/**/.cache/
+# indirect-caller runtime caches generated during test runs
+test/fixtures/**/.clangd-mcp-indirect-caller-cache/
+
+# Turbo
+.turbo/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS
+Thumbs.db
+
+# OpenCode
+.opencode/
+opencode.json
+
+# Claude agent state (cron prompts, scratch tasks, etc.)
+.claude/
+
+# Notes vault symlinks (personal Obsidian vault at /home/abhi/notes)
+doc/atomic
+doc/project
+
+# Local intelligence DB data (workspace-local Postgres/Neo4j volumes)
+.intelligence-data/
+
+# Workspace-local intelligence data in external WLAN roots
+**/.intelligence-data/
+
+# Accidental shell redirect artifacts (e.g. "=3-word", "=0:", "1" from bad redirects)
+=*
+/[0-9]
+/[0-9][0-9]

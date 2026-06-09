@@ -1,0 +1,81 @@
+# ─── ZimaBlue .gitignore ───────────────────────────────────────────
+# Single-package fork of opencode. Source of truth for agents,
+# task notes, and durable knowledge is the notes vault, NOT this repo.
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.claude/
+*.swp
+*.swo
+*~
+
+# Node / Bun
+node_modules/
+.cache/
+
+# Build output
+dist/
+out/
+*.js.map
+*.tsbuildinfo
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Local opencode config snapshots.
+# opencode.json itself holds session state (todo budgets, bindings)
+# and is intentionally local-only.
+opencode.json
+opencode.jsonc
+
+# Local docs / derived vault snapshot
+doc/
+doc.bak/
+doc.bak.*/
+scratchpad/
+
+# Lint / type-check caches
+.turbo/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.clangd-mcp-state.json
+
+# Test scratch
+.tmp-notes-tests/
+.tmp-notes-symlink-tests/
+.artifacts/
+
+# Coverage / reports
+coverage/
+*.lcov
+.nyc_output/
+
+# Patch / merge leftovers
+*.rej
+*.orig
+*.log
+changes.patch
+
+# Intelligence / graph stack (local dev only)
+.intelligence-data/
+.clangd-mcp.json
+.env.intelligence.local
+docker-compose.intelligence.local.yml
+
+# Perforce workspace artifacts
+.p4workspace
+
+# Defensive guards against accidental scratch files at repo root
+/1
+/2
+/agent.txt
+/notes.
+/tmp/
+/TODO-qgenie-responses.md

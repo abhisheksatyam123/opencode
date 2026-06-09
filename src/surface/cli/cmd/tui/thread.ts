@@ -1,0 +1,238 @@
+import { cmd } from "@/surface/cli/cmd/cmd"
+import { tui } from "@/surface/cli/cmd/tui/app"
+import { Rpc } from "@/foundation/util/rpc"
+import { type rpc } from "@/surface/cli/cmd/tui/worker"
+import path from "path"
+import { fileURLToPath } from "url"
+import { UI } from "@/surface/cli/ui"
+import { Log } from "@/foundation/util/log"
+import { errorMessage } from "@/foundation/util/error"
+// gap-26-followup-3: Sleep.withTimeout is the centralized helper
+// (also unrefs the timer so it doesn't block process exit).
+import { Sleep } from "@/foundation/util/sleep"
+import { withNetworkOptions, resolveNetworkOptions } from "@/surface/cli/network"
+import { CliArgs } from "@/foundation/util/cli-args"
+import { Filesystem } from "@/foundation/util/filesystem"
+import type { Event } from "@opencode-ai/sdk/v2"
+import type { EventSource } from "@/surface/cli/cmd/tui/context/sdk"
+import { win32DisableProcessedInput, win32InstallCtrlCGuard } from "@/surface/cli/cmd/tui/win32"
+import { TuiConfig } from "@/config/tui"
+import { Instance } from "@/config/project/instance"
+import { writeHeapSnapshot } from "v8"
+
+declare global {
+  const OPENCODE_WORKER_PATH: string
+}
+
+type RpcClient = ReturnType<typeof Rpc.client<typeof rpc>>
+
+function createWorkerFetch(client: RpcClient): typeof fetch {
+  const fn = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const request = new Request(input, init)
+    const body = request.body ? await request.text() : undefined
+    const result = await client.call("fetch", {
+      url: request.url,
+      method: request.method,
+      headers: Object.fromEntries(request.headers.entries()),
+      body,
+    })
+    return new Response(result.body, {
+      status: result.status,
+      headers: result.headers,
+    })
+  }
+  return fn as typeof fetch
+}
+
+function createEventSource(client: RpcClient): EventSource {
+  return {
+    on: (handler) => client.on<Event>("event", handler),
+    setWorkspace: (workspaceID) => {
+      void client.call("setWorkspace", { workspaceID })
+    },
+  }
+}
+
+async function target() {
+  if (typeof OPENCODE_WORKER_PATH !== "undefined") return OPENCODE_WORKER_PATH
+  const dist = new URL("./worker.js", import.meta.url)
+  if (await Filesystem.exists(fileURLToPath(dist))) return dist
+  return new URL("./worker.ts", import.meta.url)
+}
+
+async function input(value?: string) {
+  const piped = process.stdin.isTTY ? undefined : await Bun.stdin.text()
+  if (!value) return piped
+  if (!piped) return value
+  return piped + "\n" + value
+}
+
+export const TuiThreadCommand = cmd({
+  command: "$0 [project]",
+  describe: "start opencode tui",
+  builder: (yargs) =>
+    withNetworkOptions(yargs)
+      .positional("project", {
+        type: "string",
+        describe: "path to start opencode in",
+      })
+      .option("model", {
+        type: "string",
+        alias: ["m"],
+        describe: "model to use in the format of provider/model",
+      })
+      .option("continue", {
+        alias: ["c"],
+        describe: "continue the last session",
+        type: "boolean",
+      })
+      .option("session", {
+        alias: ["s"],
+        type: "string",
+        describe: "session id to continue",
+      })
+      .option("fork", {
+        type: "boolean",
+        describe: "fork the session when continuing (use with --continue or --session)",
+      })
+      .option("prompt", {
+        type: "string",
+        describe: "prompt to use",
+      })
+      .option("agent", {
+        type: "string",
+        describe: "agent to use",
+      }),
+  handler: async (args) => {
+    // Keep ENABLE_PROCESSED_INPUT cleared even if other code flips it.
+    // (Important when running under `bun run` wrappers on Windows.)
+    const unguard = win32InstallCtrlCGuard()
+    try {
+      // Must be the very first thing — disables CTRL_C_EVENT before any Worker
+      // spawn or async work so the OS cannot kill the process group.
+      win32DisableProcessedInput()
+
+      if (args.fork && !args.continue && !args.session) {
+        UI.error("--fork requires --continue or --session")
+        process.exitCode = 1
+        return
+      }
+
+      // Resolve relative --project paths from PWD, then use the real cwd after
+      // chdir so the thread and worker share the same directory key.
+      const root = Filesystem.resolve(process.env.PWD ?? process.cwd())
+      const next = args.project
+        ? Filesystem.resolve(path.isAbsolute(args.project) ? args.project : path.join(root, args.project))
+        : Filesystem.resolve(process.cwd())
+      const file = await target()
+      try {
+        process.chdir(next)
+      } catch {
+        UI.error("Failed to change directory to " + next)
+        return
+      }
+      const cwd = Filesystem.resolve(process.cwd())
+
+      const worker = new Worker(file, {
+        env: Object.fromEntries(
+          Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined),
+        ),
+      })
+      worker.onerror = (e) => {
+        Log.Default.error(e)
+      }
+
+      const client = Rpc.client<typeof rpc>(worker)
+      const error = (e: unknown) => {
+        Log.Default.error(e)
+      }
+      const reload = () => {
+        client.call("reload", undefined).catch((err) => {
+          Log.Default.warn("worker reload failed", {
+            error: errorMessage(err),
+          })
+        })
+      }
+      process.on("uncaughtException", error)
+      process.on("unhandledRejection", error)
+      process.on("SIGUSR2", reload)
+
+      let stopped = false
+      const stop = async () => {
+        if (stopped) return
+        stopped = true
+        process.off("uncaughtException", error)
+        process.off("unhandledRejection", error)
+        process.off("SIGUSR2", reload)
+        await Sleep.withTimeout(client.call("shutdown", undefined), 5000, "TUI worker shutdown timed out after 5s").catch((error) => {
+          Log.Default.warn("worker shutdown failed", {
+            error: errorMessage(error),
+          })
+        })
+        worker.terminate()
+      }
+
+      const prompt = await input(args.prompt)
+      const config = await Instance.provide({
+        directory: cwd,
+        fn: () => TuiConfig.get(),
+      })
+
+      const network = await resolveNetworkOptions(args)
+      // gap-54-followup-1: CliArgs.hasCliFlag handles --port/--port=8080
+      // both forms; the legacy process.argv.includes silently missed
+      // the equals form.
+      const external =
+        CliArgs.hasCliFlag("--port") ||
+        CliArgs.hasCliFlag("--hostname") ||
+        CliArgs.hasCliFlag("--mdns") ||
+        network.mdns ||
+        network.port !== 0 ||
+        network.hostname !== "127.0.0.1"
+
+      const transport = external
+        ? {
+            url: (await client.call("server", { ...network, permissionMode: network.permissionMode as "default" | "plan" | "bypass" })).url,
+            fetch: undefined,
+            events: undefined,
+          }
+        : {
+            url: "http://opencode.internal",
+            fetch: createWorkerFetch(client),
+            events: createEventSource(client),
+          }
+
+      setTimeout(() => {
+        client.call("checkUpgrade", { directory: cwd }).catch(() => {})
+      }, 1000).unref?.()
+
+      try {
+        await tui({
+          url: transport.url,
+          async onSnapshot() {
+            const tui = writeHeapSnapshot("tui.heapsnapshot")
+            const server = await client.call("snapshot", undefined)
+            return [tui, server]
+          },
+          config,
+          directory: cwd,
+          fetch: transport.fetch,
+          events: transport.events,
+          args: {
+            continue: args.continue,
+            sessionID: args.session,
+            agent: args.agent,
+            model: args.model,
+            prompt,
+            fork: args.fork,
+          },
+        })
+      } finally {
+        await stop()
+      }
+    } finally {
+      unguard?.()
+    }
+    process.exit(0)
+  },
+})

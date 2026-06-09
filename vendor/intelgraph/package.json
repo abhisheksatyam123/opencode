@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@opencode-ai/intelgraph",
+  "version": "0.2.0",
+  "description": "Plugin-based code intelligence graph: extracts, queries, and visualizes structural facts about C/C++ and TypeScript codebases. Exposes a CLI and HTTP JSON API.",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "bin": {
+    "intelgraph": "./dist/index.js"
+  },
+  "exports": {
+    "./fakes": {
+      "types": "./src/fakes.ts",
+      "import": "./dist/fakes.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src/fakes.ts",
+    "src/intelligence/contracts",
+    "src/daemon/ports.ts",
+    "src/daemon/fakes",
+    "src/tools/ports.ts",
+    "src/tools/fakes",
+    "src/tools/reason-engine/ports.ts",
+    "src/lsp/ports.ts",
+    "src/bus/ports.ts",
+    "src/logging/ports.ts",
+    "src/logging/fakes"
+  ],
+  "scripts": {
+    "build": "bun build ./src/index.ts --outfile ./dist/index.js --target node --format esm --external better-sqlite3 && bun build ./src/bridge/index.ts --outfile ./dist/bridge.js --target node --format esm && bun build ./src/fakes.ts --outfile ./dist/fakes.js --target node --format esm --external better-sqlite3",
+    "dev": "bun run ./src/index.ts",
+    "enrich:fixtures": "bun run ./src/bin/enrich-fixtures.ts",
+    "audit:fixtures": "bun run ./src/bin/audit-fixtures.ts",
+    "extract": "npx tsx ./src/bin/extract.ts",
+    "snapshot:stats": "npx tsx ./src/bin/snapshot-stats.ts",
+    "analyze": "npx tsx ./src/bin/analyze.ts",
+    "query": "npx tsx ./src/bin/query.ts",
+    "serve": "npx tsx ./src/bin/serve.ts",
+    "test": "vitest run",
+    "test:unit": "vitest run test/unit/",
+    "test:integration": "vitest run test/integration/",
+    "test:e2e": "vitest run test/e2e/",
+    "test:contracts": "vitest run --config vitest.contracts.config.ts",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "validate:unit": "npm run test:unit -- test/unit/pattern-resolver.test.ts",
+    "validate:01880": "env WLAN_WORKSPACE_ROOT=/local/mnt/workspace/code1/WLAN.CNG.1.0-01880.3-QCACNGSWPL_V1_V2_SILICON-1 CLANGD_TCP_BRIDGE_PORT=35101 CHAIN_TEST_TIMEOUT_01880_MS=60000 CHAIN_RETRY_TIMEOUT_01880=1 CHAIN_RESOLVE_TIMEOUT_MS=20000 npx vitest run test/integration/chain-resolver-ground-truth.test.ts",
+    "lint": "eslint src/ --ext .ts",
+    "validate:matrix:conditional-go": "npm run validate:unit && npm run typecheck && npm run validate:01880",
+    "validate:graph": "npm run build && npm run typecheck && env WLAN_WORKSPACE_ROOT=/local/mnt/workspace/code1/WLAN.CNG.1.0-01880.3-QCACNGSWPL_V1_V2_SILICON-1/wlan_proc npm run test:unit && echo '\u2713 graph validation: build + unit checks passed'",
+    "validate:graph:sqlite": "npx vitest run test/integration/sqlite-backend.test.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/openai-compatible": "^0.2.14",
+    "ai": "^4.3.16",
+    "better-sqlite3": "^12.8.0",
+    "drizzle-orm": "^0.45.2",
+    "tree-sitter": "^0.25.0",
+    "tree-sitter-c": "^0.24.1",
+    "tree-sitter-rust": "^0.24.0",
+    "tree-sitter-typescript": "^0.23.2",
+    "vscode-jsonrpc": "8.2.1",
+    "web-tree-sitter": "^0.26.7",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.57.2",
+    "@typescript-eslint/parser": "^8.57.2",
+    "@vitest/coverage-v8": "^2.1.9",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^10.1.0",
+    "fast-check": "^4.7.0",
+    "typescript": "^5.0.0",
+    "vitest": "^2.1.9"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "macroApiAliases": [
+    {
+      "macro": "OFFLDMGR_FN",
+      "api": "offloadif_install_data_ind_handler"
+    }
+  ],
+  "signalRegistrationApiPattern": "(?:^|_)register_signal(?:_|$)",
+  "linkedDispatchApiPattern": "(?:^|_)irq_register(?:_|$)|irq_register",
+  "dispatchKeyArgRules": [
+    {
+      "apiPattern": "irq_register",
+      "argIndex": 0
+    }
+  ]
+}

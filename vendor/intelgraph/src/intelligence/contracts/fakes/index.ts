@@ -1,0 +1,6 @@
+export { FakeDbFoundation, FakeSnapshotIngestWriter } from "./db-foundation.fake.js"
+export { FakeDbLookup } from "./db-lookup.fake.js"
+export { FakeExtractionAdapter } from "./extraction-adapter.fake.js"
+export { FakeFactBus } from "./fact-bus.fake.js"
+export { FakeIndirectCallerIngestion } from "./indirect-caller-ingestion.fake.js"
+export { FakeQueryNodeAdapter } from "./query-node-adapter.fake.js"

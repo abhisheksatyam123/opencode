@@ -1,0 +1,28 @@
+Load focused skill notes from the notes vault.
+
+Input: $ARGUMENTS
+
+Workspace root: ${path}
+Notes vault root: ${notesRoot}
+
+Goal:
+- Find the most relevant skill note(s) for the user request.
+- Read only the minimum necessary parts.
+- Apply the skill guidance to the current task.
+
+Rules:
+1. Do not read the whole vault or whole large files by default.
+2. Start with discovery (`bash` + `rg`) under:
+   - `${notesRoot}/atomic/skill`
+   - `${notesRoot}/project/software/*/skill`
+3. Narrow to 1-3 candidate files using the input query.
+4. Use `read` with `offset` + `limit` for targeted slices.
+5. Expand to another slice only if needed.
+6. If no matching skill note exists, say that briefly and continue with best effort.
+
+Execution flow:
+1. Interpret `$ARGUMENTS` as the skill/topic query.
+2. Discover candidate skill note paths with `rg --files` and focused `rg -n`.
+3. Read headings first, then only relevant sections.
+4. Summarize the applied instructions and proceed with task execution.
+

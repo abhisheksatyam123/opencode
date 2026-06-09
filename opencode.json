@@ -1,0 +1,6 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "notes": {
+    "root": "/local/mnt/workspace/notes"
+  }
+}

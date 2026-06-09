@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opencode.ai/schemas/model-routing-config.schema.json",
+  "title": "OpenCode Model Routing Config",
+  "description": "Provider model registry with per-model tier annotation (tier0=best, tier1=delivery, tier2=cheap). Agent tier is declared in each local prompt card (src/agent/prompts/<name>.md) via model_tier frontmatter.",
+  "type": "object",
+  "properties": {
+    "enabled_providers": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "provider": {
+      "type": "object",
+      "description": "Custom provider configurations and model overrides including tier annotations.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "models": {
+            "type": "object",
+            "description": "Per-model overrides keyed by model ID.",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "tier": {
+                  "enum": [
+                    "tier0",
+                    "tier1",
+                    "tier2"
+                  ],
+                  "description": "Capability tier for this model."
+                }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "model_routing": {
+      "type": "object",
+      "description": "Tuning knobs for the model router. No agent mappings or model inventory here.",
+      "properties": {
+        "cooldown_ms": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "rate_limit_cooldown_ms": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "min_samples": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "required": [],
+  "additionalProperties": true,
+  "allowComments": true,
+  "allowTrailingCommas": true
+}

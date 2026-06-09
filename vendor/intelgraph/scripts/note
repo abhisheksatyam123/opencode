@@ -1,0 +1,161 @@
+#!/usr/bin/env bash
+# note — quick-capture CLI for the notes vault.
+#
+# Usage:
+#   scripts/note new <type> <slug> [--scope <scope>]
+#   scripts/note new concept flow-lens
+#   scripts/note new skill debug-neo4j-startup --scope project
+#   scripts/note new task fix-port-binding --scope project
+#   scripts/note new question why-does-clangd-hang
+#   scripts/note new daily
+#   scripts/note inbox <slug>
+#
+# Types and their default destinations:
+#   concept    -> atomic/concept/
+#   principle  -> atomic/principle/
+#   skill      -> atomic/skill/   (or project/<...>/skill/ with --scope project)
+#   pattern    -> atomic/pattern/
+#   reference  -> atomic/reference/
+#   literature -> atomic/literature/article/
+#   question   -> inbox/  (move to project/.../question/ later)
+#   task       -> project/<...>/task/  (requires --scope project)
+#   decision   -> project/<...>/decision/  (requires --scope project)
+#   daily      -> journal/YYYY/MM/YYYY-MM-DD.md
+#
+# Opens the new file in $EDITOR if set.
+
+set -euo pipefail
+
+VAULT="${VAULT:-$HOME/notes}"
+PROJECT_NAME="${PROJECT_NAME:-intelgraph}"
+PROJECT_CATEGORY="${PROJECT_CATEGORY:-software}"
+PROJECT_PATH="$VAULT/project/$PROJECT_CATEGORY/$PROJECT_NAME"
+TEMPLATES="$VAULT/_templates"
+
+today() { date +%Y-%m-%d; }
+
+usage() {
+  sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'
+  exit "${1:-0}"
+}
+
+cmd_new() {
+  [ $# -ge 1 ] || usage 1
+  local type="$1"; shift
+  local slug=""
+  local scope="universal"
+
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --scope) scope="$2"; shift 2 ;;
+      --scope=*) scope="${1#--scope=}"; shift ;;
+      -*) echo "unknown flag: $1" >&2; exit 1 ;;
+      *) slug="$1"; shift ;;
+    esac
+  done
+
+  local dest=""
+  local template=""
+  local title=""
+
+  case "$type" in
+    concept|principle|pattern|reference)
+      dest="$VAULT/atomic/$type"
+      template="$TEMPLATES/concept.md"  # concept template fits all 4
+      ;;
+    skill)
+      if [ "$scope" = "project" ]; then
+        dest="$PROJECT_PATH/skill"
+      else
+        dest="$VAULT/atomic/skill"
+      fi
+      template="$TEMPLATES/skill.md"
+      ;;
+    literature)
+      dest="$VAULT/atomic/literature/article"
+      template="$TEMPLATES/literature.md"
+      ;;
+    question)
+      dest="$VAULT/inbox"
+      template="$TEMPLATES/question.md"
+      ;;
+    task)
+      [ "$scope" = "project" ] || { echo "task notes require --scope project" >&2; exit 1; }
+      dest="$PROJECT_PATH/task"
+      template="$TEMPLATES/task.md"
+      [ -n "$slug" ] && slug="todo-$slug"
+      ;;
+    decision)
+      [ "$scope" = "project" ] || { echo "decision notes require --scope project" >&2; exit 1; }
+      dest="$PROJECT_PATH/decision"
+      template="$TEMPLATES/decision.md"
+      ;;
+    daily)
+      local d
+      d="$(today)"
+      local y="${d%-*-*}"
+      local m="${d#*-}"; m="${m%-*}"
+      dest="$VAULT/journal/$y/$m"
+      template="$TEMPLATES/daily.md"
+      slug="$d"
+      title="$d"
+      ;;
+    *)
+      echo "unknown type: $type" >&2
+      usage 1
+      ;;
+  esac
+
+  [ -n "$slug" ] || { echo "slug required for type '$type'" >&2; exit 1; }
+  [ -f "$template" ] || { echo "template missing: $template" >&2; exit 1; }
+
+  mkdir -p "$dest"
+  local file="$dest/$slug.md"
+  if [ -e "$file" ]; then
+    echo "exists: $file" >&2
+    [ -n "${EDITOR:-}" ] && exec "$EDITOR" "$file"
+    exit 1
+  fi
+
+  [ -n "$title" ] || title="$slug"
+  local d
+  d="$(today)"
+
+  # Substitute <date> and <title> placeholders
+  sed -e "s|<date>|$d|g" -e "s|<title>|$title|g" "$template" > "$file"
+
+  echo "$file"
+  [ -n "${EDITOR:-}" ] && exec "$EDITOR" "$file"
+}
+
+cmd_inbox() {
+  [ $# -ge 1 ] || { echo "slug required" >&2; exit 1; }
+  local slug="$1"
+  local dest="$VAULT/inbox"
+  mkdir -p "$dest"
+  local file="$dest/$slug.md"
+  local d
+  d="$(today)"
+  cat > "$file" <<EOF
+---
+title: $slug
+type: reference
+status: seedling
+created: $d
+updated: $d
+---
+# $slug
+
+EOF
+  echo "$file"
+  [ -n "${EDITOR:-}" ] && exec "$EDITOR" "$file"
+}
+
+[ $# -ge 1 ] || usage 0
+sub="$1"; shift
+case "$sub" in
+  new) cmd_new "$@" ;;
+  inbox) cmd_inbox "$@" ;;
+  -h|--help|help) usage 0 ;;
+  *) echo "unknown subcommand: $sub" >&2; usage 1 ;;
+esac

@@ -1,0 +1,25 @@
+Load focused module notes from the notes vault.
+
+Input: $ARGUMENTS
+
+Workspace root: ${path}
+Notes vault root: ${notesRoot}
+
+Goal:
+- Collect only module-level context needed to implement or review the change.
+
+Rules:
+1. Avoid reading entire module note trees.
+2. Discover candidates first with `bash` + `rg` under:
+   - `${notesRoot}/project/software/*/module`
+3. Select the smallest relevant set of notes (usually 1-2).
+4. Use `read` with `offset` + `limit` to read only targeted sections.
+5. Focus on responsibilities, public surface, invariants, and edge cases.
+6. Cross-check with source files when note guidance is stale or unclear.
+
+Execution flow:
+1. Treat `$ARGUMENTS` as module name/topic.
+2. Find candidate module notes with `rg --files` and heading/content matches.
+3. Read targeted slices only.
+4. Summarize the exact module constraints that affect implementation.
+

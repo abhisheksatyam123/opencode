@@ -1,0 +1,27 @@
+Load focused architecture notes from the notes vault.
+
+Input: $ARGUMENTS
+
+Workspace root: ${path}
+Notes vault root: ${notesRoot}
+
+Goal:
+- Gather only the architecture context needed for this task.
+- Avoid broad note ingestion.
+
+Rules:
+1. Do not read full architecture directories by default.
+2. Discover candidates first with `bash` + `rg` under:
+   - `${notesRoot}/project/software/*/architecture`
+   - `${notesRoot}/atomic`
+3. Pick 1-3 highest-relevance notes.
+4. Use `read` with `offset` + `limit` for targeted sections only.
+5. Prefer sections about boundaries, data flow, contracts, and invariants.
+6. If ambiguous, state assumptions and continue with the smallest safe scope.
+
+Execution flow:
+1. Treat `$ARGUMENTS` as architecture topic/scope.
+2. Locate candidate notes by title/headings/content hits.
+3. Read only relevant sections.
+4. Summarize concrete architectural constraints you will follow.
+

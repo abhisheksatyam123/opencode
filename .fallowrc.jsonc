@@ -1,0 +1,121 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+
+  // OpenCode has many runtime-discovered/public modules: CLI commands, TUI
+  // route/plugin modules, browser assets, and generated SDKs. Treating the repo
+  // source tree as entry keeps
+  // Fallow from deleting DIP/public contract modules simply because they are
+  // resolved dynamically or externally.
+  "entry": ["src/**/*.{ts,tsx,js,jsx}", "script/**/*.{ts,tsx,js,mjs,cjs}", "src/surface/web/notes-ui/style.css"],
+
+  // Keep dependency hygiene actionable while acknowledging runtime/browser
+  // assets and vendored/package-local dependency surfaces.
+  "ignoreDependencies": [
+    "@effect/opentelemetry",
+    "@happy-dom/global-registrator",
+    "@hey-api/openapi-ts",
+    "@kobalte/core",
+    "@npmcli/config",
+    "@opencode-ai/script",
+    "@opentelemetry/api",
+    "@opentelemetry/context-async-hooks",
+    "@opentelemetry/exporter-trace-otlp-http",
+    "@opentelemetry/sdk-trace-base",
+    "@playwright/test",
+    "@sentry/solid",
+    "@sentry/vite-plugin",
+    "@solid-primitives/event-listener",
+    "@solid-primitives/i18n",
+    "@solid-primitives/media",
+    "@solid-primitives/resize-observer",
+    "@solid-primitives/storage",
+    "@solid-primitives/timer",
+    "@solidjs/meta",
+    "@solidjs/router",
+    "@tailwindcss/vite",
+    "@tanstack/solid-query",
+    "better-sqlite3",
+    "@thisbeyond/solid-dnd",
+    "ansi-to-html",
+    "dompurify",
+    "ghostty-web",
+    "katex",
+    "luxon",
+    "marked",
+    "marked-katex-extension",
+    "marked-shiki",
+    "mermaid",
+    "morphdom",
+    "motion",
+    "remend",
+    "shiki",
+    "solid-list",
+    "sst",
+    "storybook",
+    "tailwindcss",
+    "tree-sitter",
+    "tree-sitter-bash",
+    "tree-sitter-c",
+    "tree-sitter-powershell",
+    "tree-sitter-rust",
+    "tree-sitter-typescript",
+    "vite",
+    "vite-plugin-icons-spritesheet",
+    "vite-plugin-solid",
+    "vscode-jsonrpc",
+  ],
+
+  // HTML and negative wiring tests intentionally reference server-served assets
+  // or removed/fixture modules that Fallow cannot resolve statically.
+  "ignoreUnresolvedImports": [
+    "../../../src/util/scrap.ts",
+    "../../src/surface/cli/cmd/tui/context/sdk.tsx",
+    "../../src/surface/cli/cmd/tui/plugin/runtime.ts",
+    "../../src/surface/cli/cmd/tui/thread.ts",
+    "../../src/surface/cli/cmd/tui/util/editor.ts",
+    "../../src/surface/cli/cmd/tui/worker.ts",
+    "../../src/surface/cli/heap.ts",
+    "../../src/surface/cli/network.ts",
+    "/notes/web/app.js",
+    "/notes/web/mermaid.min.js",
+    "/notes/web/style.css",
+    "/oc-theme-preload.js",
+  ],
+
+  // Owner-port marker is a CommonJS boundary test utility with intentionally
+  // exported test constants.
+  "ignoreExports": [{ "file": "tools/boundary/owner-port-marker.cjs", "exports": ["*"] }],
+
+  // DIP guardrail: circular dependencies remain a source-refactor backlog, but
+  // full-scan reporting should not force unsafe public-barrel/contract deletions.
+  // Changed-code audit remains enabled and source edits must keep impl modules
+  // depending inward on contracts/ports/runtime helpers, never on barrels that
+  // re-export them.
+  "rules": {
+    "circular-dependencies": "off",
+    "coverage-gaps": "off",
+  },
+
+  // Ignore vendored/package-local workspace internals; they have their own entry
+  // graphs and dependency surfaces outside this root package. Tests are created
+  // on demand, not kept as a permanent health-score input.
+  "ignorePatterns": ["vendor/**", "src/surface/web/official/**", "test/**"],
+
+  // Pair-only clone reports are too noisy in this monorepo; keep duplicate
+  // detection focused on widespread copy/paste. Generated/vendor/official web
+  // code is tracked separately and not a useful duplication gate for app code.
+  "duplicates": {
+    "minOccurrences": 10,
+    "ignore": ["vendor/**", "src/foundation/vendor/**", "src/surface/web/official/**", "test/**"],
+  },
+
+  // Health analysis remains useful for changed-code audits. For full-repo
+  // reporting, use high watermarks so legacy hot spots do not swamp end-to-end
+  // cleanup signal; refactor them under explicit tests in later slices.
+  "health": {
+    "ignore": ["vendor/**", "src/foundation/vendor/**", "src/surface/web/official/**", "test/**"],
+    "maxCyclomatic": 200,
+    "maxCognitive": 200,
+    "maxCrap": 1000000,
+  },
+}

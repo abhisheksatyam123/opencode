@@ -1,0 +1,11 @@
+preload = ["@opentui/solid/preload"]
+
+[test]
+preload = ["@opentui/solid/preload", "./test/boundary/preload.ts"]
+# Run each test file in a fresh global object to prevent cross-file contamination.
+# Instance.disposeAll() in one file's afterEach would otherwise race with
+# Instance.provide() in another file's test (Bun runs up to 20 tests concurrently).
+isolate = true
+# timeout is not actually parsed from bunfig.toml (see src/bunfig.zig in oven-sh/bun)
+# using --timeout in package.json scripts instead
+# https://github.com/oven-sh/bun/issues/7789

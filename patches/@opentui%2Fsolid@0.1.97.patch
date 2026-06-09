@@ -1,0 +1,57 @@
+diff --git a/index.js b/index.js
+--- a/index.js
++++ b/index.js
+@@ -461,6 +461,15 @@ function _insertNode(parent, node, anchor) {
+   if (anchor && anchor instanceof SlotRenderable) {
+     anchor = anchor.getSlotChild(parent);
+   }
++  if (parent instanceof Renderable && parent.isDestroyed) {
++    return;
++  }
++  if (node instanceof Renderable && node.isDestroyed) {
++    return;
++  }
++  if (anchor instanceof Renderable && anchor.isDestroyed) {
++    anchor = undefined;
++  }
+   if (isTextNodeRenderable(node)) {
+     if (!(parent instanceof TextRenderable) && !isTextNodeRenderable(parent)) {
+       throw new Error(`Orphan text error: "${node.toChunks().map((c) => c.text).join("")}" must have a <text> as a parent: ${parent.id} above ${node.id}`);
+@@ -478,6 +487,8 @@ function _insertNode(parent, node, anchor) {
+   const anchorIndex = children.findIndex((el) => el.id === anchor.id);
+   if (anchorIndex === -1) {
+     log("[INSERT]", "Could not find anchor", logId(parent), logId(anchor), "[children]", ...children.map((c) => c.id));
++    parent.add(node);
++    return;
+   }
+   parent.add(node, anchorIndex);
+ }
+@@ -487,6 +498,17 @@ function _removeNode(parent, node) {
+     node.parent = null;
+     node = node.getSlotChild(parent);
+   }
++  if (parent instanceof Renderable && parent.isDestroyed) {
++    return;
++  }
++  if (node instanceof Renderable && node.isDestroyed) {
++    return;
++  }
++  const children = getNodeChildren(parent);
++  if (!children.some((child) => child.id === node.id)) {
++    log("[REMOVE]", "Could not find child", logId(parent), logId(node), "[children]", ...children.map((child) => child.id));
++    return;
++  }
+   parent.remove(node.id);
+   process.nextTick(() => {
+     if (node instanceof BaseRenderable && !node.parent) {
+@@ -558,6 +580,10 @@ var {
+     textNode.replace(decodeHTML(value), 0);
+   },
+   setProperty(node, name, value, prev) {
++    if (node instanceof Renderable && node.isDestroyed) {
++      return;
++    }
++
+     if (name.startsWith("on:")) {
+       const eventName = name.slice(3);
+       if (value) {

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://raw.githubusercontent.com/opencode-ai/intelgraph/main/schema.json",
+  "version": "1.0.0",
+  "enabled": true,
+  "language": "typescript",
+  "intelligence": "auto",
+  "server": "clangd",
+  "args": [
+    "--background-index",
+    "--enable-config",
+    "--log=error"
+  ],
+  "languageServers": {
+    "c": {
+      "command": "clangd",
+      "args": ["--background-index", "--clang-tidy=false", "--completion-style=detailed", "--header-insertion=never", "--log=error"]
+    },
+    "cpp": {
+      "command": "clangd",
+      "args": ["--background-index", "--clang-tidy=false", "--completion-style=detailed", "--header-insertion=never", "--log=error"]
+    },
+    "rust": {
+      "command": "rust-analyzer",
+      "args": []
+    },
+    "typescript": {
+      "command": "typescript-language-server",
+      "args": ["--stdio"]
+    },
+    "javascript": {
+      "command": "typescript-language-server",
+      "args": ["--stdio"]
+    },
+    "python": {
+      "command": "pyright-langserver",
+      "args": ["--stdio"]
+    },
+    "go": {
+      "command": "gopls",
+      "args": []
+    }
+  },
+  "compileCommandsCleaning": {
+    "preflightPolicy": "fix"
+  }
+}
