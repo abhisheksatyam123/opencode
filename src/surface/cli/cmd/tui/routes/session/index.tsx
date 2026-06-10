@@ -2148,6 +2148,27 @@ export function Session() {
                       )
                     }
 
+                    // Helper to get consistent colors for components across TUI stats elements.
+                    const getComponentColor = (name: string, index: number): RGBA => {
+                      const colors = [
+                        theme.accent, // tool calls
+                        theme.warning, // system prompt
+                        theme.success, // user input
+                        theme.secondary, // assistant reasoning / text
+                        theme.border, // files
+                        theme.textMuted, // other
+                      ]
+                      if (name.includes("system")) return theme.warning
+                      if (name.includes("user")) return theme.success
+                      if (name.includes("tool")) return theme.accent
+                      if (name.includes("text") || name.includes("reasoning") || name.includes("assistant"))
+                        return theme.secondary
+                      if (name.includes("file") || name.includes("patch") || name.includes("snapshot"))
+                        return theme.border
+                      if (name === "free" || name.includes("free space")) return theme.textMuted
+                      return colors[index % colors.length]
+                    }
+
                     // A beautiful 2D representation of the context window as colored block tiles.
                     const renderContextMap = (context: ContextWindowStats) => {
                       const totalWidth = 40
@@ -2193,26 +2214,9 @@ export function Session() {
                       const cells: Array<{ char: string; fg: RGBA }> = []
                       const safeLimit = Math.max(1, limit)
 
-                      // Component styles
-                      const colors = [
-                        theme.accent, // tool calls
-                        theme.warning, // system prompt
-                        theme.success, // user input
-                        theme.secondary, // assistant reasoning / text
-                        theme.border, // files
-                        theme.textMuted, // other
-                      ]
                       const getStyle = (name: string, index: number) => {
-                        if (name === "free" || name.includes("free space"))
-                          return { char: "░", fg: theme.backgroundElement }
-                        if (name.includes("system")) return { char: "▓", fg: theme.warning }
-                        if (name.includes("user")) return { char: "█", fg: theme.success }
-                        if (name.includes("tool")) return { char: "█", fg: theme.accent }
-                        if (name.includes("text") || name.includes("reasoning") || name.includes("assistant"))
-                          return { char: "▒", fg: theme.secondary }
-                        if (name.includes("file") || name.includes("patch") || name.includes("snapshot"))
-                          return { char: "█", fg: theme.border }
-                        return { char: "█", fg: colors[index % colors.length] }
+                        if (name === "free" || name.includes("free space")) return { char: "░", fg: theme.textMuted }
+                        return { char: "█", fg: getComponentColor(name, index) }
                       }
 
                       for (let index = 0; index < totalBlocks; index++) {
@@ -2238,27 +2242,27 @@ export function Session() {
                       }
 
                       return (
-                        <box
-                          flexDirection="column"
-                          gap={0}
-                          border={["top", "bottom", "left", "right"]}
-                          borderColor={theme.border}
-                          paddingLeft={1}
-                          paddingRight={1}
-                          flexShrink={0}
-                          marginTop={1}
-                          marginBottom={1}
-                        >
-                          <For each={lines}>
-                            {(line) => (
-                              <box flexDirection="row" gap={0}>
-                                <For each={line}>{(cell) => <text fg={compColor(cell.fg)}>{cell.char}</text>}</For>
-                              </box>
-                            )}
-                          </For>
+                        <box flexDirection="column" flexShrink={0} marginTop={1} marginBottom={1}>
+                          <box
+                            flexDirection="column"
+                            gap={0}
+                            border={["top", "bottom", "left", "right"]}
+                            borderColor={theme.border}
+                            paddingLeft={1}
+                            paddingRight={1}
+                            flexShrink={0}
+                          >
+                            <For each={lines}>
+                              {(line) => (
+                                <box flexDirection="row" gap={0}>
+                                  <For each={line}>{(cell) => <text fg={compColor(cell.fg)}>{cell.char}</text>}</For>
+                                </box>
+                              )}
+                            </For>
+                          </box>
                           <box flexDirection="row" gap={2} marginTop={1} flexWrap="wrap">
                             <box flexDirection="row" gap={1}>
-                              <text fg={theme.warning}>▓</text>
+                              <text fg={theme.warning}>█</text>
                               <text fg={theme.textMuted}>system</text>
                             </box>
                             <box flexDirection="row" gap={1}>
@@ -2270,7 +2274,7 @@ export function Session() {
                               <text fg={theme.textMuted}>tools</text>
                             </box>
                             <box flexDirection="row" gap={1}>
-                              <text fg={theme.secondary}>▒</text>
+                              <text fg={theme.secondary}>█</text>
                               <text fg={theme.textMuted}>assistant</text>
                             </box>
                             <box flexDirection="row" gap={1}>
@@ -2278,7 +2282,7 @@ export function Session() {
                               <text fg={theme.textMuted}>files/patches</text>
                             </box>
                             <box flexDirection="row" gap={1}>
-                              <text fg={theme.backgroundElement}>░</text>
+                              <text fg={theme.textMuted}>░</text>
                               <text fg={theme.textMuted}>free space</text>
                             </box>
                           </box>
@@ -2414,14 +2418,7 @@ export function Session() {
                                   <box flexDirection="column" gap={0} flexShrink={0} marginTop={1}>
                                     <For each={snapshot().context.components}>
                                       {(component, index) => {
-                                        const colors = [
-                                          theme.accent,
-                                          theme.warning,
-                                          theme.success,
-                                          theme.secondary,
-                                          theme.textMuted,
-                                        ]
-                                        const color = colors[index() % colors.length]
+                                        const color = getComponentColor(component.name, index())
                                         return (
                                           <box flexDirection="row" gap={2} flexShrink={0} alignItems="center">
                                             <text fg={theme.textMuted} width={18}>
