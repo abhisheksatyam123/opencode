@@ -79,3 +79,4 @@ docker-compose.intelligence.local.yml
 /notes.
 /tmp/
 /TODO-qgenie-responses.md
+nvim-config
