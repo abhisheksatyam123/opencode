@@ -31,9 +31,7 @@ export interface EventBusOptions {
  *     "plugin.completed":   BusEvent<"plugin.completed",   { name: string; facts: number }>
  *   }
  */
-export interface EventBus<
-  M extends Record<string, BusEvent> = Record<string, BusEvent>,
-> {
+export interface EventBus<M extends Record<string, BusEvent> = Record<string, BusEvent>> {
   /**
    * Subscribe to events of kind `K`.
    *
@@ -44,10 +42,7 @@ export interface EventBus<
    *   affect other subscribers or the emitter.
    * - Returns a Disposable. `dispose()` removes this subscription.
    */
-  on<K extends keyof M & string>(
-    kind: K,
-    handler: (evt: M[K]) => void | Promise<void>,
-  ): Disposable
+  on<K extends keyof M & string>(kind: K, handler: (evt: M[K]) => void | Promise<void>): Disposable
 
   /**
    * Emit event — fire-and-forget.

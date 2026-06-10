@@ -39,7 +39,7 @@ export const ADVISORY = new Set([
 // Hardcoded fallback when no override is set. Must match DEFAULT_NOTES_ROOT in
 // note/task tooling. Override via OPENCODE_DEFAULT_NOTES_ROOT (tests) or the standard
 // precedence chain (project/global opencode.json `notes.root`, OPENCODE_NOTES_ROOT).
-const DEFAULT_NOTES_ROOT = "/local/mnt/workspace/notes"
+const DEFAULT_NOTES_ROOT = (process.env.HOME || process.env.USERPROFILE || "/tmp") + "/notes"
 
 // Allow tests to override the default notes root via OPENCODE_DEFAULT_NOTES_ROOT.
 // This is a function so it reads the env var at call time, not at module load time.

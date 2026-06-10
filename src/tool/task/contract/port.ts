@@ -48,24 +48,28 @@ export const TaskSpawnBudgetSchema = z.object({
 })
 export type TaskSpawnBudget = z.infer<typeof TaskSpawnBudgetSchema>
 
-export const TaskSpawnDelegationSchema = z.object({
-  mode: TaskDelegationModeSchema.optional(),
-  objective: optionalNonEmpty(),
-  scope: z.array(nonEmpty()).optional(),
-  out_of_scope: z.array(nonEmpty()).optional(),
-  filesystem_policy: TaskFilesystemPolicySchema.default("bash-only").optional(),
-  output_format: TaskOutputFormatSchema.default("structured-summary").optional(),
-  can_edit: z.boolean().default(false).optional(),
-  allowed_paths: z.array(nonEmpty()).optional(),
-  forbidden_paths: z.array(nonEmpty()).optional(),
-  budget: TaskSpawnBudgetSchema.optional(),
-}).strict()
+export const TaskSpawnDelegationSchema = z
+  .object({
+    mode: TaskDelegationModeSchema.optional(),
+    objective: optionalNonEmpty(),
+    scope: z.array(nonEmpty()).optional(),
+    out_of_scope: z.array(nonEmpty()).optional(),
+    filesystem_policy: TaskFilesystemPolicySchema.default("bash-only").optional(),
+    output_format: TaskOutputFormatSchema.default("structured-summary").optional(),
+    can_edit: z.boolean().default(false).optional(),
+    allowed_paths: z.array(nonEmpty()).optional(),
+    forbidden_paths: z.array(nonEmpty()).optional(),
+    budget: TaskSpawnBudgetSchema.optional(),
+  })
+  .strict()
 export type TaskSpawnDelegation = z.infer<typeof TaskSpawnDelegationSchema>
 
-export const TaskReferenceSchema = z.object({
-  task_id: optionalNonEmpty(),
-  pid: optionalNonEmpty(),
-}).strict()
+export const TaskReferenceSchema = z
+  .object({
+    task_id: optionalNonEmpty(),
+    pid: optionalNonEmpty(),
+  })
+  .strict()
 export type TaskReference = z.infer<typeof TaskReferenceSchema>
 
 type TaskReferenceInput = { task_id?: string; pid?: string }
@@ -91,7 +95,8 @@ export const TaskSpawnOperationSchema = z
     ...TaskSpawnDelegationSchema.shape,
     background: z.boolean().optional(),
     run_in_background: z.boolean().optional(),
-  }).strict()
+  })
+  .strict()
   .refine((value) => value.mode !== "implement" || value.can_edit === true, {
     path: ["can_edit"],
     message: "can_edit=true is required for implement-mode subagents",
@@ -119,28 +124,34 @@ export const TaskSpawnOperationSchema = z
   )
 export type TaskSpawnOperation = z.infer<typeof TaskSpawnOperationSchema>
 
-export const TaskResultOperationSchema = z.object({
-  op: z.literal("result"),
-  background_task_id: nonEmpty(),
-  timeout_ms: z.number().min(0).optional(),
-}).strict()
+export const TaskResultOperationSchema = z
+  .object({
+    op: z.literal("result"),
+    background_task_id: nonEmpty(),
+    timeout_ms: z.number().min(0).optional(),
+  })
+  .strict()
 export type TaskResultOperation = z.infer<typeof TaskResultOperationSchema>
 
 export const TaskLifecycleParametersSchema = taskReferenceRequired(
-  z.object({
-    op: TaskLifecycleOperationSchema,
-    ...TaskReferenceSchema.shape,
-    reason: z.string().max(280).optional(),
-  }).strict(),
+  z
+    .object({
+      op: TaskLifecycleOperationSchema,
+      ...TaskReferenceSchema.shape,
+      reason: z.string().max(280).optional(),
+    })
+    .strict(),
 )
 export type TaskLifecycleParameters = z.infer<typeof TaskLifecycleParametersSchema>
 
 export const TaskModelOperationSchema = taskReferenceRequired(
-  z.object({
-    op: z.literal("model"),
-    ...TaskReferenceSchema.shape,
-    model: nonEmpty(),
-  }).strict(),
+  z
+    .object({
+      op: z.literal("model"),
+      ...TaskReferenceSchema.shape,
+      model: nonEmpty(),
+    })
+    .strict(),
 )
 export type TaskModelOperation = z.infer<typeof TaskModelOperationSchema>
 

@@ -47,7 +47,12 @@ export default defineConfig({
           if (id.includes("/packages/ui/src/")) return "ui-core"
           if (id.includes("/packages/core/src/")) return "opencode-core"
           if (id.includes("node_modules/@kobalte/")) return "vendor-kobalte"
-          if (id.includes("node_modules/solid-js/") || id.includes("node_modules/@solidjs/") || id.includes("node_modules/@solid-primitives/")) return "vendor-solid"
+          if (
+            id.includes("node_modules/solid-js/") ||
+            id.includes("node_modules/@solidjs/") ||
+            id.includes("node_modules/@solid-primitives/")
+          )
+            return "vendor-solid"
           if (id.includes("node_modules/effect/")) return "vendor-effect"
           if (id.includes("node_modules/@tanstack/")) return "vendor-query"
         },

@@ -150,7 +150,8 @@ export const bootData: Seed[] = [
     path: "skill/notes-workflow",
     title: "notes-workflow",
     fm: {
-      description: "Standard procedure for optional note lookup. Agents may read notes but should not write project notes unless asked.",
+      description:
+        "Standard procedure for optional note lookup. Agents may read notes but should not write project notes unless asked.",
       status: "evergreen",
       tags: ["skill/notes-workflow", "status/stable"],
     },
@@ -194,7 +195,8 @@ export const bootData: Seed[] = [
     path: "skill/notes-design",
     title: "notes-design",
     fm: {
-      description: "Design before execution: make contracts, interfaces, and invariants clear in code and TODO planning.",
+      description:
+        "Design before execution: make contracts, interfaces, and invariants clear in code and TODO planning.",
       status: "evergreen",
       tags: ["skill/notes-design", "status/stable"],
     },
@@ -313,7 +315,7 @@ export const bootData: Seed[] = [
         "- [x] Bootstrap the project notes vault with baseline architecture/concept/module/skill notes.",
         "- [x] Evidence: `write op=bootstrap` completed; audit passed.",
       ].join("\n"),
-Systems: "",
+      Systems: "",
     },
   },
 
@@ -330,8 +332,7 @@ Systems: "",
       tags: ["meta/project-home"],
     },
     sec: {
-      Purpose:
-        "- Curated entry point for optional project reference notes.",
+      Purpose: "- Curated entry point for optional project reference notes.",
       Notes: [
         "- _Add module notes here as you create them: [[module/<name>]]_",
         "- _Add architecture notes here as you create them: [[architecture/<name>]]_",

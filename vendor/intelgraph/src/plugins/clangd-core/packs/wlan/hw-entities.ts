@@ -19,7 +19,14 @@ const wlanHWEntities: readonly HWEntityDef[] = [
     name: "WMI Subsystem",
     kind: "message",
     description: "Wireless Module Interface — command/event messaging between host and firmware",
-    matchesChainSteps: ["wmi_rx_event", "wmi_event_dispatch", "event_handler_table", "wmi_rx_cmd", "wmi_dispatch_cmd", "cmd_handler_table"],
+    matchesChainSteps: [
+      "wmi_rx_event",
+      "wmi_event_dispatch",
+      "event_handler_table",
+      "wmi_rx_cmd",
+      "wmi_dispatch_cmd",
+      "cmd_handler_table",
+    ],
   },
   {
     name: "HIF Transport",
@@ -31,7 +38,13 @@ const wlanHWEntities: readonly HWEntityDef[] = [
     name: "Offload Manager",
     kind: "dispatch_table",
     description: "Data offload manager — routes protocol-specific data to registered handlers",
-    matchesChainSteps: ["data_rx_path", "_offldmgr_enhanced_data_handler", "data_offload_table", "wow_notif_dispatch", "_offldmgr_wow_notify_event"],
+    matchesChainSteps: [
+      "data_rx_path",
+      "_offldmgr_enhanced_data_handler",
+      "data_offload_table",
+      "wow_notif_dispatch",
+      "_offldmgr_wow_notify_event",
+    ],
   },
   {
     name: "WLAN Thread",

@@ -19,10 +19,7 @@ interface FieldEdge {
   file: string
 }
 
-export async function* extractFieldAccess(
-  ctx: PhaseCtx,
-  fileSymbols: FileSymbolMap,
-) {
+export async function* extractFieldAccess(ctx: PhaseCtx, fileSymbols: FileSymbolMap) {
   for (const [file, symbols] of fileSymbols.entries()) {
     if (ctx.signal.aborted) return
     const text = ctx.workspace.readFile(file)
@@ -36,36 +33,40 @@ export async function* extractFieldAccess(
     }
 
     // Parse once, extract all field-access data, then delete the tree
-    const fieldEdges = parseSourceWith(text, (root): FieldEdge[] => {
-      const edges: FieldEdge[] = []
-      const fieldExprs = findAllNodes(root, "field_expression")
-      for (const fe of fieldExprs) {
-        const fieldNode = fe.childForFieldName?.("field")
-        const argNode = fe.childForFieldName?.("argument")
-        if (!fieldNode || !argNode) continue
+    const fieldEdges =
+      parseSourceWith(text, (root): FieldEdge[] => {
+        const edges: FieldEdge[] = []
+        const fieldExprs = findAllNodes(root, "field_expression")
+        for (const fe of fieldExprs) {
+          const fieldNode = fe.childForFieldName?.("field")
+          const argNode = fe.childForFieldName?.("argument")
+          if (!fieldNode || !argNode) continue
 
-        const fieldName = fieldNode.text
-        const structExpr = argNode.text?.slice(0, 60)
-        if (!fieldName || !structExpr) continue
+          const fieldName = fieldNode.text
+          const structExpr = argNode.text?.slice(0, 60)
+          if (!fieldName || !structExpr) continue
 
-        const accessLine = fe.startPosition?.row ?? 0
+          const accessLine = fe.startPosition?.row ?? 0
 
-        let edgeKind: "reads_field" | "writes_field" = "reads_field"
-        const parent = fe.parent
-        if (parent?.type === "assignment_expression") {
-          const lhs = parent.childForFieldName?.("left")
-          if (lhs && lhs.id === fe.id) edgeKind = "writes_field"
+          let edgeKind: "reads_field" | "writes_field" = "reads_field"
+          const parent = fe.parent
+          if (parent?.type === "assignment_expression") {
+            const lhs = parent.childForFieldName?.("left")
+            if (lhs && lhs.id === fe.id) edgeKind = "writes_field"
+          }
+
+          let enclosingFn = "(file-scope)"
+          for (const fn of fnRanges) {
+            if (accessLine >= fn.startLine && accessLine <= fn.endLine) {
+              enclosingFn = fn.name
+              break
+            }
+          }
+
+          edges.push({ edgeKind, enclosingFn, fieldName, structExpr, accessLine, file })
         }
-
-        let enclosingFn = "(file-scope)"
-        for (const fn of fnRanges) {
-          if (accessLine >= fn.startLine && accessLine <= fn.endLine) { enclosingFn = fn.name; break }
-        }
-
-        edges.push({ edgeKind, enclosingFn, fieldName, structExpr, accessLine, file })
-      }
-      return edges
-    }) ?? []
+        return edges
+      }) ?? []
 
     for (const e of fieldEdges) {
       yield ctx.edge({

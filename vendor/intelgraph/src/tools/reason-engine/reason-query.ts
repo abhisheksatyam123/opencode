@@ -40,11 +40,7 @@ export async function prepareReasonQuery(
 
   const cursorToken = resolveCursorToken(lineText, args.character)
   const symbol =
-    args.targetSymbol ||
-    graph.seed?.name ||
-    cursorToken ||
-    lineText.match(/\b([A-Za-z_]\w*)\b/)?.[1] ||
-    "(unknown)"
+    args.targetSymbol || graph.seed?.name || cursorToken || lineText.match(/\b([A-Za-z_]\w*)\b/)?.[1] || "(unknown)"
 
   const knownEvidence: Array<{ file: string; line: number; text: string }> = [
     { file: args.file, line: args.line, text: lineText.trim() },

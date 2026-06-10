@@ -27,9 +27,7 @@ export type { Command, Disposable }
  *   const result = await bus.send({ kind: "query", payload: req })
  *   // result: NormalizedQueryResponse
  */
-export interface RequestBus<
-  M extends Record<string, Command> = Record<string, Command>,
-> {
+export interface RequestBus<M extends Record<string, Command> = Record<string, Command>> {
   /**
    * Register a handler for command kind `K`.
    *
@@ -53,10 +51,7 @@ export interface RequestBus<
    * - If `cmd.kind` is in-flight on the same async chain, throws `CircularCommandError`.
    * - After `dispose()`, throws `BusDisposedError`.
    */
-  send<K extends keyof M & string>(
-    cmd: M[K],
-    signal?: AbortSignal,
-  ): Promise<NonNullable<M[K]["__response"]>>
+  send<K extends keyof M & string>(cmd: M[K], signal?: AbortSignal): Promise<NonNullable<M[K]["__response"]>>
 
   /**
    * Dispose the bus. Clears all handler registrations.

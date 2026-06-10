@@ -22,8 +22,7 @@ import type { RustPatternPack } from "../types.js"
 
 const markdownOxidePack: RustPatternPack = {
   name: "markdown-oxide",
-  description:
-    "markdown-oxide-specific Rust patterns (tower-lsp handlers, vault traversal, completion engine).",
+  description: "markdown-oxide-specific Rust patterns (tower-lsp handlers, vault traversal, completion engine).",
 
   contributesEdgeKinds: [],
 

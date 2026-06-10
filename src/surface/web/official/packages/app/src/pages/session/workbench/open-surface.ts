@@ -55,7 +55,11 @@ function resolveTargetPane(options: OpenSurfacePane | OpenSurfaceOptions): OpenS
   return "a"
 }
 
-function findExistingPane(tabs: OpenSurfaceTabs, uri: string, targetPane: OpenSurfacePane): OpenSurfacePane | undefined {
+function findExistingPane(
+  tabs: OpenSurfaceTabs,
+  uri: string,
+  targetPane: OpenSurfacePane,
+): OpenSurfacePane | undefined {
   const existsInA = tabs.all().includes(uri)
   const existsInB = tabs.allB().includes(uri)
   if (targetPane === "b") return existsInB ? "b" : existsInA ? "a" : undefined

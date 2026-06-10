@@ -66,8 +66,9 @@ export const PrCommand = cmd({
               const remoteName = forkOwner
 
               // Check if remote already exists
-              const remotes = (await Process.text(["git", "remote"], { cwd: Instance.worktree, nothrow: true })).text
-                .trim()
+              const remotes = (
+                await Process.text(["git", "remote"], { cwd: Instance.worktree, nothrow: true })
+              ).text.trim()
               if (!remotes.split("\n").includes(remoteName)) {
                 await Process.run(
                   ["git", "remote", "add", remoteName, `https://github.com/${forkOwner}/${forkName}.git`],

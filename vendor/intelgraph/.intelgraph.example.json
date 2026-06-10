@@ -5,19 +5,27 @@
   "language": "typescript",
   "intelligence": "auto",
   "server": "clangd",
-  "args": [
-    "--background-index",
-    "--enable-config",
-    "--log=error"
-  ],
+  "args": ["--background-index", "--enable-config", "--log=error"],
   "languageServers": {
     "c": {
       "command": "clangd",
-      "args": ["--background-index", "--clang-tidy=false", "--completion-style=detailed", "--header-insertion=never", "--log=error"]
+      "args": [
+        "--background-index",
+        "--clang-tidy=false",
+        "--completion-style=detailed",
+        "--header-insertion=never",
+        "--log=error"
+      ]
     },
     "cpp": {
       "command": "clangd",
-      "args": ["--background-index", "--clang-tidy=false", "--completion-style=detailed", "--header-insertion=never", "--log=error"]
+      "args": [
+        "--background-index",
+        "--clang-tidy=false",
+        "--completion-style=detailed",
+        "--header-insertion=never",
+        "--log=error"
+      ]
     },
     "rust": {
       "command": "rust-analyzer",

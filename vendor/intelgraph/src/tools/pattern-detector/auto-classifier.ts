@@ -25,12 +25,7 @@
 
 import { fileURLToPath } from "url"
 import { loggerPort } from "../../logging/logger.js"
-import {
-  parseSource,
-  extractFunctionParams,
-  findStoreAssignments,
-  findAllNodes,
-} from "./c-parser.js"
+import { parseSource, extractFunctionParams, findStoreAssignments, findAllNodes } from "./c-parser.js"
 import type { FunctionCall } from "./c-parser.js"
 import type { ClassifiedSite, PatternConnectionKind } from "./ports.js"
 
@@ -75,10 +70,11 @@ export async function autoClassifyCall(
     if (!defs?.length) return null
 
     // Prefer a .c definition (function body) over a .h declaration
-    const preferredDef = defs.find((d: any) => {
-      const uri = d.uri ?? d.targetUri ?? ""
-      return uri.endsWith(".c") || uri.endsWith(".cc") || uri.endsWith(".cpp")
-    }) ?? defs[0]
+    const preferredDef =
+      defs.find((d: any) => {
+        const uri = d.uri ?? d.targetUri ?? ""
+        return uri.endsWith(".c") || uri.endsWith(".cc") || uri.endsWith(".cpp")
+      }) ?? defs[0]
     const defUri = preferredDef?.uri ?? preferredDef?.targetUri ?? ""
     const defFile = defUri.startsWith("file://") ? fileURLToPath(defUri) : defUri
     const defLine = preferredDef?.range?.start?.line ?? preferredDef?.targetRange?.start?.line ?? 0
@@ -86,9 +82,7 @@ export async function autoClassifyCall(
     if (!defSource) return null
 
     // Step 2: check if definition resolved to a macro — if so, follow expansion
-    const { resolvedSource, resolvedFile, resolvedLine } = await followMacroExpansion(
-      defSource, defFile, defLine, deps,
-    )
+    const { resolvedSource, resolvedFile, resolvedLine } = await followMacroExpansion(defSource, defFile, defLine, deps)
 
     // Step 3: parse the registration API body with tree-sitter
     const root = parseSource(resolvedSource)
@@ -103,9 +97,7 @@ export async function autoClassifyCall(
     const fnPtrArgIndex = detectFnPtrArgIndex(call.args, callbackName, params)
 
     // Step 6: extract callbackParamName — the parameter name in the body
-    const callbackParamName = fnPtrArgIndex >= 0 && fnPtrArgIndex < params.length
-      ? params[fnPtrArgIndex].name
-      : null
+    const callbackParamName = fnPtrArgIndex >= 0 && fnPtrArgIndex < params.length ? params[fnPtrArgIndex].name : null
 
     // Step 7: derive connection kind and dispatch key
     const connectionKind = deriveConnectionKind(call.name)
@@ -135,7 +127,12 @@ export async function autoClassifyCall(
       callbackArgIndex: fnPtrArgIndex >= 0 ? fnPtrArgIndex : undefined,
     }
   } catch (err) {
-    loggerPort.child("auto-classifier").error(`autoClassifyCall failed for call "${call?.name ?? "unknown"}"`, err instanceof Error ? err : new Error(String(err)))
+    loggerPort
+      .child("auto-classifier")
+      .error(
+        `autoClassifyCall failed for call "${call?.name ?? "unknown"}"`,
+        err instanceof Error ? err : new Error(String(err)),
+      )
     return null
   }
 }
@@ -146,10 +143,10 @@ export async function autoClassifyCall(
  */
 export function deriveConnectionKind(callName: string): PatternConnectionKind {
   const n = callName.toLowerCase()
-  if (/irq|interrupt/.test(n))             return "hw_interrupt"
-  if (/ring|threshold/.test(n))            return "ring_signal"
+  if (/irq|interrupt/.test(n)) return "hw_interrupt"
+  if (/ring|threshold/.test(n)) return "ring_signal"
   if (/signal|event|notif|notify/.test(n)) return "event"
-  if (/msg|message|thread_comm/.test(n))   return "api_call"
+  if (/msg|message|thread_comm/.test(n)) return "api_call"
   return "api_call"
 }
 
@@ -252,9 +249,7 @@ async function followMacroExpansion(
           try {
             const defs2 = await deps.lspClientFull.definition(defFile, bodyLine, fnCharOffset)
             if (defs2?.length) {
-              const realFile = defs2[0].uri?.startsWith("file://")
-                ? fileURLToPath(defs2[0].uri)
-                : defs2[0].uri
+              const realFile = defs2[0].uri?.startsWith("file://") ? fileURLToPath(defs2[0].uri) : defs2[0].uri
               const realLine = defs2[0].range?.start?.line ?? 0
               const realSource = deps.readFile(realFile)
               if (realSource) {
@@ -306,30 +301,74 @@ function extractParamsFallback(
     // Heuristic: fn-ptr typedef if type has fn-ptr signal OR doesn't contain primitive keywords
     // but does NOT classify numeric/struct typedefs ending in _t as fn-ptrs
     const FN_PTR_SIGNALS = ["_cb", "_fn", "_handler", "_func", "_routine", "_callback"]
-    const KNOWN_NON_FN_PTR = ["void","int","char","unsigned","signed","long","short","float","double",
-      "struct","enum","bool","size_t","ssize_t",
-      "uint8_t","uint16_t","uint32_t","uint64_t","int8_t","int16_t","int32_t","int64_t",
-      "u8","u16","u32","u64","s8","s16","s32","s64",
-      "A_UINT8","A_UINT16","A_UINT32","A_UINT64","A_INT8","A_INT16","A_INT32","A_BOOL",
-      "A_STATUS","QDF_STATUS","wlan_status_t","OFFLOAD_STATUS"]
-    const hasFnPtrSignal = FN_PTR_SIGNALS.some(s => typeText.toLowerCase().includes(s))
-    const isKnownNonFnPtr = KNOWN_NON_FN_PTR.some(kw => typeText === kw || typeText.startsWith(kw + " "))
+    const KNOWN_NON_FN_PTR = [
+      "void",
+      "int",
+      "char",
+      "unsigned",
+      "signed",
+      "long",
+      "short",
+      "float",
+      "double",
+      "struct",
+      "enum",
+      "bool",
+      "size_t",
+      "ssize_t",
+      "uint8_t",
+      "uint16_t",
+      "uint32_t",
+      "uint64_t",
+      "int8_t",
+      "int16_t",
+      "int32_t",
+      "int64_t",
+      "u8",
+      "u16",
+      "u32",
+      "u64",
+      "s8",
+      "s16",
+      "s32",
+      "s64",
+      "A_UINT8",
+      "A_UINT16",
+      "A_UINT32",
+      "A_UINT64",
+      "A_INT8",
+      "A_INT16",
+      "A_INT32",
+      "A_BOOL",
+      "A_STATUS",
+      "QDF_STATUS",
+      "wlan_status_t",
+      "OFFLOAD_STATUS",
+    ]
+    const hasFnPtrSignal = FN_PTR_SIGNALS.some((s) => typeText.toLowerCase().includes(s))
+    const isKnownNonFnPtr = KNOWN_NON_FN_PTR.some((kw) => typeText === kw || typeText.startsWith(kw + " "))
     // _t suffix without fn-ptr signal = numeric/struct typedef, not a fn-ptr
     const isNumericLikeTypedef = typeText.endsWith("_t") && !hasFnPtrSignal
-    const isFnPtrTypedef = !isKnownNonFnPtr && !isNumericLikeTypedef
-      && (hasFnPtrSignal || tokens.length >= 2)
+    const isFnPtrTypedef = !isKnownNonFnPtr && !isNumericLikeTypedef && (hasFnPtrSignal || tokens.length >= 2)
     return { name, typeText, isFnPtrTypedef }
   })
 }
 
 function splitParamsFallback(paramList: string): string[] {
   const params: string[] = []
-  let depth = 0, current = ""
+  let depth = 0,
+    current = ""
   for (const ch of paramList) {
-    if (ch === "(") { depth++; current += ch }
-    else if (ch === ")") { depth--; current += ch }
-    else if (ch === "," && depth === 0) { params.push(current); current = "" }
-    else current += ch
+    if (ch === "(") {
+      depth++
+      current += ch
+    } else if (ch === ")") {
+      depth--
+      current += ch
+    } else if (ch === "," && depth === 0) {
+      params.push(current)
+      current = ""
+    } else current += ch
   }
   if (current.trim()) params.push(current)
   return params
@@ -338,12 +377,7 @@ function splitParamsFallback(paramList: string): string[] {
 /**
  * Find the character offset of a call name token on a given line.
  */
-function findCallNameChar(
-  filePath: string,
-  line0: number,
-  callName: string,
-  deps: AutoClassifierDeps,
-): number {
+function findCallNameChar(filePath: string, line0: number, callName: string, deps: AutoClassifierDeps): number {
   const source = deps.readFile(filePath)
   if (!source) return -1
   const lineText = source.split(/\r?\n/)[line0] ?? ""

@@ -125,16 +125,12 @@ export function decideOrchestrationAction(state: OrchestrationState): Orchestrat
   return { type: "return_not_found" }
 }
 
-export function shouldRunLlmFallback(
-  request: QueryRequest,
-  ctx: EnricherContext,
-): boolean {
+export function shouldRunLlmFallback(request: QueryRequest, ctx: EnricherContext): boolean {
   if (!ctx.policy.llmLastResort) return false
   if (!(request.snapshotId > 0)) return false
 
   const deterministicAttempts = ctx.priorAttempts.filter(
-    (a): a is EnrichmentAttempt & { source: DeterministicEnricherSource } =>
-      a.source !== "llm",
+    (a): a is EnrichmentAttempt & { source: DeterministicEnricherSource } => a.source !== "llm",
   )
 
   const attemptedAllDeterministic = ctx.policy.deterministicOrder.every((source) =>

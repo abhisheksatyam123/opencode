@@ -24,8 +24,6 @@ export class FakePluginRegistry implements IPluginRegistry {
   }
 
   getExtractorsFor(probe: WorkspaceProbe): IExtractor[] {
-    return this.extractors.filter(
-      (ext) => !ext.metadata.appliesTo || ext.metadata.appliesTo(probe),
-    )
+    return this.extractors.filter((ext) => !ext.metadata.appliesTo || ext.metadata.appliesTo(probe))
   }
 }

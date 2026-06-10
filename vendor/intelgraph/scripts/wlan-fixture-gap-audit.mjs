@@ -90,22 +90,7 @@ function rgExists({ symbol, sourceRoot }) {
   const regex = `\\b${escapeRegex(symbol)}\\b`
   const result = spawnSync(
     "rg",
-    [
-      "-n",
-      "-m",
-      "1",
-      "-e",
-      regex,
-      sourceRoot,
-      "-g",
-      "*.c",
-      "-g",
-      "*.h",
-      "-g",
-      "*.cpp",
-      "-g",
-      "*.hpp",
-    ],
+    ["-n", "-m", "1", "-e", regex, sourceRoot, "-g", "*.c", "-g", "*.h", "-g", "*.cpp", "-g", "*.hpp"],
     { encoding: "utf-8" },
   )
   return result.status === 0
@@ -123,11 +108,10 @@ function normalizePath(filePath) {
 }
 
 function buildBasenameIndex(sourceRoot) {
-  const result = spawnSync(
-    "rg",
-    ["--files", sourceRoot, "-g", "*.c", "-g", "*.h", "-g", "*.cpp", "-g", "*.hpp"],
-    { encoding: "utf-8", maxBuffer: 1024 * 1024 * 128 },
-  )
+  const result = spawnSync("rg", ["--files", sourceRoot, "-g", "*.c", "-g", "*.h", "-g", "*.cpp", "-g", "*.hpp"], {
+    encoding: "utf-8",
+    maxBuffer: 1024 * 1024 * 128,
+  })
 
   if (result.status !== 0) {
     throw new Error(`Failed to list source files with rg: ${result.stderr || "unknown error"}`)

@@ -63,11 +63,7 @@ export type {
 
 // ── enrichment.ts — enricher ports, fallback policy, orchestration SM ─────────
 
-export {
-  DEFAULT_FALLBACK_POLICY,
-  decideOrchestrationAction,
-  shouldRunLlmFallback,
-} from "./enrichment.js"
+export { DEFAULT_FALLBACK_POLICY, decideOrchestrationAction, shouldRunLlmFallback } from "./enrichment.js"
 
 export type {
   DeterministicEnricherSource,

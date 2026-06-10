@@ -98,7 +98,8 @@ const ToolRunCommand = cmd({
 
 export const ToolCommand = cmd({
   command: "tool",
-  describe: "secondary script layer: list/run helper scripts from <notes-root>/tools (agent tool surface remains bash/task)",
+  describe:
+    "secondary script layer: list/run helper scripts from <notes-root>/tools (agent tool surface remains bash/task)",
   builder: (yargs: Argv) => yargs.command(ToolListCommand).command(ToolRunCommand).demandCommand(),
   handler: async () => {},
 })

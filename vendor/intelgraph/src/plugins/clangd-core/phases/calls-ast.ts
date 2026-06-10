@@ -22,10 +22,7 @@ interface RawCall {
   line: number
 }
 
-export async function* extractCallsAst(
-  ctx: PhaseCtx,
-  fileSymbols: FileSymbolMap,
-) {
+export async function* extractCallsAst(ctx: PhaseCtx, fileSymbols: FileSymbolMap) {
   // Build set of all known function names from Phase 1 symbol extraction
   // (includes functions found in all .c and .h files in the extraction budget).
   const knownFunctions = new Set<string>()
@@ -42,82 +39,83 @@ export async function* extractCallsAst(
     if (!text) continue
 
     const disabledLines = disabledPreprocessorLineSet(text)
-    const calls = parseSourceWith(text, (root): RawCall[] => {
-      const results: RawCall[] = []
+    const calls =
+      parseSourceWith(text, (root): RawCall[] => {
+        const results: RawCall[] = []
 
-      // Build a per-file set of callable names: includes globally known functions
-      // plus any function-like identifiers declared in THIS file (forward decls,
-      // inline helpers, macros expanded to function names in same TU).
-      // We do a single pre-pass over all call_expressions in the file to collect
-      // callee names that are also defined/declared in this file.
-      const fileLocalFns = new Set<string>(knownFunctions)
+        // Build a per-file set of callable names: includes globally known functions
+        // plus any function-like identifiers declared in THIS file (forward decls,
+        // inline helpers, macros expanded to function names in same TU).
+        // We do a single pre-pass over all call_expressions in the file to collect
+        // callee names that are also defined/declared in this file.
+        const fileLocalFns = new Set<string>(knownFunctions)
 
-      // Add functions defined or declared in this file (even if not yet in knownFunctions
-      // because they're LOCAL/STATIC and only visible here).
-      const allDefs = findAllNodes(root, "function_definition")
-      for (const fd of allDefs) {
-        const fnLine = (fd.startPosition?.row ?? 0) + 1
-        if (isLineInDisabledPreprocessorRegion(disabledLines, fnLine)) continue
-        const decl = fd.childForFieldName?.("declarator")
-        let inner = decl
-        while (inner && inner.type === "pointer_declarator") {
-          inner = inner.childForFieldName?.("declarator") ?? inner.firstChild ?? undefined
-        }
-        if (inner?.type === "function_declarator") {
-          const nameNode = inner.childForFieldName?.("declarator") ?? inner.firstChild
-          const name = nameNode?.text?.replace(/[^a-zA-Z0-9_]/g, "")
-          if (name && name.length > 1) fileLocalFns.add(name)
-        }
-      }
-
-      const funcDefs = findAllNodes(root, "function_definition")
-      for (const funcDef of funcDefs) {
-        const fnLine = (funcDef.startPosition?.row ?? 0) + 1
-        if (isLineInDisabledPreprocessorRegion(disabledLines, fnLine)) continue
-        // Get the function name
-        let callerName: string | null = null
-        const declarator = funcDef.childForFieldName?.("declarator")
-        if (declarator) {
-          walkAst(declarator, (n: any) => {
-            if (!callerName && n.type === "identifier") callerName = n.text
-          })
-        }
-        if (!callerName) continue
-
-        // Walk all call_expressions inside the function body
-        const body = funcDef.childForFieldName?.("body")
-        if (!body) continue
-
-        const callExprs = findAllNodes(body, "call_expression")
-        const seenCallees = new Set<string>()
-        for (const callExpr of callExprs) {
-          const fnNode = callExpr.childForFieldName?.("function")
-          if (!fnNode) continue
-
-          let calleeName: string | null = null
-          if (fnNode.type === "identifier") {
-            calleeName = fnNode.text
-          } else if (fnNode.type === "field_expression") {
-            // ptr->method or struct.method — extract field name
-            const field = fnNode.childForFieldName?.("field")
-            calleeName = field?.text ?? null
-          } else if (fnNode.type === "parenthesized_expression") {
-            // (*fn_ptr)(args) — skip function pointer calls
-            continue
+        // Add functions defined or declared in this file (even if not yet in knownFunctions
+        // because they're LOCAL/STATIC and only visible here).
+        const allDefs = findAllNodes(root, "function_definition")
+        for (const fd of allDefs) {
+          const fnLine = (fd.startPosition?.row ?? 0) + 1
+          if (isLineInDisabledPreprocessorRegion(disabledLines, fnLine)) continue
+          const decl = fd.childForFieldName?.("declarator")
+          let inner = decl
+          while (inner && inner.type === "pointer_declarator") {
+            inner = inner.childForFieldName?.("declarator") ?? inner.firstChild ?? undefined
           }
-
-          if (!calleeName || !fileLocalFns.has(calleeName)) continue
-          if (seenCallees.has(calleeName)) continue
-          seenCallees.add(calleeName)
-
-          const callLine = (callExpr.startPosition?.row ?? 0) + 1
-          if (isLineInDisabledPreprocessorRegion(disabledLines, callLine)) continue
-          results.push({ caller: callerName, callee: calleeName, line: callLine })
+          if (inner?.type === "function_declarator") {
+            const nameNode = inner.childForFieldName?.("declarator") ?? inner.firstChild
+            const name = nameNode?.text?.replace(/[^a-zA-Z0-9_]/g, "")
+            if (name && name.length > 1) fileLocalFns.add(name)
+          }
         }
-      }
 
-      return results
-    }) ?? []
+        const funcDefs = findAllNodes(root, "function_definition")
+        for (const funcDef of funcDefs) {
+          const fnLine = (funcDef.startPosition?.row ?? 0) + 1
+          if (isLineInDisabledPreprocessorRegion(disabledLines, fnLine)) continue
+          // Get the function name
+          let callerName: string | null = null
+          const declarator = funcDef.childForFieldName?.("declarator")
+          if (declarator) {
+            walkAst(declarator, (n: any) => {
+              if (!callerName && n.type === "identifier") callerName = n.text
+            })
+          }
+          if (!callerName) continue
+
+          // Walk all call_expressions inside the function body
+          const body = funcDef.childForFieldName?.("body")
+          if (!body) continue
+
+          const callExprs = findAllNodes(body, "call_expression")
+          const seenCallees = new Set<string>()
+          for (const callExpr of callExprs) {
+            const fnNode = callExpr.childForFieldName?.("function")
+            if (!fnNode) continue
+
+            let calleeName: string | null = null
+            if (fnNode.type === "identifier") {
+              calleeName = fnNode.text
+            } else if (fnNode.type === "field_expression") {
+              // ptr->method or struct.method — extract field name
+              const field = fnNode.childForFieldName?.("field")
+              calleeName = field?.text ?? null
+            } else if (fnNode.type === "parenthesized_expression") {
+              // (*fn_ptr)(args) — skip function pointer calls
+              continue
+            }
+
+            if (!calleeName || !fileLocalFns.has(calleeName)) continue
+            if (seenCallees.has(calleeName)) continue
+            seenCallees.add(calleeName)
+
+            const callLine = (callExpr.startPosition?.row ?? 0) + 1
+            if (isLineInDisabledPreprocessorRegion(disabledLines, callLine)) continue
+            results.push({ caller: callerName, callee: calleeName, line: callLine })
+          }
+        }
+
+        return results
+      }) ?? []
 
     for (const call of calls) {
       yield ctx.edge({

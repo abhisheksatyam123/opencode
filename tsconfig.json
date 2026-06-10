@@ -4,220 +4,82 @@
   "compilerOptions": {
     "jsx": "preserve",
     "jsxImportSource": "@opentui/solid",
-    "lib": [
-      "ESNext",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "types": [],
     "noUncheckedIndexedAccess": false,
-    "customConditions": [
-      "browser"
-    ],
+    "customConditions": ["browser"],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@tui/*": [
-        "./src/surface/cli/cmd/tui/*"
-      ],
-      "@opencode-ai/util/*": [
-        "./src/foundation/vendor/util/*"
-      ],
-      "@opencode-ai/plugin": [
-        "./src/foundation/vendor/plugin/index.ts"
-      ],
-      "@opencode-ai/plugin/tool": [
-        "./src/foundation/vendor/plugin/tool.ts"
-      ],
-      "@opencode-ai/plugin/tui": [
-        "./src/foundation/vendor/plugin/tui.ts"
-      ],
-      "@opencode-ai/sdk": [
-        "./src/foundation/vendor/sdk/index.ts"
-      ],
-      "@opencode-ai/sdk/client": [
-        "./src/foundation/vendor/sdk/client.ts"
-      ],
-      "@opencode-ai/sdk/server": [
-        "./src/foundation/vendor/sdk/server.ts"
-      ],
-      "@opencode-ai/sdk/v2": [
-        "./src/foundation/vendor/sdk/v2/index.ts"
-      ],
-      "@opencode-ai/sdk/v2/client": [
-        "./src/foundation/vendor/sdk/v2/client.ts"
-      ],
-      "@opencode-ai/sdk/v2/gen/client": [
-        "./src/foundation/vendor/sdk/v2/gen/client/index.ts"
-      ],
-      "@opencode-ai/sdk/v2/server": [
-        "./src/foundation/vendor/sdk/v2/server.ts"
-      ],
-      "@foundation/*": [
-        "./src/foundation/*"
-      ],
-      "@m/bus": [
-        "./src/infrastructure/bus/index.ts"
-      ],
-      "@m/storage": [
-        "./src/infrastructure/storage/index.ts"
-      ],
-      "@m/filesystem": [
-        "./src/infrastructure/filesystem/index.ts"
-      ],
-      "@m/config": [
-        "./src/platform/config/index.ts"
-      ],
-      "@m/env": [
-        "./src/platform/env/index.ts"
-      ],
-      "@m/global": [
-        "./src/platform/global/index.ts"
-      ],
-      "@m/installation": [
-        "./src/init/installation/index.ts"
-      ],
-      "@m/policy": [
-        "./src/platform/policy/index.ts"
-      ],
-      "@m/permission": [
-        "./src/platform/permission/index.ts"
-      ],
-      "@m/auth": [
-        "./src/init/auth/index.ts"
-      ],
-      "@m/provider": [
-        "./src/platform/provider/index.ts"
-      ],
-      "@m/notes": [
-        "./src/platform/notes/index.ts"
-      ],
-      "@m/process": [
-        "./src/runtime/process/index.ts"
-      ],
-      "@m/tool": [
-        "./src/runtime/tool/index.ts"
-      ],
-      "@m/tool-card": [
-        "./src/runtime/tool-card/index.ts"
-      ],
-      "@m/lsp": [
-        "./src/runtime/lsp/index.ts"
-      ],
-      "@m/mcp": [
-        "./src/runtime/mcp/index.ts"
-      ],
-      "@m/ide": [
-        "./src/runtime/ide/index.ts"
-      ],
-      "@m/command": [
-        "./src/runtime/command/index.ts"
-      ],
-      "@m/skill": [
-        "./src/runtime/skill/index.ts"
-      ],
-      "@m/shell": [
-        "./src/runtime/shell/index.ts"
-      ],
-      "@m/pty": [
-        "./src/runtime/pty/index.ts"
-      ],
-      "@m/file": [
-        "./src/runtime/file/index.ts"
-      ],
-      "@m/snapshot": [
-        "./src/runtime/snapshot/index.ts"
-      ],
-      "@m/question": [
-        "./src/runtime/question/index.ts"
-      ],
-      "@m/agent": [
-        "./src/domain/agent/index.ts"
-      ],
-      "@m/workflow": [
-        "./src/domain/workflow/index.ts"
-      ],
-      "@m/session": [
-        "./src/domain/session/index.ts"
-      ],
-      "@m/project": [
-        "./src/domain/project/index.ts"
-      ],
-      "@m/account": [
-        "./src/init/account/index.ts"
-      ],
-      "@m/share": [
-        "./src/domain/share/index.ts"
-      ],
-      "@m/sync": [
-        "./src/domain/sync/index.ts"
-      ],
-      "@m/memory": [
-        "./src/domain/memory/index.ts"
-      ],
-      "@m/mentor": [
-        "./src/domain/mentor/index.ts"
-      ],
-      "@m/retrieval": [
-        "./src/domain/retrieval/index.ts"
-      ],
-      "@m/federation": [
-        "./src/domain/federation/index.ts"
-      ],
-      "@m/orchestrator": [
-        "./src/domain/orchestrator/index.ts"
-      ],
-      "@m/nversion": [
-        "./src/init/nversion/index.ts"
-      ],
-      "@m/control-plane": [
-        "./src/domain/control-plane/index.ts"
-      ],
-      "@m/cli": [
-        "./src/interface/cli/index.ts"
-      ],
-      "@m/server": [
-        "./src/interface/server/index.ts"
-      ],
-      "@m/surface": [
-        "./src/interface/surface/index.ts"
-      ],
-      "@m/acp": [
-        "./src/interface/acp/index.ts"
-      ],
-      "@m/plugin": [
-        "./src/init/plugin/index.ts"
-      ],
-      "@m/init": [
-        "./src/init/index.ts"
-      ],
-      "@m/npm": [
-        "./src/init/npm/index.ts"
-      ],
-      "@intelgraph/*": [
-        "./vendor/intelgraph/src/*"
-      ],
-      "@opencode-ai/intelgraph": [
-        "./vendor/intelgraph/src/index.ts"
-      ],
-      "@opencode-ai/intelgraph/fakes": [
-        "./vendor/intelgraph/src/fakes.ts"
-      ]
+      "@/*": ["./src/*"],
+      "@tui/*": ["./src/surface/cli/cmd/tui/*"],
+      "@opencode-ai/util/*": ["./src/foundation/vendor/util/*"],
+      "@opencode-ai/plugin": ["./src/foundation/vendor/plugin/index.ts"],
+      "@opencode-ai/plugin/tool": ["./src/foundation/vendor/plugin/tool.ts"],
+      "@opencode-ai/plugin/tui": ["./src/foundation/vendor/plugin/tui.ts"],
+      "@opencode-ai/sdk": ["./src/foundation/vendor/sdk/index.ts"],
+      "@opencode-ai/sdk/client": ["./src/foundation/vendor/sdk/client.ts"],
+      "@opencode-ai/sdk/server": ["./src/foundation/vendor/sdk/server.ts"],
+      "@opencode-ai/sdk/v2": ["./src/foundation/vendor/sdk/v2/index.ts"],
+      "@opencode-ai/sdk/v2/client": ["./src/foundation/vendor/sdk/v2/client.ts"],
+      "@opencode-ai/sdk/v2/gen/client": ["./src/foundation/vendor/sdk/v2/gen/client/index.ts"],
+      "@opencode-ai/sdk/v2/server": ["./src/foundation/vendor/sdk/v2/server.ts"],
+      "@foundation/*": ["./src/foundation/*"],
+      "@m/bus": ["./src/infrastructure/bus/index.ts"],
+      "@m/storage": ["./src/infrastructure/storage/index.ts"],
+      "@m/filesystem": ["./src/infrastructure/filesystem/index.ts"],
+      "@m/config": ["./src/platform/config/index.ts"],
+      "@m/env": ["./src/platform/env/index.ts"],
+      "@m/global": ["./src/platform/global/index.ts"],
+      "@m/installation": ["./src/init/installation/index.ts"],
+      "@m/policy": ["./src/platform/policy/index.ts"],
+      "@m/permission": ["./src/platform/permission/index.ts"],
+      "@m/auth": ["./src/init/auth/index.ts"],
+      "@m/provider": ["./src/platform/provider/index.ts"],
+      "@m/notes": ["./src/platform/notes/index.ts"],
+      "@m/process": ["./src/runtime/process/index.ts"],
+      "@m/tool": ["./src/runtime/tool/index.ts"],
+      "@m/tool-card": ["./src/runtime/tool-card/index.ts"],
+      "@m/lsp": ["./src/runtime/lsp/index.ts"],
+      "@m/mcp": ["./src/runtime/mcp/index.ts"],
+      "@m/ide": ["./src/runtime/ide/index.ts"],
+      "@m/command": ["./src/runtime/command/index.ts"],
+      "@m/skill": ["./src/runtime/skill/index.ts"],
+      "@m/shell": ["./src/runtime/shell/index.ts"],
+      "@m/pty": ["./src/runtime/pty/index.ts"],
+      "@m/file": ["./src/runtime/file/index.ts"],
+      "@m/snapshot": ["./src/runtime/snapshot/index.ts"],
+      "@m/question": ["./src/runtime/question/index.ts"],
+      "@m/agent": ["./src/domain/agent/index.ts"],
+      "@m/workflow": ["./src/domain/workflow/index.ts"],
+      "@m/session": ["./src/domain/session/index.ts"],
+      "@m/project": ["./src/domain/project/index.ts"],
+      "@m/account": ["./src/init/account/index.ts"],
+      "@m/share": ["./src/domain/share/index.ts"],
+      "@m/sync": ["./src/domain/sync/index.ts"],
+      "@m/memory": ["./src/domain/memory/index.ts"],
+      "@m/mentor": ["./src/domain/mentor/index.ts"],
+      "@m/retrieval": ["./src/domain/retrieval/index.ts"],
+      "@m/federation": ["./src/domain/federation/index.ts"],
+      "@m/orchestrator": ["./src/domain/orchestrator/index.ts"],
+      "@m/nversion": ["./src/init/nversion/index.ts"],
+      "@m/control-plane": ["./src/domain/control-plane/index.ts"],
+      "@m/cli": ["./src/interface/cli/index.ts"],
+      "@m/server": ["./src/interface/server/index.ts"],
+      "@m/surface": ["./src/interface/surface/index.ts"],
+      "@m/acp": ["./src/interface/acp/index.ts"],
+      "@m/plugin": ["./src/init/plugin/index.ts"],
+      "@m/init": ["./src/init/index.ts"],
+      "@m/npm": ["./src/init/npm/index.ts"],
+      "@intelgraph/*": ["./vendor/intelgraph/src/*"],
+      "@opencode-ai/intelgraph": ["./vendor/intelgraph/src/index.ts"],
+      "@opencode-ai/intelgraph/fakes": ["./vendor/intelgraph/src/fakes.ts"]
     },
     "plugins": [
       {
         "name": "@effect/language-service",
         "transform": "@effect/language-service/transform",
-        "namespaceImportPackages": [
-          "effect",
-          "@effect/*"
-        ]
+        "namespaceImportPackages": ["effect", "@effect/*"]
       }
     ]
   },
-  "exclude": [
-    "src/surface/web",
-    "vendor"
-  ]
+  "exclude": ["src/surface/web", "vendor"]
 }

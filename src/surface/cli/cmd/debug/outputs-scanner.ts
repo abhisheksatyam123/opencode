@@ -96,7 +96,9 @@ export const OutputsScannerCommand = cmd({
         // works regardless of cwd; the display text honors --relative.
         console.log(Hyperlink.file(f, display))
       }
-      console.log(`(${files.length} file${files.length === 1 ? "" : "s"} modified since ${new Date(since).toISOString()})`)
+      console.log(
+        `(${files.length} file${files.length === 1 ? "" : "s"} modified since ${new Date(since).toISOString()})`,
+      )
     })
   },
 })

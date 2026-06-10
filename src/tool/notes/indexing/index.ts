@@ -13,4 +13,11 @@
 export { hasLsp, touch, workspaceSymbolQuery } from "@/tool/notes/indexing/client"
 export { lineOffsets, pointOffset, applyLspEdits, normalizeLsp } from "@/tool/notes/indexing/normalize"
 export { linesToHeading, flatSymbol, readLspHeadings } from "@/tool/notes/indexing/headings"
-export { resolveByTitle, invalidateTitleIndex, looksLikeFilename, lspResolve, noteDiagnostics, opLink } from "@/tool/notes/indexing/link"
+export {
+  resolveByTitle,
+  invalidateTitleIndex,
+  looksLikeFilename,
+  lspResolve,
+  noteDiagnostics,
+  opLink,
+} from "@/tool/notes/indexing/link"

@@ -119,7 +119,6 @@ function fallback(part: ToolPart) {
   })
 }
 
-
 function task(info: ToolProps<typeof TaskTool>) {
   const input = info.part.state.input
   const status = info.part.state.status

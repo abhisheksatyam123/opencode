@@ -1,4 +1,9 @@
-import type { IReasonEngine, ReasonEngineInput, ReasonEngineResult, LlmReasoningConfig } from "../reason-engine/ports.js"
+import type {
+  IReasonEngine,
+  ReasonEngineInput,
+  ReasonEngineResult,
+  LlmReasoningConfig,
+} from "../reason-engine/ports.js"
 import type { ILanguageClient } from "../../lsp/ports.js"
 import type { ReasonPath } from "../reason-engine/contracts.js"
 

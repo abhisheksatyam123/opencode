@@ -228,9 +228,7 @@ export namespace ProviderAuth {
     }),
   )
 
-  export const defaultLayer = Layer.suspend(() =>
-    layer.pipe(Layer.provide(Auth.defaultLayer)),
-  )
+  export const defaultLayer = Layer.suspend(() => layer.pipe(Layer.provide(Auth.defaultLayer)))
 
   const { runPromise } = makeRuntime(Service, defaultLayer)
 

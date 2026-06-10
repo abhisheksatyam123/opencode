@@ -7,12 +7,12 @@ import type { FunctionCall } from "./c-parser.js"
 
 /** Connection kind — how the callback is invoked at runtime. */
 export type PatternConnectionKind =
-  | "api_call"                // direct fn-ptr invocation
-  | "hw_interrupt"            // hardware interrupt routed to callback
-  | "event"                   // event/message dispatch table
-  | "ring_signal"             // signal/ring-based dispatch
-  | "interface_registration"  // ops/vtable registration
-  | "custom"                  // unknown mechanism
+  | "api_call" // direct fn-ptr invocation
+  | "hw_interrupt" // hardware interrupt routed to callback
+  | "event" // event/message dispatch table
+  | "ring_signal" // signal/ring-based dispatch
+  | "interface_registration" // ops/vtable registration
+  | "custom" // unknown mechanism
 
 /**
  * A call-name based classification rule.

@@ -1,9 +1,5 @@
 import type { IIndirectCallerIngestion } from "../../contracts/indirect-caller-ingestion.js"
-import type {
-  RuntimeCallerInput,
-  RuntimeCallerBatch,
-  LinkReport,
-} from "../../contracts/indirect-caller-ingestion.js"
+import type { RuntimeCallerInput, RuntimeCallerBatch, LinkReport } from "../../contracts/indirect-caller-ingestion.js"
 import type { IngestReport, RuntimeCallerRow } from "../../contracts/common.js"
 import { runtimeRows, type GraphWriteSink } from "../graph-rows.js"
 
@@ -84,10 +80,7 @@ export class IndirectCallerIngestionService implements IIndirectCallerIngestion 
       })
     }
 
-    const participantsMaterialized = linked.linked.reduce(
-      (sum, row) => sum + (row.participants?.length ?? 0),
-      0,
-    )
+    const participantsMaterialized = linked.linked.reduce((sum, row) => sum + (row.participants?.length ?? 0), 0)
 
     const report: IngestReport = {
       snapshotId,

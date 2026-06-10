@@ -6,4 +6,8 @@ export {
   type MentorLintResult,
 } from "@/agent/mentor/mentor-lint"
 
-export { loadMentorRulesAtSessionStart, formatActiveMentorRulesSection, type LoadedMentorRules } from "@/agent/mentor/mentor-loader"
+export {
+  loadMentorRulesAtSessionStart,
+  formatActiveMentorRulesSection,
+  type LoadedMentorRules,
+} from "@/agent/mentor/mentor-loader"

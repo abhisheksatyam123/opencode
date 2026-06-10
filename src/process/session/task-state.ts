@@ -84,7 +84,17 @@ export namespace TaskState {
         status: z.enum(["active", "deferred", "done", "failed", "missing"]).optional(),
         /** Resolution source used to choose this snapshot */
         source: z
-          .enum(["explicit", "session-active", "session-attached", "worktree-active", "branch-active", "default", "archived-result", "legacy", "none"])
+          .enum([
+            "explicit",
+            "session-active",
+            "session-attached",
+            "worktree-active",
+            "branch-active",
+            "default",
+            "archived-result",
+            "legacy",
+            "none",
+          ])
           .optional(),
         /** Optional revision/hash for clients that want stale-update guards */
         revision: z.string().optional(),

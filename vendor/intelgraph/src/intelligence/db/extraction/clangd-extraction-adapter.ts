@@ -9,12 +9,7 @@ import type {
   ExtractionBatches,
 } from "../../contracts/extraction-adapter.js"
 import type { IngestReport, SymbolRow, EdgeRow } from "../../contracts/common.js"
-import {
-  edgeRow,
-  evidenceRow,
-  symbolNode,
-  type GraphWriteSink,
-} from "../graph-rows.js"
+import { edgeRow, evidenceRow, symbolNode, type GraphWriteSink } from "../graph-rows.js"
 
 // ---------------------------------------------------------------------------
 // Clangd LSP client interface (minimal surface we need)
@@ -38,13 +33,7 @@ function isWlanProcRoot(dir: string): boolean {
 
 function isLikelyBuildArtifactPath(filePath: string): boolean {
   const p = filePath.replace(/\\/g, "/").toLowerCase()
-  const markers = [
-    "/build/",
-    "/config/bsp/",
-    "/core/debugtools/",
-    "/core/power/",
-    "/core/services/",
-  ]
+  const markers = ["/build/", "/config/bsp/", "/core/debugtools/", "/core/power/", "/core/services/"]
   return markers.some((m) => p.includes(m))
 }
 
@@ -95,13 +84,20 @@ async function collectFiles(dir: string, limit = 500): Promise<string[]> {
 
 function mapKind(k: number): SymbolRow["kind"] {
   switch (k) {
-    case 12: return "function"
-    case 23: return "struct"
-    case 10: return "enum"
-    case 26: return "typedef"
-    case 13: return "field"
-    case 14: return "param"
-    default: return "function"
+    case 12:
+      return "function"
+    case 23:
+      return "struct"
+    case 10:
+      return "enum"
+    case 26:
+      return "typedef"
+    case 13:
+      return "field"
+    case 14:
+      return "param"
+    default:
+      return "function"
   }
 }
 
@@ -116,16 +112,16 @@ export class ClangdExtractionAdapter implements IExtractionAdapter {
   ) {}
 
   async extractSymbols(input: ExtractionInput): Promise<SymbolBatch> {
-    const files = input.files ?? await collectFiles(input.workspaceRoot, input.fileLimit ?? 200)
+    const files = input.files ?? (await collectFiles(input.workspaceRoot, input.fileLimit ?? 200))
     const symbols: SymbolRow[] = []
 
     for (const file of files) {
       try {
         const raw = await this.lsp.documentSymbol(file)
         for (const s of raw) {
-          const loc = (s.location as Record<string, unknown> | undefined)
-          const range = (s.range as Record<string, unknown> | undefined) ??
-                        (loc?.range as Record<string, unknown> | undefined)
+          const loc = s.location as Record<string, unknown> | undefined
+          const range =
+            (s.range as Record<string, unknown> | undefined) ?? (loc?.range as Record<string, unknown> | undefined)
           const start = range?.start as Record<string, unknown> | undefined
           symbols.push({
             kind: mapKind((s.kind as number) ?? 12),

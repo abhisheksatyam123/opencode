@@ -215,7 +215,9 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
             const current = {
               all: tabs.all.filter((tab): tab is string => typeof tab === "string"),
               active: typeof tabs.active === "string" ? tabs.active : undefined,
-              allB: Array.isArray(tabs.allB) ? tabs.allB.filter((tab): tab is string => typeof tab === "string") : undefined,
+              allB: Array.isArray(tabs.allB)
+                ? tabs.allB.filter((tab): tab is string => typeof tab === "string")
+                : undefined,
               activeB: typeof tabs.activeB === "string" ? tabs.activeB : undefined,
             }
             const normalized = normalizeStoredSessionTabs(key, current)
@@ -951,7 +953,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
             const nextAllB = allB.includes(nextTab) ? allB : [...allB, nextTab]
             setStore("sessionTabs", session, {
               allB: nextAllB,
-              activeB: nextTab
+              activeB: nextTab,
             })
           },
           closeB(tab: string) {
@@ -962,7 +964,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
             const activeB = current.activeB === tab ? (allB[0] ?? undefined) : current.activeB
             setStore("sessionTabs", session, {
               allB,
-              activeB
+              activeB,
             })
           },
           moveTabToB(tab: string) {
@@ -977,7 +979,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
               all,
               active,
               allB: nextAllB,
-              activeB: tab
+              activeB: tab,
             })
           },
           moveTabToA(tab: string) {
@@ -992,7 +994,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
               all: nextAll,
               active: tab,
               allB,
-              activeB
+              activeB,
             })
           },
           setActive(tab: string | undefined) {

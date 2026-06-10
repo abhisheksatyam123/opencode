@@ -255,7 +255,7 @@ export async function waitForSpawnLockRelease(root: string, timeoutMs = 30_000):
       }
 
       // Lock file still exists — wait
-      await new Promise(r => setTimeout(r, delay))
+      await new Promise((r) => setTimeout(r, delay))
       delay = Math.min(delay * 1.5, 2000)
     } catch {
       // Lock file gone
@@ -317,7 +317,10 @@ export async function checkDaemonAlive(state: DaemonState, expectedRoot?: string
   // If bridgePid is 0, the bridge hasn't been spawned yet (HTTP daemon wrote state first).
   // This is OK — we'll spawn the bridge and it will update the state.
   if (state.bridgePid === 0) {
-    log.info("Bridge not yet spawned (bridgePid=0) — will spawn now", { httpPort: state.httpPort, httpPid: state.httpPid })
+    log.info("Bridge not yet spawned (bridgePid=0) — will spawn now", {
+      httpPort: state.httpPort,
+      httpPid: state.httpPid,
+    })
     return false
   }
   if (!isProcessAlive(state.bridgePid)) {
@@ -389,13 +392,17 @@ export async function spawnDaemon(opts: SpawnDaemonOptions): Promise<DaemonState
 
   const bridgeArgs = [
     opts.bridgeScript,
-    "--port", String(port),
-    "--root", root,
-    "--server", opts.serverBin,
+    "--port",
+    String(port),
+    "--root",
+    root,
+    "--server",
+    opts.serverBin,
     opts.serverArgs.length > 0 ? "--server-args" : null,
     opts.serverArgs.length > 0 ? opts.serverArgs.join(",") : null,
-    "--log", bridgeLog,
-  ].filter(v => v !== null) as string[]
+    "--log",
+    bridgeLog,
+  ].filter((v) => v !== null) as string[]
 
   // Spawn bridge as a detached process with stdio ignored so it becomes a
   // true daemon — it can outlive the requesting process.
@@ -414,7 +421,11 @@ export async function spawnDaemon(opts: SpawnDaemonOptions): Promise<DaemonState
   // think the daemon is alive and skip respawning.
   bridge.on("exit", (code, signal) => {
     log.warn("Bridge process exited while parent still running — clearing stale state", {
-      bridgePid: bridge.pid, code, signal, port, root,
+      bridgePid: bridge.pid,
+      code,
+      signal,
+      port,
+      root,
     })
     clearState(root)
   })
@@ -465,7 +476,13 @@ export async function spawnDaemon(opts: SpawnDaemonOptions): Promise<DaemonState
   }
 
   writeState(root, state)
-  log.info("Daemon state written", { port, bridgePid: bridge.pid, serverPid, httpPort: state.httpPort, httpPid: state.httpPid })
+  log.info("Daemon state written", {
+    port,
+    bridgePid: bridge.pid,
+    serverPid,
+    httpPort: state.httpPort,
+    httpPid: state.httpPid,
+  })
   return state
 }
 
@@ -518,9 +535,7 @@ export interface SpawnHttpDaemonOptions {
  * The daemon runs: index.js --http-daemon --http-port <N> --root <root> ...
  * It is detached and unref'd so it outlives the stdio proxy process.
  */
-export async function spawnHttpDaemon(
-  opts: SpawnHttpDaemonOptions,
-): Promise<{ httpPort: number; httpPid: number }> {
+export async function spawnHttpDaemon(opts: SpawnHttpDaemonOptions): Promise<{ httpPort: number; httpPid: number }> {
   // Normalise root first — guards against .git being passed as root
   const root = normaliseRoot(opts.root)
   if (root !== opts.root) {
@@ -545,7 +560,7 @@ export async function spawnHttpDaemon(
     } else {
       // Lock was released — check if daemon is now running
       const state = readState(root)
-      if (state?.httpPort && state.httpPid && await isTcpPortOpen(state.httpPort)) {
+      if (state?.httpPort && state.httpPid && (await isTcpPortOpen(state.httpPort))) {
         log.info("HTTP daemon was spawned by another process — reusing", {
           httpPort: state.httpPort,
           httpPid: state.httpPid,
@@ -572,9 +587,12 @@ export async function spawnHttpDaemon(
     const args = [
       indexScript,
       "--http-daemon",
-      "--http-port", String(httpPort),
-      "--root", root,
-      "--server", opts.serverBin,
+      "--http-port",
+      String(httpPort),
+      "--root",
+      root,
+      "--server",
+      opts.serverBin,
     ]
     if (opts.serverArgs.length) {
       args.push("--server-args", opts.serverArgs.join(","))
@@ -601,7 +619,11 @@ export async function spawnHttpDaemon(
     const httpDaemonPid = daemon.pid
     daemon.on("exit", (code, signal) => {
       log.warn("HTTP daemon exited while proxy still running — clearing HTTP state", {
-        httpPid: httpDaemonPid, code, signal, httpPort, root,
+        httpPid: httpDaemonPid,
+        code,
+        signal,
+        httpPort,
+        root,
       })
       const currentState = readState(root)
       if (currentState && currentState.httpPid === httpDaemonPid) {

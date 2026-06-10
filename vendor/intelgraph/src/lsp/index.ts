@@ -29,24 +29,38 @@ const log = loggerPort.child("lsp")
 // uses non-standard languageIds.
 const DEFAULT_LANGUAGE_EXTENSIONS: Record<string, string> = {
   // C / C++ / CUDA / Objective-C
-  ".c": "c", ".h": "c",
-  ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp",
-  ".hpp": "cpp", ".hxx": "cpp", ".hh": "cpp",
-  ".cu": "cuda", ".cuh": "cuda",
-  ".m": "objective-c", ".mm": "objective-cpp",
+  ".c": "c",
+  ".h": "c",
+  ".cpp": "cpp",
+  ".cc": "cpp",
+  ".cxx": "cpp",
+  ".hpp": "cpp",
+  ".hxx": "cpp",
+  ".hh": "cpp",
+  ".cu": "cuda",
+  ".cuh": "cuda",
+  ".m": "objective-c",
+  ".mm": "objective-cpp",
   // Rust
   ".rs": "rust",
   // Go
   ".go": "go",
   // Python
-  ".py": "python", ".pyi": "python",
+  ".py": "python",
+  ".pyi": "python",
   // TypeScript / JavaScript
-  ".ts": "typescript", ".tsx": "typescriptreact",
-  ".js": "javascript", ".jsx": "javascriptreact", ".mjs": "javascript", ".cjs": "javascript",
+  ".ts": "typescript",
+  ".tsx": "typescriptreact",
+  ".js": "javascript",
+  ".jsx": "javascriptreact",
+  ".mjs": "javascript",
+  ".cjs": "javascript",
   // Java / Kotlin / Scala
   ".java": "java",
-  ".kt": "kotlin", ".kts": "kotlin",
-  ".scala": "scala", ".sc": "scala",
+  ".kt": "kotlin",
+  ".kts": "kotlin",
+  ".scala": "scala",
+  ".sc": "scala",
   // Other common languages
   ".rb": "ruby",
   ".php": "php",
@@ -128,11 +142,7 @@ const LSP_CAPABILITIES = {
  * (progress, file status, configuration, workspace folders) on a freshly
  * created JSON-RPC connection. Used by both stdio and socket factories.
  */
-function wireServerHandlers(
-  conn: MessageConnection,
-  tracker: IndexTracker,
-  root: string,
-): void {
+function wireServerHandlers(conn: MessageConnection, tracker: IndexTracker, root: string): void {
   conn.onRequest("window/workDoneProgress/create", (params: any) => {
     tracker.onProgressCreate(params.token)
     return null
@@ -149,9 +159,7 @@ function wireServerHandlers(
   conn.onRequest("workspace/configuration", () => [{}])
   conn.onRequest("client/registerCapability", () => {})
   conn.onRequest("client/unregisterCapability", () => {})
-  conn.onRequest("workspace/workspaceFolders", () => [
-    { name: "workspace", uri: pathToFileURL(root).href },
-  ])
+  conn.onRequest("workspace/workspaceFolders", () => [{ name: "workspace", uri: pathToFileURL(root).href }])
 }
 
 /**
@@ -183,20 +191,15 @@ export interface LspClientOptions {
 export class LspClient implements ILanguageClient {
   private _proc: ChildProcess
   private _conn: MessageConnection
-  private _openFiles = new Map<string, number>()   // path → version
-  private _diagnostics = new Map<string, LspDiagnostic[]>()  // path → diagnostics
-  private _shuttingDown = false                     // prevents onExit from firing during clean shutdown
+  private _openFiles = new Map<string, number>() // path → version
+  private _diagnostics = new Map<string, LspDiagnostic[]>() // path → diagnostics
+  private _shuttingDown = false // prevents onExit from firing during clean shutdown
   private _socketTraceId: string | null = null
   private _inflightRequests = 0
   readonly indexTracker: IndexTracker
   readonly root: string
 
-  private constructor(
-    proc: ChildProcess,
-    conn: MessageConnection,
-    root: string,
-    indexTracker: IndexTracker,
-  ) {
+  private constructor(proc: ChildProcess, conn: MessageConnection, root: string, indexTracker: IndexTracker) {
     this._proc = proc
     this._conn = conn
     this.root = root
@@ -236,7 +239,9 @@ export class LspClient implements ILanguageClient {
         const { appendFileSync } = require("fs") as typeof import("fs")
         const { getLogFile } = require("../logging/logger.js") as typeof import("../logging/logger.js")
         appendFileSync(getLogFile(), `${new Date().toISOString()} [CLANGD] ${text}\n`)
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       process.stderr.write(`[clangd] ${text}\n`)
     })
 
@@ -365,10 +370,7 @@ export class LspClient implements ILanguageClient {
       remotePort: socket.remotePort,
     })
 
-    const conn = createMessageConnection(
-      new SocketMessageReader(socket),
-      new SocketMessageWriter(socket),
-    )
+    const conn = createMessageConnection(new SocketMessageReader(socket), new SocketMessageWriter(socket))
 
     conn.onClose(() => {
       log.warn("JSON-RPC connection to clangd bridge closed", {
@@ -399,7 +401,13 @@ export class LspClient implements ILanguageClient {
     }
 
     // createFromSocket has no ChildProcess — pass a dummy proc object
-    const dummyProc = { pid: undefined, kill: () => {}, stdin: null, stdout: null, stderr: null } as unknown as ChildProcess
+    const dummyProc = {
+      pid: undefined,
+      kill: () => {},
+      stdin: null,
+      stdout: null,
+      stderr: null,
+    } as unknown as ChildProcess
     const client = new LspClient(dummyProc, conn, root, tracker)
     client._socketTraceId = traceId
 
@@ -438,7 +446,10 @@ export class LspClient implements ILanguageClient {
       log.debug(`${label}:done`, this._traceCtx({ durationMs: Date.now() - started }))
       return out
     } catch (err: any) {
-      log.warn(`${label}:error`, this._traceCtx({ durationMs: Date.now() - started, message: String(err?.message ?? err) }))
+      log.warn(
+        `${label}:error`,
+        this._traceCtx({ durationMs: Date.now() - started, message: String(err?.message ?? err) }),
+      )
       throw err
     } finally {
       this._inflightRequests = Math.max(0, this._inflightRequests - 1)
@@ -492,8 +503,12 @@ export class LspClient implements ILanguageClient {
 
   // ── LSP requests ───────────────────────────────────────────────────────────
 
-  private _uri(filePath: string) { return pathToFileURL(filePath).href }
-  private _pos(line: number, character: number) { return { line, character } }
+  private _uri(filePath: string) {
+    return pathToFileURL(filePath).href
+  }
+  private _pos(line: number, character: number) {
+    return { line, character }
+  }
 
   async hover(filePath: string, line: number, character: number): Promise<any> {
     return this._conn
@@ -631,15 +646,17 @@ export class LspClient implements ILanguageClient {
 
   async rangeFormatting(
     filePath: string,
-    startLine: number, startChar: number,
-    endLine: number, endChar: number,
+    startLine: number,
+    startChar: number,
+    endLine: number,
+    endChar: number,
   ): Promise<any[]> {
     return this._conn
       .sendRequest("textDocument/rangeFormatting", {
         textDocument: { uri: this._uri(filePath) },
         range: {
           start: { line: startLine, character: startChar },
-          end:   { line: endLine,   character: endChar   },
+          end: { line: endLine, character: endChar },
         },
         options: { tabSize: 4, insertSpaces: true },
       })
@@ -653,7 +670,7 @@ export class LspClient implements ILanguageClient {
         textDocument: { uri: this._uri(filePath) },
         range: {
           start: { line: startLine, character: 0 },
-          end:   { line: endLine,   character: 0 },
+          end: { line: endLine, character: 0 },
         },
       })
       .then((r: any) => (Array.isArray(r) ? r : []))
@@ -663,11 +680,12 @@ export class LspClient implements ILanguageClient {
   async prepareCallHierarchy(filePath: string, line: number, character: number): Promise<any[]> {
     const startedAt = Date.now()
     log.info("call-hierarchy prepare start", { filePath, line, character })
-    return this._trackedRequest("lsp.prepareCallHierarchy", () => this._conn
-      .sendRequest("textDocument/prepareCallHierarchy", {
+    return this._trackedRequest("lsp.prepareCallHierarchy", () =>
+      this._conn.sendRequest("textDocument/prepareCallHierarchy", {
         textDocument: { uri: this._uri(filePath) },
         position: this._pos(line, character),
-      }))
+      }),
+    )
       .then((r: any) => {
         const items = Array.isArray(r) ? r : []
         const first = items[0]?.name ?? null
@@ -701,8 +719,9 @@ export class LspClient implements ILanguageClient {
       return []
     }
     const seed = items[0]?.name ?? null
-    return this._trackedRequest("lsp.incomingCalls", () => this._conn
-      .sendRequest("callHierarchy/incomingCalls", { item: items[0] }))
+    return this._trackedRequest("lsp.incomingCalls", () =>
+      this._conn.sendRequest("callHierarchy/incomingCalls", { item: items[0] }),
+    )
       .then((r: any) => {
         const calls = Array.isArray(r) ? r : []
         log.info("call-hierarchy incoming result", {
@@ -787,7 +806,7 @@ export class LspClient implements ILanguageClient {
     const fileDiags = this._diagnostics.get(filePath) ?? []
     const range = {
       start: { line, character },
-      end:   { line, character },
+      end: { line, character },
     }
     return this._conn
       .sendRequest("textDocument/codeAction", {

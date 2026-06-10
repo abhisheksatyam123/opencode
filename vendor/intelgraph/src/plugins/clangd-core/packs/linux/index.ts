@@ -73,10 +73,7 @@ const linuxPack: PatternPack = {
 
   appliesTo: (workspaceRoot: string) => {
     // Linux kernel checkout signals: top-level Kbuild + Documentation/.
-    return (
-      existsSync(join(workspaceRoot, "Kbuild")) &&
-      existsSync(join(workspaceRoot, "Documentation"))
-    )
+    return existsSync(join(workspaceRoot, "Kbuild")) && existsSync(join(workspaceRoot, "Documentation"))
   },
 }
 

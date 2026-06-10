@@ -7,7 +7,6 @@
 // Simple predicate registry: stable name → callable predicate.
 // -------------------------------------------------------------------------
 
-
 export namespace Predicate {
   /**
    * Uniform input passed to every predicate. Carries the freshly-read
@@ -88,4 +87,3 @@ export namespace Predicate {
     }
   }
 }
-

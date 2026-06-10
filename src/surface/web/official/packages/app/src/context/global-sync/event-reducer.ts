@@ -1,14 +1,6 @@
 import { Binary } from "@opencode-ai/core/util/binary"
 import { produce, reconcile, type SetStoreFunction, type Store } from "solid-js/store"
-import type {
-  Message,
-  Part,
-  Project,
-  Session,
-  SessionStatus,
-  SnapshotFileDiff,
-  Todo,
-} from "@opencode-ai/sdk/v2/client"
+import type { Message, Part, Project, Session, SessionStatus, SnapshotFileDiff, Todo } from "@opencode-ai/sdk/v2/client"
 import type { State, VcsCache } from "./types"
 import { trimSessions } from "./session-trim"
 import { dropSessionCaches } from "./session-cache"

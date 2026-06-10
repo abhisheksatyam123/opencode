@@ -209,7 +209,10 @@ export function validateFixture(fixture: unknown): ValidationResult {
       if ("required_directions" in c && !Array.isArray(c.required_directions)) {
         errors.push(err("contract.required_directions", "must be an array if present"))
       }
-      if ("minimum_counts" in c && (typeof c.minimum_counts !== "object" || Array.isArray(c.minimum_counts) || c.minimum_counts === null)) {
+      if (
+        "minimum_counts" in c &&
+        (typeof c.minimum_counts !== "object" || Array.isArray(c.minimum_counts) || c.minimum_counts === null)
+      ) {
         errors.push(err("contract.minimum_counts", "must be an object if present"))
       }
     }

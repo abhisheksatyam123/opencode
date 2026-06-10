@@ -37,11 +37,7 @@ export type {
 
 // enrichment.ts
 
-export {
-  DEFAULT_FALLBACK_POLICY,
-  decideOrchestrationAction,
-  shouldRunLlmFallback,
-} from "./enrichment.js"
+export { DEFAULT_FALLBACK_POLICY, decideOrchestrationAction, shouldRunLlmFallback } from "./enrichment.js"
 
 export type {
   DeterministicEnricherSource,
@@ -69,11 +65,7 @@ export interface DbLookupRepository {
    * presence via `typeof lookup.loadGraphJson === "function"` and return
    * a structured error when absent, rather than duck-typing at runtime.
    */
-  loadGraphJson?(
-    snapshotId: number,
-    workspaceRoot: string,
-    filters?: GraphJsonFilters,
-  ): GraphJson
+  loadGraphJson?(snapshotId: number, workspaceRoot: string, filters?: GraphJsonFilters): GraphJson
 }
 
 export interface AuthoritativeSnapshotRepository {

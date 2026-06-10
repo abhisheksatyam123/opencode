@@ -230,8 +230,6 @@ export namespace ACP {
                 return
               }
 
-
-
               await this.sdk.permission.reply({
                 requestID: permission.id,
                 reply: res.outcome.optionId as "once" | "always" | "reject",
@@ -333,7 +331,6 @@ export namespace ACP {
                     },
                   },
                 ]
-
 
                 if (part.tool === "todo") {
                   const parsedTodos = z
@@ -860,7 +857,6 @@ export namespace ACP {
                   },
                 },
               ]
-
 
               if (part.tool === "todo") {
                 const parsedTodos = z
@@ -1547,7 +1543,6 @@ export namespace ACP {
     return []
   }
 
-
   async function defaultModel(config: ACPConfig, cwd?: string): Promise<{ providerID: ProviderID; modelID: ModelID }> {
     const sdk = config.sdk
     const configured = config.defaultModel
@@ -1648,7 +1643,6 @@ export namespace ACP {
       }
     }
   }
-
 
   function sortProvidersByName<T extends { name: string }>(providers: T[]): T[] {
     return [...providers].sort((a, b) => {

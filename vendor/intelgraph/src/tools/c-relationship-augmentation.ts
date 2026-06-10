@@ -179,7 +179,8 @@ export async function augmentCRelationships<TGraph extends AugmentableIntelGraph
     const currentExt = extname(current.file_path ?? "").toLowerCase()
     const candidateExt = extname(candidate.file_path ?? "").toLowerCase()
     const currentHeader = currentExt === ".h" || currentExt === ".hpp" || currentExt === ".hh" || currentExt === ".hxx"
-    const candidateSource = candidateExt === ".c" || candidateExt === ".cc" || candidateExt === ".cpp" || candidateExt === ".cxx"
+    const candidateSource =
+      candidateExt === ".c" || candidateExt === ".cc" || candidateExt === ".cpp" || candidateExt === ".cxx"
     if (currentHeader && candidateSource) nodesByName.set(name, candidate)
   }
 
@@ -249,7 +250,12 @@ export async function augmentCRelationships<TGraph extends AugmentableIntelGraph
   const bodiesByName = new Map(bodies.map((body) => [body.name, body]))
   const seen = new Set(graph.edges.map((edge) => edge.id ?? edgeId(edge.src, edge.dst, edge.kind)))
   const edges = [...graph.edges]
-  const addEdge = (src: AugmentableIntelGraphNode, dst: AugmentableIntelGraphNode, kind: string, resolution_kind: string) => {
+  const addEdge = (
+    src: AugmentableIntelGraphNode,
+    dst: AugmentableIntelGraphNode,
+    kind: string,
+    resolution_kind: string,
+  ) => {
     const id = edgeId(src.id, dst.id, kind)
     if (seen.has(id)) return
     seen.add(id)

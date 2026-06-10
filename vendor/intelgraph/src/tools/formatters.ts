@@ -15,7 +15,7 @@ export function formatHover(result: any): string {
   if (typeof content === "string") return content
   if (content?.value) return content.value
   if (Array.isArray(content)) {
-    return content.map((c: any) => (typeof c === "string" ? c : c?.value ?? "")).join("\n")
+    return content.map((c: any) => (typeof c === "string" ? c : (c?.value ?? ""))).join("\n")
   }
   return "No hover information available."
 }
@@ -35,9 +35,9 @@ export function formatDocumentSymbol(results: any[]): string {
   if (!results.length) return "No symbols found."
   function renderSymbol(sym: any, indent = 0): string {
     const prefix = "  ".repeat(indent)
-    const kind   = SYMBOL_KIND[sym.kind] ?? `Kind(${sym.kind})`
+    const kind = SYMBOL_KIND[sym.kind] ?? `Kind(${sym.kind})`
     const detail = sym.detail ? ` — ${sym.detail}` : ""
-    const line   = sym.range?.start?.line != null ? `:${sym.range.start.line + 1}` : ""
+    const line = sym.range?.start?.line != null ? `:${sym.range.start.line + 1}` : ""
     let out = `${prefix}[${kind}] ${sym.name}${detail}${line}`
     if (sym.children?.length) {
       out += "\n" + sym.children.map((c: any) => renderSymbol(c, indent + 1)).join("\n")
@@ -63,7 +63,7 @@ export function formatIncomingCalls(results: any[], root: string): string {
     .map((call: any) => {
       const from = call.from ?? call.caller
       const kind = SYMBOL_KIND[from?.kind] ?? "?"
-      const loc  = fmtLocation({ uri: from?.uri, range: from?.selectionRange ?? from?.range }, root)
+      const loc = fmtLocation({ uri: from?.uri, range: from?.selectionRange ?? from?.range }, root)
       return `  <- [${kind}] ${from?.name ?? "(unknown)"}  at ${loc}`
     })
     .join("\n")
@@ -73,9 +73,9 @@ export function formatOutgoingCalls(results: any[], root: string): string {
   if (!results.length) return "No outgoing calls."
   return results
     .map((call: any) => {
-      const to   = call.to ?? call.callee
+      const to = call.to ?? call.callee
       const kind = SYMBOL_KIND[to?.kind] ?? "?"
-      const loc  = fmtLocation({ uri: to?.uri, range: to?.selectionRange ?? to?.range }, root)
+      const loc = fmtLocation({ uri: to?.uri, range: to?.selectionRange ?? to?.range }, root)
       return `  -> [${kind}] ${to?.name ?? "(unknown)"}  at ${loc}`
     })
     .join("\n")
@@ -86,7 +86,7 @@ export function formatTypeHierarchy(results: any[], root: string, arrow: string)
   return results
     .map((item: any) => {
       const kind = SYMBOL_KIND[item.kind] ?? "?"
-      const loc  = fmtLocation({ uri: item.uri, range: item.selectionRange ?? item.range }, root)
+      const loc = fmtLocation({ uri: item.uri, range: item.selectionRange ?? item.range }, root)
       return `  ${arrow} [${kind}] ${item.name}  at ${loc}`
     })
     .join("\n")
@@ -99,9 +99,9 @@ export function formatDiagnostics(diagMap: Map<string, LspDiagnostic[]>, root: s
     lines.push(`${displayPath(filePath, root)}:`)
     for (const d of diags) {
       const severityMap: Record<number, string> = { 1: "ERROR", 2: "WARN", 3: "INFO", 4: "HINT" }
-      const sev  = severityMap[d.severity ?? 1] ?? "ERROR"
-      const line = d.range?.start?.line      != null ? d.range.start.line + 1      : "?"
-      const col  = d.range?.start?.character != null ? d.range.start.character + 1 : "?"
+      const sev = severityMap[d.severity ?? 1] ?? "ERROR"
+      const line = d.range?.start?.line != null ? d.range.start.line + 1 : "?"
+      const col = d.range?.start?.character != null ? d.range.start.character + 1 : "?"
       lines.push(`  ${sev} [${line}:${col}] ${d.message}`)
     }
   }
@@ -112,7 +112,7 @@ export function formatCodeAction(results: any[]): string {
   if (!results.length) return "No code actions available."
   return results
     .map((action: any) => {
-      const kind     = action.kind     ? ` [${action.kind}]`                    : ""
+      const kind = action.kind ? ` [${action.kind}]` : ""
       const disabled = action.disabled ? ` (disabled: ${action.disabled.reason})` : ""
       return `* ${action.title}${kind}${disabled}`
     })
@@ -124,11 +124,11 @@ export function formatDocumentHighlight(results: any[], filePath: string, root: 
   const rel = displayPath(filePath, root)
   return results
     .map((h: any) => {
-      const kind  = HIGHLIGHT_KIND[h.kind ?? 1] ?? "text"
-      const line  = h.range?.start?.line      != null ? h.range.start.line + 1      : "?"
-      const col   = h.range?.start?.character != null ? h.range.start.character + 1 : "?"
-      const eline = h.range?.end?.line        != null ? h.range.end.line + 1        : "?"
-      const ecol  = h.range?.end?.character   != null ? h.range.end.character + 1   : "?"
+      const kind = HIGHLIGHT_KIND[h.kind ?? 1] ?? "text"
+      const line = h.range?.start?.line != null ? h.range.start.line + 1 : "?"
+      const col = h.range?.start?.character != null ? h.range.start.character + 1 : "?"
+      const eline = h.range?.end?.line != null ? h.range.end.line + 1 : "?"
+      const ecol = h.range?.end?.character != null ? h.range.end.character + 1 : "?"
       return `  [${kind}] ${rel}:${line}:${col} – ${eline}:${ecol}`
     })
     .join("\n")
@@ -139,9 +139,9 @@ export function formatFoldingRange(results: any[], filePath: string, root: strin
   const rel = displayPath(filePath, root)
   return results
     .map((r: any) => {
-      const kind  = r.kind ? ` (${FOLD_KIND[r.kind] ?? r.kind})` : ""
+      const kind = r.kind ? ` (${FOLD_KIND[r.kind] ?? r.kind})` : ""
       const start = (r.startLine ?? 0) + 1
-      const end   = (r.endLine   ?? 0) + 1
+      const end = (r.endLine ?? 0) + 1
       return `  ${rel}:${start}–${end}${kind}`
     })
     .join("\n")
@@ -155,19 +155,16 @@ export function formatSignatureHelp(result: any): string {
     const marker = i === active ? "▶" : " "
     lines.push(`${marker} ${sig.label}`)
     if (sig.documentation) {
-      const doc = typeof sig.documentation === "string"
-        ? sig.documentation
-        : sig.documentation?.value ?? ""
+      const doc = typeof sig.documentation === "string" ? sig.documentation : (sig.documentation?.value ?? "")
       if (doc) lines.push(`  ${doc}`)
     }
     if (sig.parameters?.length) {
       const activeParam = result.activeParameter ?? sig.activeParameter ?? 0
       sig.parameters.forEach((p: any, pi: number) => {
         const pmarker = pi === activeParam && i === active ? "  → " : "    "
-        const label   = typeof p.label === "string" ? p.label
-          : Array.isArray(p.label) ? sig.label.slice(p.label[0], p.label[1]) : ""
-        const pdoc    = typeof p.documentation === "string" ? p.documentation
-          : p.documentation?.value ?? ""
+        const label =
+          typeof p.label === "string" ? p.label : Array.isArray(p.label) ? sig.label.slice(p.label[0], p.label[1]) : ""
+        const pdoc = typeof p.documentation === "string" ? p.documentation : (p.documentation?.value ?? "")
         lines.push(`${pmarker}param[${pi}]: ${label}${pdoc ? ` — ${pdoc}` : ""}`)
       })
     }
@@ -186,7 +183,7 @@ export function formatRename(workspaceEdit: any, root: string): string {
       lines.push(`  ${file}: ${edits.length} edit(s)`)
       for (const e of edits) {
         const line = e.range?.start?.line != null ? e.range.start.line + 1 : "?"
-        const col  = e.range?.start?.character != null ? e.range.start.character + 1 : "?"
+        const col = e.range?.start?.character != null ? e.range.start.character + 1 : "?"
         lines.push(`    line ${line}:${col} → "${e.newText}"`)
       }
     }
@@ -197,7 +194,7 @@ export function formatRename(workspaceEdit: any, root: string): string {
       lines.push(`  ${file}: ${edits.length} edit(s)`)
       for (const e of edits) {
         const line = e.range?.start?.line != null ? e.range.start.line + 1 : "?"
-        const col  = e.range?.start?.character != null ? e.range.start.character + 1 : "?"
+        const col = e.range?.start?.character != null ? e.range.start.character + 1 : "?"
         lines.push(`    line ${line}:${col} → "${e.newText}"`)
       }
     }
@@ -210,14 +207,19 @@ export function formatRename(workspaceEdit: any, root: string): string {
 export function formatFormat(edits: any[], filePath: string, root: string): string {
   if (!edits.length) return "No formatting changes needed."
   const rel = displayPath(filePath, root)
-  return `${rel}: ${edits.length} formatting edit(s)\n` +
-    edits.slice(0, 10).map((e: any) => {
-      const sl = e.range?.start?.line != null ? e.range.start.line + 1 : "?"
-      const el = e.range?.end?.line   != null ? e.range.end.line + 1   : "?"
-      const preview = e.newText.slice(0, 60).replace(/\n/g, "↵")
-      return `  lines ${sl}–${el}: "${preview}${e.newText.length > 60 ? "…" : ""}"`
-    }).join("\n") +
+  return (
+    `${rel}: ${edits.length} formatting edit(s)\n` +
+    edits
+      .slice(0, 10)
+      .map((e: any) => {
+        const sl = e.range?.start?.line != null ? e.range.start.line + 1 : "?"
+        const el = e.range?.end?.line != null ? e.range.end.line + 1 : "?"
+        const preview = e.newText.slice(0, 60).replace(/\n/g, "↵")
+        return `  lines ${sl}–${el}: "${preview}${e.newText.length > 60 ? "…" : ""}"`
+      })
+      .join("\n") +
     (edits.length > 10 ? `\n  … and ${edits.length - 10} more` : "")
+  )
 }
 
 export function formatInlayHints(hints: any[], filePath: string, root: string): string {
@@ -225,12 +227,12 @@ export function formatInlayHints(hints: any[], filePath: string, root: string): 
   const rel = displayPath(filePath, root)
   return hints
     .map((h: any) => {
-      const line  = h.position?.line      != null ? h.position.line + 1      : "?"
-      const col   = h.position?.character != null ? h.position.character + 1 : "?"
+      const line = h.position?.line != null ? h.position.line + 1 : "?"
+      const col = h.position?.character != null ? h.position.character + 1 : "?"
       const label = Array.isArray(h.label)
-        ? h.label.map((p: any) => (typeof p === "string" ? p : p.value ?? "")).join("")
+        ? h.label.map((p: any) => (typeof p === "string" ? p : (p.value ?? ""))).join("")
         : String(h.label ?? "")
-      const kind  = h.kind === 1 ? "type" : h.kind === 2 ? "param" : "hint"
+      const kind = h.kind === 1 ? "type" : h.kind === 2 ? "param" : "hint"
       return `  [${kind}] ${rel}:${line}:${col}  ${label}`
     })
     .join("\n")

@@ -119,9 +119,7 @@ export async function initParser(): Promise<void> {
           }
         }
         if (!projectRoot) {
-          throw new Error(
-            `tree-sitter WASM files not found in any of: ${candidateRoots.join(", ")}`,
-          )
+          throw new Error(`tree-sitter WASM files not found in any of: ${candidateRoots.join(", ")}`)
         }
 
         await Parser.init({
@@ -134,13 +132,16 @@ export async function initParser(): Promise<void> {
       }
 
       const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("tree-sitter WASM init timed out")), WASM_INIT_TIMEOUT_MS)
+        setTimeout(() => reject(new Error("tree-sitter WASM init timed out")), WASM_INIT_TIMEOUT_MS),
       )
 
       await Promise.race([initWork(), timeout])
     } catch (err) {
       _initFailed = true
-      _log.error("tree-sitter init failed — using character-level fallback", err instanceof Error ? err : new Error(String(err)))
+      _log.error(
+        "tree-sitter init failed — using character-level fallback",
+        err instanceof Error ? err : new Error(String(err)),
+      )
     }
   })()
 
@@ -159,11 +160,7 @@ export function isParserReady(): boolean {
  * Find the enclosing function call at a given position in C source text.
  * Uses tree-sitter when available, falls back to character-level parser.
  */
-export function findEnclosingCall(
-  source: string,
-  targetLine: number,
-  targetCol: number,
-): FunctionCall | null {
+export function findEnclosingCall(source: string, targetLine: number, targetCol: number): FunctionCall | null {
   if (_parser) {
     return tsEnclosingCall(source, targetLine, targetCol)
   }
@@ -173,11 +170,7 @@ export function findEnclosingCall(
 /**
  * Find any enclosing construct (call or initializer).
  */
-export function findEnclosingConstruct(
-  source: string,
-  targetLine: number,
-  targetCol: number,
-): FunctionCall | null {
+export function findEnclosingConstruct(source: string, targetLine: number, targetCol: number): FunctionCall | null {
   if (_parser) {
     return tsEnclosingConstruct(source, targetLine, targetCol)
   }
@@ -188,11 +181,7 @@ export function findEnclosingConstruct(
 // Tree-sitter implementation
 // ---------------------------------------------------------------------------
 
-function tsEnclosingCall(
-  source: string,
-  targetLine: number,
-  targetCol: number,
-): FunctionCall | null {
+function tsEnclosingCall(source: string, targetLine: number, targetCol: number): FunctionCall | null {
   try {
     const tree = _parser.parse(source)
     const node = findCallAtPosition(tree.rootNode, targetLine, targetCol)
@@ -203,11 +192,7 @@ function tsEnclosingCall(
   }
 }
 
-function tsEnclosingConstruct(
-  source: string,
-  targetLine: number,
-  targetCol: number,
-): FunctionCall | null {
+function tsEnclosingConstruct(source: string, targetLine: number, targetCol: number): FunctionCall | null {
   try {
     const tree = _parser.parse(source)
 
@@ -230,9 +215,10 @@ function tsEnclosingConstruct(
  */
 function findCallAtPosition(node: any, row: number, col: number): any {
   // Check if this node contains the position
-  const s = node.startPosition, e = node.endPosition
-  const contains = (s.row < row || (s.row === row && s.column <= col)) &&
-                   (e.row > row || (e.row === row && e.column >= col))
+  const s = node.startPosition,
+    e = node.endPosition
+  const contains =
+    (s.row < row || (s.row === row && s.column <= col)) && (e.row > row || (e.row === row && e.column >= col))
   if (!contains) return null
 
   // Depth-first: find the innermost call_expression
@@ -257,9 +243,10 @@ function findCallAtPosition(node: any, row: number, col: number): any {
  * Find the innermost initializer_list containing the given position.
  */
 function findInitializerAtPosition(node: any, row: number, col: number): any {
-  const s = node.startPosition, e = node.endPosition
-  const contains = (s.row < row || (s.row === row && s.column <= col)) &&
-                   (e.row > row || (e.row === row && e.column >= col))
+  const s = node.startPosition,
+    e = node.endPosition
+  const contains =
+    (s.row < row || (s.row === row && s.column <= col)) && (e.row > row || (e.row === row && e.column >= col))
   if (!contains) return null
 
   for (let i = 0; i < node.childCount; i++) {
@@ -272,7 +259,8 @@ function findInitializerAtPosition(node: any, row: number, col: number): any {
 }
 
 function nodeSize(node: any): number {
-  const s = node.startPosition, e = node.endPosition
+  const s = node.startPosition,
+    e = node.endPosition
   return (e.row - s.row) * 10000 + (e.column - s.column)
 }
 
@@ -357,7 +345,11 @@ export function parseSource(source: string): any | null {
     _parsesSinceReset++
     if (_parsesSinceReset >= _PARSER_RESET_EVERY) {
       _parsesSinceReset = 0
-      try { _parser.delete?.() } catch { /* ignore */ }
+      try {
+        _parser.delete?.()
+      } catch {
+        /* ignore */
+      }
       // _language is already loaded; just make a fresh Parser instance
       const ParserClass = _parser.constructor as new () => typeof _parser
       const fresh = new ParserClass()
@@ -383,7 +375,11 @@ export function parseSourceWith<T>(source: string, fn: (root: any) => T): T | nu
     _parsesSinceReset++
     if (_parsesSinceReset >= _PARSER_RESET_EVERY) {
       _parsesSinceReset = 0
-      try { _parser.delete?.() } catch { /* ignore */ }
+      try {
+        _parser.delete?.()
+      } catch {
+        /* ignore */
+      }
       const ParserClass = _parser.constructor as new () => typeof _parser
       const fresh = new ParserClass()
       fresh.setLanguage(_language)
@@ -394,7 +390,11 @@ export function parseSourceWith<T>(source: string, fn: (root: any) => T): T | nu
   } catch {
     return null
   } finally {
-    try { tree?.delete?.() } catch { /* ignore */ }
+    try {
+      tree?.delete?.()
+    } catch {
+      /* ignore */
+    }
   }
 }
 
@@ -495,17 +495,53 @@ export function extractFunctionParams(
 
   // Known non-fn-ptr types: numeric typedefs, status codes, common firmware types
   const KNOWN_NON_FNPTR_TYPES = new Set([
-    "void","int","char","unsigned","signed","long","short","float","double",
-    "bool","size_t","ssize_t","ptrdiff_t",
-    "uint8_t","uint16_t","uint32_t","uint64_t","int8_t","int16_t","int32_t","int64_t",
-    "u8","u16","u32","u64","s8","s16","s32","s64",
-    "A_UINT8","A_UINT16","A_UINT32","A_UINT64","A_INT8","A_INT16","A_INT32",
-    "A_BOOL","A_STATUS","QDF_STATUS","wlan_status_t","OFFLOAD_STATUS",
-    "NTSTATUS","errno_t",
+    "void",
+    "int",
+    "char",
+    "unsigned",
+    "signed",
+    "long",
+    "short",
+    "float",
+    "double",
+    "bool",
+    "size_t",
+    "ssize_t",
+    "ptrdiff_t",
+    "uint8_t",
+    "uint16_t",
+    "uint32_t",
+    "uint64_t",
+    "int8_t",
+    "int16_t",
+    "int32_t",
+    "int64_t",
+    "u8",
+    "u16",
+    "u32",
+    "u64",
+    "s8",
+    "s16",
+    "s32",
+    "s64",
+    "A_UINT8",
+    "A_UINT16",
+    "A_UINT32",
+    "A_UINT64",
+    "A_INT8",
+    "A_INT16",
+    "A_INT32",
+    "A_BOOL",
+    "A_STATUS",
+    "QDF_STATUS",
+    "wlan_status_t",
+    "OFFLOAD_STATUS",
+    "NTSTATUS",
+    "errno_t",
   ])
 
   // Positive signals that a typedef is a function-pointer type
-  const FN_PTR_SIGNALS = ["_cb","_fn","_handler","_func","_routine","_callback","_op"]
+  const FN_PTR_SIGNALS = ["_cb", "_fn", "_handler", "_func", "_routine", "_callback", "_op"]
 
   const funcDefs = findAllNodes(root, "function_definition")
   for (const fn of funcDefs) {
@@ -529,15 +565,16 @@ export function extractFunctionParams(
       // 3. Must NOT be a known non-fn-ptr type (numeric/status typedefs)
       // 4. Must NOT be a _t-suffixed type without a fn-ptr signal (struct/numeric typedef)
       // 5. Should have a fn-ptr signal OR be a multi-token type expression
-      const hasFnPtrSignal = FN_PTR_SIGNALS.some(s => typeText.toLowerCase().includes(s))
+      const hasFnPtrSignal = FN_PTR_SIGNALS.some((s) => typeText.toLowerCase().includes(s))
       const isKnownNonFnPtr = KNOWN_NON_FNPTR_TYPES.has(typeText)
       // A _t suffix without explicit fn-ptr signal is almost certainly a numeric/struct typedef
       const isNumericLikeTypedef = typeText.endsWith("_t") && !hasFnPtrSignal
-      const isFnPtrTypedef = typeNode?.type === "type_identifier" &&
-                              declNode?.type === "identifier" &&
-                              !isKnownNonFnPtr &&
-                              !isNumericLikeTypedef &&
-                              (hasFnPtrSignal || true) // keep existing behaviour for unknown types
+      const isFnPtrTypedef =
+        typeNode?.type === "type_identifier" &&
+        declNode?.type === "identifier" &&
+        !isKnownNonFnPtr &&
+        !isNumericLikeTypedef &&
+        (hasFnPtrSignal || true) // keep existing behaviour for unknown types
 
       results.push({ name, typeText, isFnPtrTypedef })
     }
@@ -597,12 +634,21 @@ export function splitArguments(text: string): string[] {
 
   while (i < text.length) {
     const ch = text[i]
-    if (ch === '"' || ch === "'") { i = skipStringForward(text, i); continue }
-    if (ch === '/' && text[i + 1] === '/') { i = skipLineCommentForward(text, i); continue }
-    if (ch === '/' && text[i + 1] === '*') { i = skipBlockCommentForward(text, i); continue }
-    if (ch === '(' || ch === '[' || ch === '{') depth++
-    else if (ch === ')' || ch === ']' || ch === '}') depth--
-    else if (ch === ',' && depth === 0) {
+    if (ch === '"' || ch === "'") {
+      i = skipStringForward(text, i)
+      continue
+    }
+    if (ch === "/" && text[i + 1] === "/") {
+      i = skipLineCommentForward(text, i)
+      continue
+    }
+    if (ch === "/" && text[i + 1] === "*") {
+      i = skipBlockCommentForward(text, i)
+      continue
+    }
+    if (ch === "(" || ch === "[" || ch === "{") depth++
+    else if (ch === ")" || ch === "]" || ch === "}") depth--
+    else if (ch === "," && depth === 0) {
       const arg = text.slice(start, i)
       if (arg.trim().length > 0 || args.length > 0) args.push(arg)
       start = i + 1
@@ -647,7 +693,14 @@ function charEnclosingConstruct(source: string, targetLine: number, targetCol: n
   const initText = source.slice(bracePos + 1, closeBrace)
   const args = splitArguments(initText)
   const [line, col] = charOffsetToLineCol(lines, bracePos)
-  return { name: "(initializer)", nameLine: line, nameCol: col, args: args.map((a) => a.trim()), fullText: source.slice(bracePos, closeBrace + 1), nodeType: "initializer_list" }
+  return {
+    name: "(initializer)",
+    nameLine: line,
+    nameCol: col,
+    args: args.map((a) => a.trim()),
+    fullText: source.slice(bracePos, closeBrace + 1),
+    nodeType: "initializer_list",
+  }
 }
 
 function charLineColToOffset(lines: string[], line: number, col: number): number {
@@ -671,11 +724,39 @@ export function findEnclosingOpenParen(source: string, from: number): number {
   let i = from - 1
   while (i >= 0) {
     const ch = source[i]
-    if (ch === '/' && source[i - 1] === '/') { while (i >= 0 && source[i] !== '\n') i--; continue }
-    if (ch === '*' && i > 0 && source[i - 1] === '/') { i -= 2; while (i >= 1) { if (source[i - 1] === '/' && source[i] === '*') { i -= 2; break } i-- } continue }
-    if (ch === '"' || ch === "'") { const q = ch; i--; while (i >= 0) { if (source[i] === '\\') { i -= 2; continue } if (source[i] === q) { i--; break } i-- } continue }
-    if (ch === ')' || ch === ']') depth++
-    else if (ch === '(' || ch === '[') {
+    if (ch === "/" && source[i - 1] === "/") {
+      while (i >= 0 && source[i] !== "\n") i--
+      continue
+    }
+    if (ch === "*" && i > 0 && source[i - 1] === "/") {
+      i -= 2
+      while (i >= 1) {
+        if (source[i - 1] === "/" && source[i] === "*") {
+          i -= 2
+          break
+        }
+        i--
+      }
+      continue
+    }
+    if (ch === '"' || ch === "'") {
+      const q = ch
+      i--
+      while (i >= 0) {
+        if (source[i] === "\\") {
+          i -= 2
+          continue
+        }
+        if (source[i] === q) {
+          i--
+          break
+        }
+        i--
+      }
+      continue
+    }
+    if (ch === ")" || ch === "]") depth++
+    else if (ch === "(" || ch === "[") {
       if (depth === 0) {
         let nameEnd = i - 1
         while (nameEnd >= 0 && /\s/.test(source[nameEnd])) nameEnd--
@@ -688,12 +769,19 @@ export function findEnclosingOpenParen(source: string, from: number): number {
 }
 
 function findEnclosingOpenBrace(source: string, from: number): number {
-  let depth = 0, i = from - 1
+  let depth = 0,
+    i = from - 1
   while (i >= 0) {
     const ch = source[i]
-    if (ch === '"' || ch === "'") { i = skipStringBackward(source, i); continue }
-    if (ch === '}' || ch === ')') depth++
-    else if (ch === '{' || ch === '(') { if (depth === 0) return i; depth-- }
+    if (ch === '"' || ch === "'") {
+      i = skipStringBackward(source, i)
+      continue
+    }
+    if (ch === "}" || ch === ")") depth++
+    else if (ch === "{" || ch === "(") {
+      if (depth === 0) return i
+      depth--
+    }
     i--
   }
   return -1
@@ -703,11 +791,23 @@ function findMatchingCloseParen(source: string, from: number): number {
   let depth = 0
   for (let i = from + 1; i < source.length; i++) {
     const ch = source[i]
-    if (ch === '"' || ch === "'") { i = skipStringForward(source, i); continue }
-    if (ch === '/' && source[i + 1] === '/') { i = skipLineCommentForward(source, i); continue }
-    if (ch === '/' && source[i + 1] === '*') { i = skipBlockCommentForward(source, i); continue }
-    if (ch === '(' || ch === '[') depth++
-    else if (ch === ')' || ch === ']') { if (depth === 0) return i; depth-- }
+    if (ch === '"' || ch === "'") {
+      i = skipStringForward(source, i)
+      continue
+    }
+    if (ch === "/" && source[i + 1] === "/") {
+      i = skipLineCommentForward(source, i)
+      continue
+    }
+    if (ch === "/" && source[i + 1] === "*") {
+      i = skipBlockCommentForward(source, i)
+      continue
+    }
+    if (ch === "(" || ch === "[") depth++
+    else if (ch === ")" || ch === "]") {
+      if (depth === 0) return i
+      depth--
+    }
   }
   return -1
 }
@@ -716,11 +816,23 @@ function findMatchingCloseBrace(source: string, from: number): number {
   let depth = 0
   for (let i = from + 1; i < source.length; i++) {
     const ch = source[i]
-    if (ch === '"' || ch === "'") { i = skipStringForward(source, i); continue }
-    if (ch === '/' && source[i + 1] === '/') { i = skipLineCommentForward(source, i); continue }
-    if (ch === '/' && source[i + 1] === '*') { i = skipBlockCommentForward(source, i); continue }
-    if (ch === '{') depth++
-    else if (ch === '}') { if (depth === 0) return i; depth-- }
+    if (ch === '"' || ch === "'") {
+      i = skipStringForward(source, i)
+      continue
+    }
+    if (ch === "/" && source[i + 1] === "/") {
+      i = skipLineCommentForward(source, i)
+      continue
+    }
+    if (ch === "/" && source[i + 1] === "*") {
+      i = skipBlockCommentForward(source, i)
+      continue
+    }
+    if (ch === "{") depth++
+    else if (ch === "}") {
+      if (depth === 0) return i
+      depth--
+    }
   }
   return -1
 }
@@ -738,21 +850,48 @@ function scanIdentifierBackward(source: string, from: number): number {
 }
 
 function skipStringForward(source: string, from: number): number {
-  const quote = source[from]; let i = from + 1
-  while (i < source.length) { if (source[i] === '\\') { i += 2; continue } if (source[i] === quote) return i + 1; i++ }
+  const quote = source[from]
+  let i = from + 1
+  while (i < source.length) {
+    if (source[i] === "\\") {
+      i += 2
+      continue
+    }
+    if (source[i] === quote) return i + 1
+    i++
+  }
   return source.length
 }
 
 function skipStringBackward(source: string, from: number): number {
-  const quote = source[from]; let i = from - 1
-  while (i >= 0) { if (source[i] === quote) { let b = 0, j = i - 1; while (j >= 0 && source[j] === '\\') { b++; j-- } if (b % 2 === 0) return i } i-- }
+  const quote = source[from]
+  let i = from - 1
+  while (i >= 0) {
+    if (source[i] === quote) {
+      let b = 0,
+        j = i - 1
+      while (j >= 0 && source[j] === "\\") {
+        b++
+        j--
+      }
+      if (b % 2 === 0) return i
+    }
+    i--
+  }
   return 0
 }
 
 function skipLineCommentForward(source: string, from: number): number {
-  let i = from; while (i < source.length && source[i] !== '\n') i++; return i
+  let i = from
+  while (i < source.length && source[i] !== "\n") i++
+  return i
 }
 
 function skipBlockCommentForward(source: string, from: number): number {
-  let i = from + 2; while (i < source.length - 1) { if (source[i] === '*' && source[i + 1] === '/') return i + 1; i++ } return source.length - 1
+  let i = from + 2
+  while (i < source.length - 1) {
+    if (source[i] === "*" && source[i + 1] === "/") return i + 1
+    i++
+  }
+  return source.length - 1
 }

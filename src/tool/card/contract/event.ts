@@ -1,10 +1,6 @@
 import z from "zod"
 
-export const CardContractEventTypeSchema = z.enum([
-  "tool.card.requested",
-  "tool.card.completed",
-  "tool.card.failed",
-])
+export const CardContractEventTypeSchema = z.enum(["tool.card.requested", "tool.card.completed", "tool.card.failed"])
 
 export type CardContractEventType = z.infer<typeof CardContractEventTypeSchema>
 

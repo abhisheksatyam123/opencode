@@ -225,7 +225,10 @@ const INTENTS_REQUIRING_STRUCT = new Set<QueryIntent>([
 // ── Validation functions ─────────────────────────────────────────────────────
 
 export function parseQueryIntent(input: string): QueryIntent | null {
-  const normalized = input.trim().toLowerCase().replace(/[\s-]+/g, "_")
+  const normalized = input
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_")
   const alias: Record<string, QueryIntent> = {
     who_calls_api: "who_calls_api",
     who_calls: "who_calls_api",
@@ -237,9 +240,9 @@ export function parseQueryIntent(input: string): QueryIntent | null {
   return (QUERY_INTENTS as readonly string[]).includes(candidate) ? candidate : null
 }
 
-export function validateQueryRequest(input: unknown):
-  | { ok: true; value: QueryRequest }
-  | { ok: false; errors: string[] } {
+export function validateQueryRequest(
+  input: unknown,
+): { ok: true; value: QueryRequest } | { ok: false; errors: string[] } {
   const errors: string[] = []
   if (!input || typeof input !== "object") return { ok: false, errors: ["request must be an object"] }
 
@@ -268,7 +271,9 @@ export function validateQueryRequest(input: unknown):
     errors.push("pattern is required for intent 'find_api_by_log_pattern'")
   }
   if (intent === "find_api_logs_by_level" && !req.logLevel) {
-    errors.push("logLevel is required for intent 'find_api_logs_by_level' (one of ERROR, WARN, INFO, DEBUG, VERBOSE, TRACE, UNKNOWN)")
+    errors.push(
+      "logLevel is required for intent 'find_api_logs_by_level' (one of ERROR, WARN, INFO, DEBUG, VERBOSE, TRACE, UNKNOWN)",
+    )
   }
   if (intent === "show_cross_module_path" && (!req.srcApi || !req.dstApi)) {
     errors.push("srcApi and dstApi are required for intent 'show_cross_module_path'")

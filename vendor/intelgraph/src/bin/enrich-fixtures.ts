@@ -133,11 +133,7 @@ async function enrichSingleApi(apiName: string, snapshotId: number, dryRun: bool
 
     // Backup original if writing (not dry-run)
     if (!dryRun) {
-      const backupPath = path.join(
-        process.cwd(),
-        "test/fixtures/c/wlan/api",
-        `${apiName}.json.pre-enrich`,
-      )
+      const backupPath = path.join(process.cwd(), "test/fixtures/c/wlan/api", `${apiName}.json.pre-enrich`)
       await fs.writeFile(backupPath, JSON.stringify(existingFixture, null, 2), "utf-8")
     }
 
@@ -202,11 +198,7 @@ async function enrichAllApisBatch(snapshotId: number, dryRun: boolean): Promise<
 
       // Backup original if writing (not dry-run)
       if (!dryRun) {
-        const backupPath = path.join(
-          process.cwd(),
-          "test/fixtures/c/wlan/api",
-          `${apiName}.json.pre-enrich`,
-        )
+        const backupPath = path.join(process.cwd(), "test/fixtures/c/wlan/api", `${apiName}.json.pre-enrich`)
         try {
           await fs.stat(backupPath)
           // Backup already exists, skip

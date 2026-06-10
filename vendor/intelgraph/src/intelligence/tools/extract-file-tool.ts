@@ -39,9 +39,7 @@ export const extractFileInputSchema = z.object({
 // Executor
 // ---------------------------------------------------------------------------
 
-export async function executeExtractFileTool(
-  args: z.infer<typeof extractFileInputSchema>,
-): Promise<string> {
+export async function executeExtractFileTool(args: z.infer<typeof extractFileInputSchema>): Promise<string> {
   if (!DEPS) {
     return JSON.stringify({
       status: "error",

@@ -5,7 +5,15 @@ import path from "path"
 
 type ContractStatus = "stable" | "active" | "wip" | "draft" | "trial" | "superseded" | "deprecated"
 
-const ALLOWED_STATUS = new Set<ContractStatus>(["stable", "active", "wip", "draft", "trial", "superseded", "deprecated"])
+const ALLOWED_STATUS = new Set<ContractStatus>([
+  "stable",
+  "active",
+  "wip",
+  "draft",
+  "trial",
+  "superseded",
+  "deprecated",
+])
 const REQUIRED_KEYS = ["title", "type", "project", "status", "description"] as const
 
 const notesRoot = process.env.OPENCODE_NOTES_ROOT ?? "/local/mnt/workspace/notes"

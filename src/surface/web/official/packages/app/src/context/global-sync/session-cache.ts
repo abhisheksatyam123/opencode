@@ -1,10 +1,4 @@
-import type {
-  Message,
-  Part,
-  SessionStatus,
-  SnapshotFileDiff,
-  Todo,
-} from "@opencode-ai/sdk/v2/client"
+import type { Message, Part, SessionStatus, SnapshotFileDiff, Todo } from "@opencode-ai/sdk/v2/client"
 
 export const SESSION_CACHE_LIMIT = 40
 

@@ -20,6 +20,7 @@ tags: [src/agent/prompts, status/stable]
 id: adviser
 aliases: [adviser, advisor]
 ---
+
 # adviser
 
 ## System prompt

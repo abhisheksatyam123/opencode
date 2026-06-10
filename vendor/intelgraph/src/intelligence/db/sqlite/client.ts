@@ -54,11 +54,7 @@ function isBunRuntime(): boolean {
 
 export function openSqlite(opts: OpenSqliteOptions): SqliteClient {
   const isMemory = opts.path === ":memory:"
-  const resolvedPath = isMemory
-    ? ":memory:"
-    : isAbsolute(opts.path)
-      ? opts.path
-      : resolve(process.cwd(), opts.path)
+  const resolvedPath = isMemory ? ":memory:" : isAbsolute(opts.path) ? opts.path : resolve(process.cwd(), opts.path)
 
   if (!isMemory) {
     // Create parent directory on first use so the caller doesn't have
@@ -75,7 +71,10 @@ export function openSqlite(opts: OpenSqliteOptions): SqliteClient {
   const raw = isBunRuntime()
     ? (() => {
         const { Database } = requireModule("bun:sqlite") as typeof import("bun:sqlite")
-        return new Database(resolvedPath, opts.readonly ? { readonly: true } : undefined) as unknown as BetterSqlite3.Database
+        return new Database(
+          resolvedPath,
+          opts.readonly ? { readonly: true } : undefined,
+        ) as unknown as BetterSqlite3.Database
       })()
     : (() => {
         const BetterSqlite3 = requireModule("better-sqlite3") as new (

@@ -335,7 +335,11 @@ export async function listFiles(type: string): Promise<string[]> {
       const baseName = path.basename(dir)
       const needsRecursive = baseName === "atomic" || baseName === "specification"
       const isTaskStateDir = /(?:^|\/)scratchpad\/task\/[^/]+\/(?:active|deferred|done)$/.test(dir)
-      const files = isTaskStateDir ? await listTaskEntries(dir) : needsRecursive ? await walkMd(dir) : await listMdEntries(dir)
+      const files = isTaskStateDir
+        ? await listTaskEntries(dir)
+        : needsRecursive
+          ? await walkMd(dir)
+          : await listMdEntries(dir)
       for (const fp of files) {
         const rel = path.relative(root, fp).replace(/\.md$/, "")
         if (!map.has(rel)) map.set(rel, fp)

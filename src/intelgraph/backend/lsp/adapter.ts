@@ -51,7 +51,10 @@ export function intelGraphLspLikeFromLayer(layer: IntelGraphLspLayerLike): Intel
       const indirectLayer = layer as IntelGraphIndirectLayerLike
       if (!indirectLayer.root) return []
       const targetFile = isAbsolute(request.file) ? request.file : join(indirectLayer.root, request.file)
-      return textReferenceLocations(indirectLayer.root, request.symbol, targetFile, request.limit).slice(0, request.limit)
+      return textReferenceLocations(indirectLayer.root, request.symbol, targetFile, request.limit).slice(
+        0,
+        request.limit,
+      )
     },
     async references(request) {
       return (await layer.references(

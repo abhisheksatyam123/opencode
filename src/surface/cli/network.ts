@@ -98,7 +98,9 @@ export async function resolveNetworkOptions(args: NetworkOptions) {
   const explicitPassword = Flag.OPENCODE_SERVER_PASSWORD
   const explicitReadPassword = Flag.OPENCODE_SERVER_READ_PASSWORD
   const shouldAutoToken = !noAuth && !explicitPassword && !isLoopback(hostname)
-  const password = noAuth ? undefined : (explicitPassword ?? (shouldAutoToken ? randomBytes(32).toString("hex") : undefined))
+  const password = noAuth
+    ? undefined
+    : (explicitPassword ?? (shouldAutoToken ? randomBytes(32).toString("hex") : undefined))
   const readPassword = noAuth
     ? undefined
     : (explicitReadPassword ?? (shouldAutoToken ? randomBytes(32).toString("hex") : undefined))

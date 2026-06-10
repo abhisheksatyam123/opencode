@@ -587,22 +587,22 @@ export const SessionRoutes = (_serverPermissionMode?: "default" | "plan" | "bypa
         const userTurnIndex = new Map(users.map((user, turnIndex) => [user.id, turnIndex]))
 
         const timeline = users.map((user, turnIndex) => {
-            const turnTokens = emptyTokens()
-            let turnCost = 0
-            const assistants = rootAssistantsByUser.get(user.id) ?? []
-            for (const assistant of assistants) {
-              addTokens(turnTokens, normalizeTokens(assistant.tokens))
-              turnCost += numeric(assistant.cost)
-            }
+          const turnTokens = emptyTokens()
+          let turnCost = 0
+          const assistants = rootAssistantsByUser.get(user.id) ?? []
+          for (const assistant of assistants) {
+            addTokens(turnTokens, normalizeTokens(assistant.tokens))
+            turnCost += numeric(assistant.cost)
+          }
 
-            return {
-              userMessageID: user.id,
-              turnIndex,
-              tokens: turnTokens,
-              cost: turnCost,
-              createdAt: user.time.created,
-            }
-          })
+          return {
+            userMessageID: user.id,
+            turnIndex,
+            tokens: turnTokens,
+            cost: turnCost,
+            createdAt: user.time.created,
+          }
+        })
 
         const llmCalls = rootMessages
           .filter((message) => message.info.role === "assistant")
@@ -1609,7 +1609,11 @@ export const SessionRoutes = (_serverPermissionMode?: "default" | "plan" | "bypa
         let taskMarkdown = body.taskMarkdown
         let parsed = parseTodoAgentTasks(taskMarkdown)
         let task = parsed.tasks[0]
-        if (task && task.comments.filter((comment) => comment.status === "pending").length === 0 && /<\s*Agent\b/.test(taskMarkdown)) {
+        if (
+          task &&
+          task.comments.filter((comment) => comment.status === "pending").length === 0 &&
+          /<\s*Agent\b/.test(taskMarkdown)
+        ) {
           try {
             const snapshot = await TodoFile.get(sessionID)
             if ("source" in snapshot && typeof snapshot.source === "string") {
@@ -1646,7 +1650,8 @@ export const SessionRoutes = (_serverPermissionMode?: "default" | "plan" | "bypa
               const operations: TodoFilePatch.Operation[] = [
                 { type: "append-agent-response", taskTitle: task.title, text: responseText },
               ]
-              if (pendingComments > 0) operations.push({ type: "resolve-comments", taskTitle: task.title, allPending: true })
+              if (pendingComments > 0)
+                operations.push({ type: "resolve-comments", taskTitle: task.title, allPending: true })
               try {
                 const patched = await TodoFile.patch({ sessionID, operations })
                 log.info("todo-agent.run.patched", {

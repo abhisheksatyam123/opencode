@@ -10,10 +10,7 @@ import type {
   OpenAIResponsesInput,
   OpenAIResponsesReasoning,
 } from "@/provider/sdk/copilot/responses/openai-responses-api-types"
-import {
-  localShellInputSchema,
-  localShellOutputSchema,
-} from "@/provider/sdk/copilot/responses/tool/local-shell"
+import { localShellInputSchema, localShellOutputSchema } from "@/provider/sdk/copilot/responses/tool/local-shell"
 
 /**
  * Check if a string is a file ID based on the given prefixes

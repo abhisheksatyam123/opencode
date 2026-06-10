@@ -8,7 +8,12 @@
  *   npm run audit:fixtures -- --min-score=80          # filter >= 80% completeness
  */
 
-import { generateCompletenessAudit, formatAuditReport, formatAuditReportJson, formatAuditReportMarkdown } from "../fixtures/completeness-audit.js"
+import {
+  generateCompletenessAudit,
+  formatAuditReport,
+  formatAuditReportJson,
+  formatAuditReportMarkdown,
+} from "../fixtures/completeness-audit.js"
 import fs from "fs/promises"
 import path from "path"
 
@@ -50,9 +55,7 @@ async function main() {
 
     // Filter by min-score if specified
     if (options.minScore !== undefined) {
-      report.per_api_scores = report.per_api_scores.filter(
-        (s) => s.completeness_score >= options.minScore!,
-      )
+      report.per_api_scores = report.per_api_scores.filter((s) => s.completeness_score >= options.minScore!)
     }
 
     // Format and output

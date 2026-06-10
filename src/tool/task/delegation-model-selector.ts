@@ -162,8 +162,7 @@ export namespace DelegationModelSelector {
     const requirement = agentCapabilityRequirement(cfg, input.agentName)
 
     const scored = input.candidates.map((candidate, index) => {
-      const modelCfg = (cfg.provider?.[candidate.providerID]?.models?.[candidate.modelID] ??
-        undefined) as
+      const modelCfg = (cfg.provider?.[candidate.providerID]?.models?.[candidate.modelID] ?? undefined) as
         | {
             tier?: string
             capabilities?: Record<string, number>

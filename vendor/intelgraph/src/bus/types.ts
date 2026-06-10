@@ -27,11 +27,7 @@ export interface Disposable {
  *
  * The composition root unions all per-module command types into `AppCommandMap`.
  */
-export interface Command<
-  Name extends string = string,
-  Payload = unknown,
-  Response = unknown,
-> {
+export interface Command<Name extends string = string, Payload = unknown, Response = unknown> {
   readonly kind: Name
   readonly payload: Payload
   readonly __response?: Response
@@ -52,10 +48,7 @@ export interface Command<
  *
  * The composition root unions all per-module event types into `AppEventMap`.
  */
-export interface BusEvent<
-  Name extends string = string,
-  Payload = unknown,
-> {
+export interface BusEvent<Name extends string = string, Payload = unknown> {
   readonly kind: Name
   readonly payload: Payload
   readonly at: number

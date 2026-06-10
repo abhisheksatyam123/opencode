@@ -21,7 +21,9 @@ export function formatReasonChainText(
   const rel = displayPath(filePath)
 
   lines.push(`Invocation reason chain: ${symbol}  (${rel})`)
-  lines.push(`  Cache: ${result.cacheHit ? "hit" : "miss"}  |  LLM used: ${result.usedLlm}  |  Rejected proposals: ${result.rejected}`)
+  lines.push(
+    `  Cache: ${result.cacheHit ? "hit" : "miss"}  |  LLM used: ${result.usedLlm}  |  Rejected proposals: ${result.rejected}`,
+  )
 
   if (result.cacheMismatchedFiles.length) {
     lines.push(`  Stale files (hash mismatch):`)
@@ -55,12 +57,7 @@ export function formatReasonChainText(
   return lines.join("\n")
 }
 
-function renderReasonPath(
-  lines: string[],
-  rp: ReasonPath,
-  index: number,
-  displayPath: PathRenderer,
-): void {
+function renderReasonPath(lines: string[], rp: ReasonPath, index: number, displayPath: PathRenderer): void {
   const ir = rp.invocationReason
   lines.push("")
   lines.push(`  Path ${index + 1}  [${rp.provenance}  confidence=${rp.confidence.score.toFixed(2)}]`)

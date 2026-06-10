@@ -145,14 +145,18 @@ export function DialogEditProject(props: { project: LocalProject }) {
                   }}
                 >
                   <Show
-                    when={getProjectAvatarSource(props.project.id, {
-                      color: store.color,
-                      url: props.project.icon?.url,
-                      override: store.iconOverride,
-                    }, {
-                      name: store.name || props.project.name,
-                      worktree: props.project.worktree,
-                    })}
+                    when={getProjectAvatarSource(
+                      props.project.id,
+                      {
+                        color: store.color,
+                        url: props.project.icon?.url,
+                        override: store.iconOverride,
+                      },
+                      {
+                        name: store.name || props.project.name,
+                        worktree: props.project.worktree,
+                      },
+                    )}
                     fallback={
                       <div class="size-full flex items-center justify-center">
                         <Avatar

@@ -28,10 +28,7 @@ import type { ILanguageClient } from "../lsp/ports.js"
 import type { IndexTracker } from "../tracking/index.js"
 import type { UnifiedBackend } from "../backend/unified-backend.js"
 import type { OrchestratorRunnerDeps } from "../intelligence/contracts/orchestrator-runner-deps.js"
-import type {
-  IndirectCallerGraph,
-  IndirectCallerNode,
-} from "./indirect-callers.js"
+import type { IndirectCallerGraph, IndirectCallerNode } from "./indirect-callers.js"
 import type { GetCallersResponse } from "./get-callers.js"
 import type { CachedIndirectCallers } from "./indirect-caller-cache.js"
 
@@ -107,10 +104,7 @@ export interface IndirectCallerQuery {
  * Fake impl: FakeIndirectCallerProvider returns seeded graphs.
  */
 export interface IIndirectCallerProvider {
-  collectIndirectCallers(
-    client: ILanguageClient,
-    args: IndirectCallerQuery,
-  ): Promise<IndirectCallerGraph>
+  collectIndirectCallers(client: ILanguageClient, args: IndirectCallerQuery): Promise<IndirectCallerGraph>
 
   formatIndirectCallerTree(graph: IndirectCallerGraph, workspaceRoot: string): string
 }

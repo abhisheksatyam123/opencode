@@ -42,7 +42,11 @@ export const createSessionTabs = (input: TabsInput) => {
     { equals: same },
   )
   const openedFileTabs = createMemo(
-    () => input.tabs().all().flatMap((tab) => (input.pathFromTab(tab) ? [input.normalizeTab(tab)] : [])),
+    () =>
+      input
+        .tabs()
+        .all()
+        .flatMap((tab) => (input.pathFromTab(tab) ? [input.normalizeTab(tab)] : [])),
     emptyTabs,
     { equals: same },
   )

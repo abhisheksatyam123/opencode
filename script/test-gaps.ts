@@ -132,11 +132,9 @@ function sectionSlow(state: State | null): void {
 // ── 5. Orphan src files ─────────────────────────────────────────────────────
 
 function listSrcFiles(): string[] {
-  const out = spawnSync(
-    "rg",
-    ["--files", "-g", "*.ts", "-g", "!*.test.ts", "-g", "!*.d.ts", "src"],
-    { encoding: "utf8" },
-  )
+  const out = spawnSync("rg", ["--files", "-g", "*.ts", "-g", "!*.test.ts", "-g", "!*.d.ts", "src"], {
+    encoding: "utf8",
+  })
   return out.stdout.split("\n").filter(Boolean)
 }
 
@@ -199,7 +197,12 @@ function sectionCoverage(): void {
   }
   try {
     const raw = JSON.parse(fs.readFileSync(COVERAGE_SUMMARY, "utf8")) as {
-      total: { lines: { pct: number }; functions: { pct: number }; branches: { pct: number }; statements: { pct: number } }
+      total: {
+        lines: { pct: number }
+        functions: { pct: number }
+        branches: { pct: number }
+        statements: { pct: number }
+      }
     }
     const t = raw.total
     process.stdout.write(

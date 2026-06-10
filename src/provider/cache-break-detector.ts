@@ -145,9 +145,7 @@ export namespace CacheBreakDetector {
     if (snapshot.turnNumber < 1) return null
 
     // Sanity-clamp the cached ratio in case the caller didn't normalize.
-    const safeRatio = Number.isFinite(snapshot.cachedRatio)
-      ? Math.max(0, Math.min(1, snapshot.cachedRatio))
-      : 0
+    const safeRatio = Number.isFinite(snapshot.cachedRatio) ? Math.max(0, Math.min(1, snapshot.cachedRatio)) : 0
     const normalized: TurnSnapshot = { ...snapshot, cachedRatio: safeRatio }
 
     const turns = history.get(snapshot.sessionID) ?? []
@@ -191,7 +189,13 @@ export namespace CacheBreakDetector {
         prevCachedRatio: prev.cachedRatio,
         currCachedRatio: safeRatio,
         drop,
-        details: { modelChanged, systemChanged, toolsChanged, prevTurn: prev.turnNumber, currTurn: snapshot.turnNumber },
+        details: {
+          modelChanged,
+          systemChanged,
+          toolsChanged,
+          prevTurn: prev.turnNumber,
+          currTurn: snapshot.turnNumber,
+        },
       }
     }
 

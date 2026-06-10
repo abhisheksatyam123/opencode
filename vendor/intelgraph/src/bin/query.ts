@@ -147,7 +147,10 @@ function parseArgs(argv: string[]): ParsedArgs {
     } else if (arg.startsWith("--snapshot-id=")) {
       const n = Number(arg.slice("--snapshot-id=".length))
       if (Number.isFinite(n) && n >= 1) snapshotId = Math.floor(n)
-      else { console.error("--snapshot-id= requires a positive integer"); process.exit(2) }
+      else {
+        console.error("--snapshot-id= requires a positive integer")
+        process.exit(2)
+      }
     } else if (arg.startsWith("--api=")) {
       apiName = arg.slice("--api=".length)
     } else if (arg.startsWith("--struct=")) {
@@ -163,15 +166,24 @@ function parseArgs(argv: string[]): ParsedArgs {
     } else if (arg.startsWith("--line=")) {
       const n = Number(arg.slice("--line=".length))
       if (Number.isFinite(n) && n >= 1) lineNumber = Math.floor(n)
-      else { console.error("--line= requires a positive integer"); process.exit(2) }
+      else {
+        console.error("--line= requires a positive integer")
+        process.exit(2)
+      }
     } else if (arg.startsWith("--depth=")) {
       const n = Number(arg.slice("--depth=".length))
       if (Number.isFinite(n) && n >= 1) depth = Math.floor(n)
-      else { console.error("--depth= requires a positive integer"); process.exit(2) }
+      else {
+        console.error("--depth= requires a positive integer")
+        process.exit(2)
+      }
     } else if (arg.startsWith("--limit=")) {
       const n = Number(arg.slice("--limit=".length))
       if (Number.isFinite(n) && n >= 1) limit = Math.floor(n)
-      else { console.error("--limit= requires a positive integer"); process.exit(2) }
+      else {
+        console.error("--limit= requires a positive integer")
+        process.exit(2)
+      }
     } else if (arg.startsWith("--log-level=")) {
       const v = arg.slice("--log-level=".length).toUpperCase() as LogLevel
       if (LOG_LEVELS.includes(v)) logLevel = v
@@ -295,8 +307,8 @@ async function main(): Promise<void> {
   if (!dbPath) {
     console.error(
       `No persisted snapshot found in ${parsed.workspace}.\n` +
-      `Run: bun run extract ${parsed.workspace}\n` +
-      `to create one first.`,
+        `Run: bun run extract ${parsed.workspace}\n` +
+        `to create one first.`,
     )
     process.exit(1)
   }

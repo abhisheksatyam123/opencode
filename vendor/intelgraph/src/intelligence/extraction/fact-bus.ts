@@ -370,9 +370,10 @@ export class FactBus implements IFactBus {
    * storage round-trip. Plugins downstream of the bus can read producedBy
    * from the row metadata to do their own attribution.
    */
-  private injectProvenance<
-    T extends { payload?: Record<string, unknown>; metadata?: Record<string, unknown> },
-  >(row: T, fact: Fact): T {
+  private injectProvenance<T extends { payload?: Record<string, unknown>; metadata?: Record<string, unknown> }>(
+    row: T,
+    fact: Fact,
+  ): T {
     const provenance = {
       producedBy: fact.producedBy,
       busConfidence: fact.confidence,

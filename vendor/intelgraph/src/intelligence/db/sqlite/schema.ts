@@ -24,17 +24,8 @@
  * round-trips a Drizzle insert+select correctly.
  */
 
-import {
-  index,
-  integer,
-  primaryKey,
-  real,
-  sqliteTable,
-  text,
-} from "drizzle-orm/sqlite-core"
-import type {
-  SourceLocation,
-} from "../../contracts/common.js"
+import { index, integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core"
+import type { SourceLocation } from "../../contracts/common.js"
 
 // ---------------------------------------------------------------------------
 // Typed JSON payloads
@@ -85,11 +76,7 @@ export const graphSnapshots = sqliteTable(
     metadata: text("metadata", { mode: "json" }).$type<Record<string, unknown> | null>(),
   },
   (t) => ({
-    idxWsStatus: index("idx_graph_snapshots_ws_status").on(
-      t.workspaceRoot,
-      t.status,
-      t.snapshotId,
-    ),
+    idxWsStatus: index("idx_graph_snapshots_ws_status").on(t.workspaceRoot, t.status, t.snapshotId),
   }),
 )
 

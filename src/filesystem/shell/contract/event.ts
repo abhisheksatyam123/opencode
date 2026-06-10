@@ -1,10 +1,6 @@
 import z from "zod"
 
-export const ShellContractEventTypeSchema = z.enum([
-  "shell.selected",
-  "shell.fallback.used",
-  "shell.process.killed",
-])
+export const ShellContractEventTypeSchema = z.enum(["shell.selected", "shell.fallback.used", "shell.process.killed"])
 
 export type ShellContractEventType = z.infer<typeof ShellContractEventTypeSchema>
 

@@ -27,11 +27,7 @@ export namespace Transport {
   }
 
   export function getProxyURL(targetURL?: string): string | undefined {
-    const proxy =
-      process.env.HTTPS_PROXY ??
-      process.env.https_proxy ??
-      process.env.HTTP_PROXY ??
-      process.env.http_proxy
+    const proxy = process.env.HTTPS_PROXY ?? process.env.https_proxy ?? process.env.HTTP_PROXY ?? process.env.http_proxy
     if (!proxy) return undefined
     if (!targetURL) return proxy
 
@@ -75,7 +71,6 @@ export namespace Transport {
       return _caCertCache.content
     }
     try {
-       
       const fs = require("fs") as typeof import("fs")
       const content = fs.readFileSync(path, "utf8")
       _caCertCache = { path, content }
@@ -87,9 +82,7 @@ export namespace Transport {
     }
   }
 
-  let _mtlsCache:
-    | { certPath: string; keyPath: string; cert: string; key: string }
-    | undefined
+  let _mtlsCache: { certPath: string; keyPath: string; cert: string; key: string } | undefined
 
   export function getMTLSConfig(): { cert: string; key: string } | undefined {
     const certPath = process.env.OPENCODE_CLIENT_CERT
@@ -102,7 +95,6 @@ export namespace Transport {
       return { cert: _mtlsCache.cert, key: _mtlsCache.key }
     }
     try {
-       
       const fs = require("fs") as typeof import("fs")
       const cert = fs.readFileSync(certPath, "utf8")
       const key = fs.readFileSync(keyPath, "utf8")

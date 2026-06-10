@@ -156,8 +156,12 @@ async function main(): Promise<void> {
     }
     process.exit(0)
   }
-  process.on("SIGINT", () => { void shutdown("SIGINT") })
-  process.on("SIGTERM", () => { void shutdown("SIGTERM") })
+  process.on("SIGINT", () => {
+    void shutdown("SIGINT")
+  })
+  process.on("SIGTERM", () => {
+    void shutdown("SIGTERM")
+  })
 
   // ── Start HTTP server ─────────────────────────────────────────────────────
   await startHttp(deps, cli.port)

@@ -26,10 +26,7 @@
  * keep working — packs re-import them from there.
  */
 
-import type {
-  CallPattern,
-  InitPattern,
-} from "../../../tools/pattern-detector/ports.js"
+import type { CallPattern, InitPattern } from "../../../tools/pattern-detector/ports.js"
 import type { LogLevel } from "../../../intelligence/contracts/common.js"
 
 export type { CallPattern, InitPattern }
@@ -76,15 +73,15 @@ export interface LogMacroDef {
 // ---------------------------------------------------------------------------
 
 export type HWEntityKind =
-  | "hw_block"          // Physical hardware block (PS/2 controller, NIC, GPU, etc.)
-  | "interrupt"         // IRQ line or interrupt source
-  | "timer"             // Hardware or software timer
-  | "ring"              // Ring buffer or circular queue
-  | "dispatch_table"    // Function pointer table or vtable
-  | "thread"            // Kernel thread or execution context
-  | "signal"            // Software signal or notification
-  | "message"           // IPC message or event
-  | "device"            // Generic device node (/dev/mem, /dev/null, etc.)
+  | "hw_block" // Physical hardware block (PS/2 controller, NIC, GPU, etc.)
+  | "interrupt" // IRQ line or interrupt source
+  | "timer" // Hardware or software timer
+  | "ring" // Ring buffer or circular queue
+  | "dispatch_table" // Function pointer table or vtable
+  | "thread" // Kernel thread or execution context
+  | "signal" // Software signal or notification
+  | "message" // IPC message or event
+  | "device" // Generic device node (/dev/mem, /dev/null, etc.)
 
 export interface HWEntityDef {
   /** Unique name for this entity (e.g. "PS/2 Controller", "I8042_KBD_IRQ") */

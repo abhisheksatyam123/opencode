@@ -61,7 +61,6 @@ const stubLsp = {
 async function main() {
   const { client, foundation, sink: store } = createSqliteStore({ path: dbPath })
   try {
-
     const snapshot = await foundation.getLatestReadySnapshot(workspaceRoot)
     if (!snapshot) process.exit(0) // no snapshot yet — skip silently
 

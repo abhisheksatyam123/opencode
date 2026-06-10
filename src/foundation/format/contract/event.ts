@@ -1,10 +1,6 @@
 import z from "zod"
 
-export const FormatContractEventTypeSchema = z.enum([
-  "format.requested",
-  "format.updated",
-  "format.failed",
-])
+export const FormatContractEventTypeSchema = z.enum(["format.requested", "format.updated", "format.failed"])
 
 export type FormatContractEventType = z.infer<typeof FormatContractEventTypeSchema>
 

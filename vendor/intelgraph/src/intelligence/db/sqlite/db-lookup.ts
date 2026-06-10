@@ -33,16 +33,8 @@
 
 import type BetterSqlite3 from "better-sqlite3"
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3"
-import type {
-  DbLookupRepository,
-  LookupResult,
-  QueryRequest,
-} from "../../contracts/orchestrator.js"
-import {
-  loadGraphJsonFromDb,
-  type GraphJson,
-  type GraphJsonFilters,
-} from "./graph-export.js"
+import type { DbLookupRepository, LookupResult, QueryRequest } from "../../contracts/orchestrator.js"
+import { loadGraphJsonFromDb, type GraphJson, type GraphJsonFilters } from "./graph-export.js"
 import type * as schema from "./schema.js"
 
 type SqliteDb = BetterSQLite3Database<typeof schema>
@@ -52,10 +44,7 @@ type SqliteDb = BetterSQLite3Database<typeof schema>
 // ---------------------------------------------------------------------------
 
 function buildApiNames(request: QueryRequest): string[] {
-  const names = [
-    ...(request.apiName ? [request.apiName] : []),
-    ...(request.apiNameAliases ?? []),
-  ].filter(Boolean)
+  const names = [...(request.apiName ? [request.apiName] : []), ...(request.apiNameAliases ?? [])].filter(Boolean)
   return [...new Set(names)]
 }
 
@@ -129,11 +118,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * persisted snapshot, with no re-extraction. Pure read; no side
    * effects on the db.
    */
-  loadGraphJson(
-    snapshotId: number,
-    workspaceRoot: string,
-    filters: GraphJsonFilters = {},
-  ): GraphJson {
+  loadGraphJson(snapshotId: number, workspaceRoot: string, filters: GraphJsonFilters = {}): GraphJson {
     return loadGraphJsonFromDb(this.raw, snapshotId, workspaceRoot, filters)
   }
 
@@ -231,7 +216,12 @@ export class SqliteDbLookup implements DbLookupRepository {
       case "find_field_access_path":
         return this.fieldAccessPath(snapshotId, request.structName, request.fieldName, limit)
       case "show_cross_module_path":
-        return this.crossModulePath(snapshotId, this.resolveSingle(snapshotId, request.srcApi), this.resolveSingle(snapshotId, request.dstApi), limit)
+        return this.crossModulePath(
+          snapshotId,
+          this.resolveSingle(snapshotId, request.srcApi),
+          this.resolveSingle(snapshotId, request.dstApi),
+          limit,
+        )
       case "show_hot_call_paths":
         return this.hotCallPaths(snapshotId, apiNames, limit)
       case "why_api_invoked":
@@ -291,12 +281,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       case "find_struct_cycles":
         return this.structCycles(snapshotId, limit)
       case "find_api_data_footprint":
-        return this.apiDataFootprint(
-          snapshotId,
-          apiNames[0] ?? "",
-          request.depth ?? 6,
-          limit,
-        )
+        return this.apiDataFootprint(snapshotId, apiNames[0] ?? "", request.depth ?? 6, limit)
       case "find_top_touched_types":
         return this.topTouchedTypes(snapshotId, limit)
       case "find_call_cycles":
@@ -342,19 +327,9 @@ export class SqliteDbLookup implements DbLookupRepository {
       case "find_symbols_by_kind":
         return this.symbolsByKind(snapshotId, request.pattern ?? "", limit)
       case "find_transitive_dependencies":
-        return this.transitiveDependencies(
-          snapshotId,
-          apiNames[0] ?? "",
-          request.depth ?? 10,
-          limit,
-        )
+        return this.transitiveDependencies(snapshotId, apiNames[0] ?? "", request.depth ?? 10, limit)
       case "find_symbol_at_location":
-        return this.symbolAtLocation(
-          snapshotId,
-          request.filePath ?? "",
-          request.lineNumber ?? 0,
-          limit,
-        )
+        return this.symbolAtLocation(snapshotId, request.filePath ?? "", request.lineNumber ?? 0, limit)
       case "find_long_functions":
         return this.longFunctions(snapshotId, request.depth ?? 50, limit)
       case "find_external_imports":
@@ -406,12 +381,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       case "find_module_top_exports":
         return this.moduleTopExports(snapshotId, apiNames[0] ?? "", limit)
       case "find_import_cycles_deep":
-        return this.importCyclesDeep(
-          snapshotId,
-          apiNames[0] ?? "",
-          request.depth ?? 5,
-          limit,
-        )
+        return this.importCyclesDeep(snapshotId, apiNames[0] ?? "", request.depth ?? 5, limit)
       case "find_symbol_degree":
         return this.symbolDegree(snapshotId, apiNames[0] ?? "")
       case "find_module_interactions":
@@ -426,11 +396,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       case "find_type_cycles":
         return this.typeCycles(snapshotId, limit)
       case "find_deepest_call_chain":
-        return this.deepestCallChain(
-          snapshotId,
-          apiNames[0] ?? "",
-          request.depth ?? 8,
-        )
+        return this.deepestCallChain(snapshotId, apiNames[0] ?? "", request.depth ?? 8)
       case "find_symbols_by_doc":
         return this.symbolsByDoc(snapshotId, request.pattern ?? "", limit)
       case "find_tightly_coupled_modules":
@@ -486,9 +452,9 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND e.edge_kind        IN (${expandIn(edgeKinds)})
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, ...apiNames, ...edgeKinds, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, ...apiNames, ...edgeKinds, limit) as Array<
+      Record<string, unknown>
+    >
     return rows.map((obj) => ({
       kind: obj.kind ?? "function",
       canonical_name: obj.canonical_name ?? obj.caller,
@@ -503,11 +469,7 @@ export class SqliteDbLookup implements DbLookupRepository {
   }
 
   // ── who_calls_api_at_runtime ────────────────────────────────────────────
-  private runtimeCallers(
-    snapshotId: number,
-    apiNames: string[],
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private runtimeCallers(snapshotId: number, apiNames: string[], limit: number): Array<Record<string, unknown>> {
     if (apiNames.length === 0) return []
     const edgeRows = this.callers(snapshotId, apiNames, ["runtime_calls", "dispatches_to"], limit)
 
@@ -523,21 +485,20 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND json_extract(payload, '$.target_api') IN (${expandIn(apiNames)})
       LIMIT ?
     `
-    const obsRaw = this.raw
-      .prepare(obsSql)
-      .all(snapshotId, ...apiNames, limit) as Array<{
-        payload: string | null
-        confidence: number
-      }>
+    const obsRaw = this.raw.prepare(obsSql).all(snapshotId, ...apiNames, limit) as Array<{
+      payload: string | null
+      confidence: number
+    }>
 
     const obsRows: Array<Record<string, unknown>> = obsRaw.map((r) => {
-      const payload = parseJson<{
-        target_api?: string
-        immediate_invoker?: string
-        runtime_trigger?: string
-        dispatch_chain?: string[]
-        dispatch_site?: { filePath?: string; line?: number }
-      }>(r.payload) ?? {}
+      const payload =
+        parseJson<{
+          target_api?: string
+          immediate_invoker?: string
+          runtime_trigger?: string
+          dispatch_chain?: string[]
+          dispatch_site?: { filePath?: string; line?: number }
+        }>(r.payload) ?? {}
       const site = payload.dispatch_site
       return {
         kind: "function",
@@ -569,11 +530,7 @@ export class SqliteDbLookup implements DbLookupRepository {
   }
 
   // ── what_api_calls ──────────────────────────────────────────────────────
-  private callees(
-    snapshotId: number,
-    apiNames: string[],
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private callees(snapshotId: number, apiNames: string[], limit: number): Array<Record<string, unknown>> {
     if (apiNames.length === 0) return []
     const sql = `
       SELECT
@@ -595,9 +552,7 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND e.edge_kind IN ('calls', 'runtime_calls')
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, ...apiNames, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, ...apiNames, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "function",
       canonical_name: obj.canonical_name ?? obj.callee,
@@ -619,9 +574,7 @@ export class SqliteDbLookup implements DbLookupRepository {
     limit: number,
   ): Array<Record<string, unknown>> {
     if (apiNames.length === 0) return []
-    const levelFilter = logLevel
-      ? `AND json_extract(e.metadata, '$.log_level') = ?`
-      : ""
+    const levelFilter = logLevel ? `AND json_extract(e.metadata, '$.log_level') = ?` : ""
     const sql = `
       SELECT
         src.canonical_name   AS api_name,
@@ -660,10 +613,8 @@ export class SqliteDbLookup implements DbLookupRepository {
         subsystem: meta.subsystem ?? null,
         confidence: toNumber(obj.confidence),
         derivation: obj.derivation,
-        file_path:
-          extractFilePath(obj.src_location) ?? extractFilePath(obj.log_location),
-        line_number:
-          extractLine(obj.src_location) ?? extractLine(obj.log_location),
+        file_path: extractFilePath(obj.src_location) ?? extractFilePath(obj.log_location),
+        line_number: extractLine(obj.src_location) ?? extractLine(obj.log_location),
         edge_kind: "logs_event",
         caller: obj.api_name,
         callee: obj.canonical_name,
@@ -672,11 +623,7 @@ export class SqliteDbLookup implements DbLookupRepository {
   }
 
   // ── find_api_timer_triggers ─────────────────────────────────────────────
-  private timerTriggers(
-    snapshotId: number,
-    apiNames: string[],
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private timerTriggers(snapshotId: number, apiNames: string[], limit: number): Array<Record<string, unknown>> {
     if (apiNames.length === 0) return []
     const sql = `
       SELECT
@@ -700,17 +647,14 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND timer.kind = 'timer'
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, ...apiNames, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, ...apiNames, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => {
       const meta = parseJson<Record<string, unknown>>(obj.metadata) ?? {}
       return {
         kind: "timer",
         canonical_name: obj.canonical_name,
         timer_identifier_name: obj.timer_identifier_name,
-        timer_trigger_condition_description:
-          meta.timer_trigger_condition_description ?? null,
+        timer_trigger_condition_description: meta.timer_trigger_condition_description ?? null,
         timer_trigger_confidence_score: toNumber(obj.confidence),
         caller: obj.timer_identifier_name,
         callee: obj.callee,
@@ -724,11 +668,7 @@ export class SqliteDbLookup implements DbLookupRepository {
   }
 
   // ── show_registration_chain / find_callback_registrars ─────────────────
-  private registrationChain(
-    snapshotId: number,
-    apiNames: string[],
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private registrationChain(snapshotId: number, apiNames: string[], limit: number): Array<Record<string, unknown>> {
     if (apiNames.length === 0) return []
     const sql = `
       SELECT
@@ -750,9 +690,7 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND e.edge_kind = 'registers_callback'
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, ...apiNames, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, ...apiNames, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => {
       const meta = parseJson<Record<string, unknown>>(obj.metadata) ?? {}
       return {
@@ -773,11 +711,7 @@ export class SqliteDbLookup implements DbLookupRepository {
   }
 
   // ── show_dispatch_sites ─────────────────────────────────────────────────
-  private dispatchSites(
-    snapshotId: number,
-    apiNames: string[],
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private dispatchSites(snapshotId: number, apiNames: string[], limit: number): Array<Record<string, unknown>> {
     if (apiNames.length === 0) return []
     const sql = `
       SELECT
@@ -799,16 +733,12 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND e.edge_kind = 'dispatches_to'
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, ...apiNames, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, ...apiNames, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => {
       const meta = parseJson<Record<string, unknown>>(obj.metadata) ?? {}
       const site = (meta.dispatch_site as Record<string, unknown> | undefined) ?? {}
-      const filePath =
-        extractFilePath(obj.location) ?? (typeof site.filePath === "string" ? site.filePath : "")
-      const lineNumber =
-        extractLine(obj.location) ?? toNumberOrNull(site.line)
+      const filePath = extractFilePath(obj.location) ?? (typeof site.filePath === "string" ? site.filePath : "")
+      const lineNumber = extractLine(obj.location) ?? toNumberOrNull(site.line)
       return {
         kind: obj.kind ?? "function",
         canonical_name: obj.canonical_name,
@@ -854,9 +784,9 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND e.edge_kind = ?
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, ...structNames, edgeKind, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, ...structNames, edgeKind, limit) as Array<
+      Record<string, unknown>
+    >
 
     const roleByEdgeKind: Record<string, string> = {
       writes_field: "writer",
@@ -915,9 +845,7 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND e.edge_kind = ?
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, ...apiNames, edgeKind, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, ...apiNames, edgeKind, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "struct",
       canonical_name: obj.canonical_name ?? obj.callee,
@@ -1021,9 +949,7 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND dst.canonical_name = ?
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, srcApi, dstApi, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, srcApi, dstApi, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "function",
       canonical_name: obj.canonical_name,
@@ -1038,11 +964,7 @@ export class SqliteDbLookup implements DbLookupRepository {
   }
 
   // ── show_hot_call_paths (diagnostic probe) ──────────────────────────────
-  private hotCallPaths(
-    snapshotId: number,
-    apiNames: string[],
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private hotCallPaths(snapshotId: number, apiNames: string[], limit: number): Array<Record<string, unknown>> {
     // Any edges in the snapshot; used to detect empty snapshots. When
     // apiNames is empty, return everything; otherwise filter to edges
     // whose src or dst match.
@@ -1106,11 +1028,7 @@ export class SqliteDbLookup implements DbLookupRepository {
   }
 
   // ── runtime observations ────────────────────────────────────────────────
-  private observations(
-    snapshotId: number,
-    apiNames: string[],
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private observations(snapshotId: number, apiNames: string[], limit: number): Array<Record<string, unknown>> {
     if (apiNames.length === 0) return []
     const sql = `
       SELECT payload, confidence
@@ -1121,17 +1039,19 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND json_extract(payload, '$.target_api') IN (${expandIn(apiNames)})
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, ...apiNames, limit) as Array<{ payload: string | null; confidence: number }>
+    const rows = this.raw.prepare(sql).all(snapshotId, ...apiNames, limit) as Array<{
+      payload: string | null
+      confidence: number
+    }>
     return rows.map((r) => {
-      const payload = parseJson<{
-        target_api?: string
-        immediate_invoker?: string
-        runtime_trigger?: string
-        dispatch_chain?: string[]
-        dispatch_site?: { filePath?: string; line?: number }
-      }>(r.payload) ?? {}
+      const payload =
+        parseJson<{
+          target_api?: string
+          immediate_invoker?: string
+          runtime_trigger?: string
+          dispatch_chain?: string[]
+          dispatch_site?: { filePath?: string; line?: number }
+        }>(r.payload) ?? {}
       const site = payload.dispatch_site
       return {
         kind: "function",
@@ -1151,11 +1071,7 @@ export class SqliteDbLookup implements DbLookupRepository {
   }
 
   // ── find_api_by_log_pattern ─────────────────────────────────────────────
-  private logPattern(
-    snapshotId: number,
-    pattern: string | undefined,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private logPattern(snapshotId: number, pattern: string | undefined, limit: number): Array<Record<string, unknown>> {
     if (!pattern) return []
     const sql = `
       SELECT
@@ -1182,9 +1098,9 @@ export class SqliteDbLookup implements DbLookupRepository {
     `
     const escapedPattern = pattern.replace(/%/g, "\\%").replace(/_/g, "\\_")
     const likePattern = `%${escapedPattern}%`
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, likePattern, likePattern, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, likePattern, likePattern, limit) as Array<
+      Record<string, unknown>
+    >
     return rows.map((obj) => {
       const meta = parseJson<Record<string, unknown>>(obj.metadata) ?? {}
       return {
@@ -1230,10 +1146,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    *
    * Result is ordered DESC by module_count, alphabetical tie-break.
    */
-  private modulesByDirectory(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private modulesByDirectory(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const allModules = this.raw
       .prepare(
         `SELECT canonical_name, json_extract(payload, '$.metadata.lineCount') AS line_count
@@ -1285,10 +1198,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * Each row carries a line_count field. Modules without lineCount
    * (rare — should always be set after D25) are excluded.
    */
-  private largestModules(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private largestModules(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         canonical_name,
@@ -1302,9 +1212,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY CAST(json_extract(payload, '$.metadata.lineCount') AS INTEGER) DESC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: "module",
       canonical_name: obj.canonical_name,
@@ -1330,10 +1238,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * modules and any module touched by an imports edge in either
    * direction.
    */
-  private orphanModules(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private orphanModules(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         m.canonical_name AS canonical_name,
@@ -1361,9 +1266,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY m.canonical_name
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: "module",
       canonical_name: obj.canonical_name,
@@ -1390,10 +1293,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * Methods inside classes are excluded — they don't carry exported=true
    * (their class does), and method-level docs are a separate concern.
    */
-  private undocumentedExports(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private undocumentedExports(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         canonical_name,
@@ -1407,9 +1307,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY canonical_name
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "function",
       canonical_name: obj.canonical_name,
@@ -1436,10 +1334,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    *
    * Each row carries module_count = number of distinct source modules.
    */
-  private widelyReferencedTypes(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private widelyReferencedTypes(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         dst.canonical_name AS canonical_name,
@@ -1461,9 +1356,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY module_count DESC, dst.canonical_name ASC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "class",
       canonical_name: obj.canonical_name,
@@ -1489,10 +1382,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    *
    * Each row carries a method_count field.
    */
-  private classesByMethodCount(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private classesByMethodCount(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         src.canonical_name AS canonical_name,
@@ -1511,9 +1401,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY method_count DESC, src.canonical_name ASC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: "class",
       canonical_name: obj.canonical_name,
@@ -1545,10 +1433,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * Includes struct + interface in addition to class so the
    * Rust + TS interface variants get caught too.
    */
-  private classesByFieldCount(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private classesByFieldCount(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         src.canonical_name AS canonical_name,
@@ -1568,9 +1453,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY field_count DESC, src.canonical_name ASC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "class",
       canonical_name: obj.canonical_name,
@@ -1599,10 +1482,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * Result rows have caller=src_module, callee=dst_module, and
    * coupling_count = total edges between them. Ordered DESC.
    */
-  private tightlyCoupledModules(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private tightlyCoupledModules(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         SUBSTR(src.canonical_name, 1, INSTR(src.canonical_name, '#') - 1) AS src_module,
@@ -1623,9 +1503,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY coupling_count DESC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<{
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<{
       src_module: string
       dst_module: string
       coupling_count: number
@@ -1652,11 +1530,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    *
    * Returns matching symbols ordered alphabetically by canonical_name.
    */
-  private symbolsByDoc(
-    snapshotId: number,
-    pattern: string,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private symbolsByDoc(snapshotId: number, pattern: string, limit: number): Array<Record<string, unknown>> {
     if (!pattern || pattern.length === 0) return []
     const safe = pattern.replace(/[\\%_]/g, "\\$&")
     const sql = `
@@ -1671,9 +1545,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY canonical_name
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, `%${safe}%`, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, `%${safe}%`, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "function",
       canonical_name: obj.canonical_name,
@@ -1702,11 +1574,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * Bounded depth (default 8, clamped to [1, 12]) and cycle
    * prevention via the running path string.
    */
-  private deepestCallChain(
-    snapshotId: number,
-    rootName: string,
-    depth: number,
-  ): Array<Record<string, unknown>> {
+  private deepestCallChain(snapshotId: number, rootName: string, depth: number): Array<Record<string, unknown>> {
     if (!rootName) return []
     const maxDepth = Math.min(Math.max(depth, 1), 12)
     const sql = `
@@ -1748,9 +1616,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       LIMIT 1
     `
     type Row = { depth_n: number; path: string }
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, rootName, snapshotId, maxDepth) as Row[]
+    const rows = this.raw.prepare(sql).all(snapshotId, rootName, snapshotId, maxDepth) as Row[]
     if (rows.length === 0) return []
     const longest = rows[0]
     const segments = longest.path.split(" -> ")
@@ -1781,10 +1647,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * the result is meaningful (function-level type references aren't
    * usually mutual). De-duped via canonical_name comparison.
    */
-  private typeCycles(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private typeCycles(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         a.canonical_name AS caller,
@@ -1812,9 +1675,7 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND a.canonical_name < b.canonical_name
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "class",
       canonical_name: obj.canonical_name,
@@ -1838,10 +1699,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * alphabetically by canonical_name. Bounded by limit (the visualizer
    * can paginate or pre-filter via find_symbols_by_name first).
    */
-  private modulesOverview(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private modulesOverview(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         m.canonical_name AS canonical_name,
@@ -1888,9 +1746,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY m.canonical_name ASC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: "module",
       canonical_name: obj.canonical_name,
@@ -1956,16 +1812,9 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY e.edge_kind, src.canonical_name, dst.canonical_name
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(
-        snapshotId,
-        srcModule,
-        srcPrefix,
-        dstModule,
-        dstPrefix,
-        limit,
-      ) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, srcModule, srcPrefix, dstModule, dstPrefix, limit) as Array<
+      Record<string, unknown>
+    >
     return rows.map((obj) => ({
       kind: "edge",
       canonical_name: obj.caller,
@@ -1989,10 +1838,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * visualizer can pivot client-side. The first column says whether
    * the count is incoming or outgoing.
    */
-  private symbolDegree(
-    snapshotId: number,
-    symbolName: string,
-  ): Array<Record<string, unknown>> {
+  private symbolDegree(snapshotId: number, symbolName: string): Array<Record<string, unknown>> {
     if (!symbolName) return []
     const sql = `
       SELECT 'outgoing' AS direction, e.edge_kind, COUNT(*) AS count
@@ -2012,9 +1858,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       GROUP BY e.edge_kind
       ORDER BY direction, count DESC
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, symbolName, snapshotId, symbolName) as Array<{
+    const rows = this.raw.prepare(sql).all(snapshotId, symbolName, snapshotId, symbolName) as Array<{
       direction: string
       edge_kind: string
       count: number
@@ -2111,9 +1955,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       LIMIT ?
     `
     type Row = { cycle_length: number; path: string }
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, rootName, snapshotId, maxDepth, limit) as Row[]
+    const rows = this.raw.prepare(sql).all(snapshotId, rootName, snapshotId, maxDepth, limit) as Row[]
     // De-dup cycles by their canonical (sorted) member set so the same
     // cycle starting from different nodes only appears once.
     const seen = new Set<string>()
@@ -2153,11 +1995,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * Symbols are ordered DESC by usage_count, with ties broken
    * alphabetically.
    */
-  private moduleTopExports(
-    snapshotId: number,
-    moduleName: string,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private moduleTopExports(snapshotId: number, moduleName: string, limit: number): Array<Record<string, unknown>> {
     if (!moduleName) return []
     const sql = `
       SELECT
@@ -2187,9 +2025,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY usage_count DESC, n.canonical_name ASC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, moduleName, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, moduleName, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "function",
       canonical_name: obj.canonical_name,
@@ -2216,11 +2052,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * parent's other children. Uses canonical_name throughout for
    * legibility.
    */
-  private siblingSymbols(
-    snapshotId: number,
-    symbolName: string,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private siblingSymbols(snapshotId: number, symbolName: string, limit: number): Array<Record<string, unknown>> {
     if (!symbolName) return []
     const sql = `
       WITH parent AS (
@@ -2251,9 +2083,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY json_extract(dst.location, '$.line') ASC, dst.canonical_name ASC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, symbolName, snapshotId, symbolName, limit) as Array<
+    const rows = this.raw.prepare(sql).all(snapshotId, symbolName, snapshotId, symbolName, limit) as Array<
       Record<string, unknown>
     >
     return rows.map((obj) => ({
@@ -2278,11 +2108,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * the module symbol itself, top-level functions/classes, and nested
    * methods. Modules and members both flow through.
    */
-  private symbolsInFile(
-    snapshotId: number,
-    filePath: string,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private symbolsInFile(snapshotId: number, filePath: string, limit: number): Array<Record<string, unknown>> {
     if (!filePath) return []
     // Support both absolute and relative (workspace-relative) file paths.
     // The stored location.filePath may be absolute; try exact match first,
@@ -2302,9 +2128,7 @@ export class SqliteDbLookup implements DbLookupRepository {
     `
     const escapedPath = filePath.replace(/%/g, "\\%").replace(/_/g, "\\_")
     const suffixPattern = `%/${escapedPath}`
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, filePath, suffixPattern, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, filePath, suffixPattern, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "function",
       canonical_name: obj.canonical_name,
@@ -2331,10 +2155,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * Visualizers use this for module browser hovers, tab badges, and
    * "module health at a glance" views.
    */
-  private moduleSummary(
-    snapshotId: number,
-    moduleName: string,
-  ): Array<Record<string, unknown>> {
+  private moduleSummary(snapshotId: number, moduleName: string): Array<Record<string, unknown>> {
     if (!moduleName) return []
     const sql = `
       SELECT
@@ -2382,9 +2203,7 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND m.canonical_name = ?
       LIMIT 1
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, moduleName) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, moduleName) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: "module",
       canonical_name: obj.canonical_name,
@@ -2403,10 +2222,7 @@ export class SqliteDbLookup implements DbLookupRepository {
     }))
   }
 
-  private classSummary(
-    snapshotId: number,
-    className: string,
-  ): Array<Record<string, unknown>> {
+  private classSummary(snapshotId: number, className: string): Array<Record<string, unknown>> {
     if (!className) return []
     const sql = `
       SELECT
@@ -2462,17 +2278,15 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND n.canonical_name = ?
       LIMIT 1
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, className) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, className) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
-      kind: obj.kind ?? 'class',
+      kind: obj.kind ?? "class",
       canonical_name: obj.canonical_name,
       caller: null,
       callee: obj.canonical_name,
-      edge_kind: 'contains',
+      edge_kind: "contains",
       confidence: 1,
-      derivation: 'clangd',
+      derivation: "clangd",
       file_path: extractFilePath(obj.location),
       line_number: extractLine(obj.location),
       line_count: toNumberOrNull(obj.line_count),
@@ -2485,10 +2299,7 @@ export class SqliteDbLookup implements DbLookupRepository {
     }))
   }
 
-  private typeSummary(
-    snapshotId: number,
-    typeName: string,
-  ): Array<Record<string, unknown>> {
+  private typeSummary(snapshotId: number, typeName: string): Array<Record<string, unknown>> {
     if (!typeName) return []
     const sql = `
       SELECT
@@ -2550,17 +2361,15 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND n.canonical_name = ?
       LIMIT 1
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, typeName) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, typeName) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
-      kind: obj.kind ?? 'typedef',
+      kind: obj.kind ?? "typedef",
       canonical_name: obj.canonical_name,
       caller: null,
       callee: obj.canonical_name,
-      edge_kind: 'aggregates',
+      edge_kind: "aggregates",
       confidence: 1,
-      derivation: 'clangd',
+      derivation: "clangd",
       file_path: extractFilePath(obj.location),
       line_number: extractLine(obj.location),
       line_count: toNumberOrNull(obj.line_count),
@@ -2573,10 +2382,7 @@ export class SqliteDbLookup implements DbLookupRepository {
     }))
   }
 
-  private apiSummary(
-    snapshotId: number,
-    apiName: string,
-  ): Array<Record<string, unknown>> {
+  private apiSummary(snapshotId: number, apiName: string): Array<Record<string, unknown>> {
     if (!apiName) return []
     const sql = `
       SELECT
@@ -2636,17 +2442,15 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND n.canonical_name = ?
       LIMIT 1
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, apiName) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, apiName) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
-      kind: obj.kind ?? 'function',
+      kind: obj.kind ?? "function",
       canonical_name: obj.canonical_name,
       caller: null,
       callee: obj.canonical_name,
-      edge_kind: 'calls',
+      edge_kind: "calls",
       confidence: 1,
-      derivation: 'clangd',
+      derivation: "clangd",
       file_path: extractFilePath(obj.location),
       line_number: extractLine(obj.location),
       line_count: toNumberOrNull(obj.line_count),
@@ -2660,10 +2464,7 @@ export class SqliteDbLookup implements DbLookupRepository {
     }))
   }
 
-  private entitySummary(
-    snapshotId: number,
-    entityName: string,
-  ): Array<Record<string, unknown>> {
+  private entitySummary(snapshotId: number, entityName: string): Array<Record<string, unknown>> {
     if (!entityName) return []
 
     const entityKindRow = this.raw
@@ -2677,24 +2478,20 @@ export class SqliteDbLookup implements DbLookupRepository {
     if (!entityKindRow) return []
 
     const kind = entityKindRow.kind
-    if (kind === 'module') {
+    if (kind === "module") {
       return this.moduleSummary(snapshotId, entityName)
-    } else if (kind === 'class' || kind === 'interface' || kind === 'struct') {
+    } else if (kind === "class" || kind === "interface" || kind === "struct") {
       return this.classSummary(snapshotId, entityName)
-    } else if (kind === 'typedef' || kind === 'enum' || kind === 'union') {
+    } else if (kind === "typedef" || kind === "enum" || kind === "union") {
       return this.typeSummary(snapshotId, entityName)
-    } else if (kind === 'function' || kind === 'method') {
+    } else if (kind === "function" || kind === "method") {
       return this.apiSummary(snapshotId, entityName)
     } else {
       return []
     }
   }
 
-  private moduleApis(
-    snapshotId: number,
-    moduleName: string,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private moduleApis(snapshotId: number, moduleName: string, limit: number): Array<Record<string, unknown>> {
     if (!moduleName) return []
     const sql = `
       SELECT
@@ -2727,17 +2524,15 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY dst.canonical_name
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, moduleName, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, moduleName, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
-      kind: obj.kind ?? 'function',
+      kind: obj.kind ?? "function",
       canonical_name: obj.canonical_name,
       caller: moduleName,
       callee: obj.canonical_name,
-      edge_kind: 'contains',
+      edge_kind: "contains",
       confidence: 1,
-      derivation: 'clangd',
+      derivation: "clangd",
       file_path: extractFilePath(obj.location),
       line_number: extractLine(obj.location),
       incoming_calls: toNumber(obj.incoming_calls),
@@ -2746,11 +2541,7 @@ export class SqliteDbLookup implements DbLookupRepository {
     }))
   }
 
-  private apiTypeDependencies(
-    snapshotId: number,
-    apiName: string,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private apiTypeDependencies(snapshotId: number, apiName: string, limit: number): Array<Record<string, unknown>> {
     if (!apiName) return []
     const sql = `
       SELECT
@@ -2771,27 +2562,22 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY ref_count DESC, dst.canonical_name
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, apiName, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, apiName, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
-      kind: obj.kind ?? 'typedef',
+      kind: obj.kind ?? "typedef",
       canonical_name: obj.canonical_name,
       caller: apiName,
       callee: obj.canonical_name,
-      edge_kind: 'references_type',
+      edge_kind: "references_type",
       confidence: 1,
-      derivation: 'clangd',
+      derivation: "clangd",
       file_path: extractFilePath(obj.location),
       line_number: extractLine(obj.location),
       ref_count: toNumber(obj.ref_count),
     }))
   }
 
-  private typeDefiningModule(
-    snapshotId: number,
-    typeName: string,
-  ): Array<Record<string, unknown>> {
+  private typeDefiningModule(snapshotId: number, typeName: string): Array<Record<string, unknown>> {
     if (!typeName) return []
     const sql = `
       SELECT
@@ -2810,17 +2596,15 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND src.kind = 'module'
       LIMIT 1
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, typeName) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, typeName) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
-      kind: 'module',
+      kind: "module",
       canonical_name: obj.canonical_name,
       caller: null,
       callee: obj.canonical_name,
-      edge_kind: 'contains',
+      edge_kind: "contains",
       confidence: 1,
-      derivation: 'clangd',
+      derivation: "clangd",
       file_path: extractFilePath(obj.location),
       line_number: extractLine(obj.location),
       line_count: toNumberOrNull(obj.line_count),
@@ -2831,8 +2615,8 @@ export class SqliteDbLookup implements DbLookupRepository {
   private workspaceHealth(snapshotId: number): Array<Record<string, unknown>> {
     const moduleCount = (
       this.raw
-        .prepare('SELECT COUNT(*) AS n FROM graph_nodes WHERE snapshot_id = ? AND kind = ?')
-        .get(snapshotId, 'module') as { n: number }
+        .prepare("SELECT COUNT(*) AS n FROM graph_nodes WHERE snapshot_id = ? AND kind = ?")
+        .get(snapshotId, "module") as { n: number }
     ).n
     const classCount = (
       this.raw
@@ -2861,18 +2645,18 @@ export class SqliteDbLookup implements DbLookupRepository {
 
     const callEdges = (
       this.raw
-        .prepare('SELECT COUNT(*) AS n FROM graph_edges WHERE snapshot_id = ? AND edge_kind = ?')
-        .get(snapshotId, 'calls') as { n: number }
+        .prepare("SELECT COUNT(*) AS n FROM graph_edges WHERE snapshot_id = ? AND edge_kind = ?")
+        .get(snapshotId, "calls") as { n: number }
     ).n
     const importEdges = (
       this.raw
-        .prepare('SELECT COUNT(*) AS n FROM graph_edges WHERE snapshot_id = ? AND edge_kind = ?')
-        .get(snapshotId, 'imports') as { n: number }
+        .prepare("SELECT COUNT(*) AS n FROM graph_edges WHERE snapshot_id = ? AND edge_kind = ?")
+        .get(snapshotId, "imports") as { n: number }
     ).n
     const refEdges = (
       this.raw
-        .prepare('SELECT COUNT(*) AS n FROM graph_edges WHERE snapshot_id = ? AND edge_kind = ?')
-        .get(snapshotId, 'references_type') as { n: number }
+        .prepare("SELECT COUNT(*) AS n FROM graph_edges WHERE snapshot_id = ? AND edge_kind = ?")
+        .get(snapshotId, "references_type") as { n: number }
     ).n
     const fieldEdges = (
       this.raw
@@ -2919,7 +2703,7 @@ export class SqliteDbLookup implements DbLookupRepository {
 
     return [
       {
-        kind: 'workspace_health',
+        kind: "workspace_health",
         canonical_name: `snapshot:${snapshotId}`,
         snapshot_id: snapshotId,
         modules_count: moduleCount,
@@ -2949,10 +2733,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * problem_score = dead_exports*10 + outgoing_imports*2 - internal_calls*0.1
    * (Higher = more problematic.)
    */
-  private analyzeProblematicModules(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private analyzeProblematicModules(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     // Collect per-module metrics in JS to avoid a deeply nested correlated subquery.
     const modules = this.raw
       .prepare(
@@ -2970,17 +2751,22 @@ export class SqliteDbLookup implements DbLookupRepository {
     }> = []
 
     for (const mod of modules) {
-      const outgoing = (this.raw
-        .prepare(`SELECT COUNT(*) AS n FROM graph_edges WHERE snapshot_id = ? AND edge_kind = 'imports' AND src_node_id = ?`)
-        .get(snapshotId, mod.node_id) as { n: number }).n
+      const outgoing = (
+        this.raw
+          .prepare(
+            `SELECT COUNT(*) AS n FROM graph_edges WHERE snapshot_id = ? AND edge_kind = 'imports' AND src_node_id = ?`,
+          )
+          .get(snapshotId, mod.node_id) as { n: number }
+      ).n
 
       // Escape LIKE wildcards in module canonical_name so e.g. "module:src/api_handler.ts"
       // matches literally, not with '_' as a single-char wildcard.
       const escapedMod = mod.canonical_name.replace(/%/g, "\\%").replace(/_/g, "\\_")
 
-      const deadExports = (this.raw
-        .prepare(
-          `SELECT COUNT(*) AS n FROM graph_nodes n
+      const deadExports = (
+        this.raw
+          .prepare(
+            `SELECT COUNT(*) AS n FROM graph_nodes n
            WHERE n.snapshot_id = ?
              AND n.canonical_name LIKE ? || '#%' ESCAPE '\\'
              AND json_extract(n.payload, '$.metadata.exported') = 1
@@ -2990,20 +2776,23 @@ export class SqliteDbLookup implements DbLookupRepository {
                  AND e.edge_kind IN ('calls', 'references_type', 'imports')
                  AND e.dst_node_id = n.node_id
              )`,
-        )
-        .get(snapshotId, escapedMod) as { n: number }).n
+          )
+          .get(snapshotId, escapedMod) as { n: number }
+      ).n
 
-      const internalCalls = (this.raw
-        .prepare(
-          `SELECT COUNT(*) AS n FROM graph_edges e
+      const internalCalls = (
+        this.raw
+          .prepare(
+            `SELECT COUNT(*) AS n FROM graph_edges e
            INNER JOIN graph_nodes src ON e.src_node_id = src.node_id AND e.snapshot_id = src.snapshot_id
            INNER JOIN graph_nodes dst ON e.dst_node_id = dst.node_id AND e.snapshot_id = dst.snapshot_id
            WHERE e.snapshot_id = ?
              AND e.edge_kind = 'calls'
              AND src.canonical_name LIKE ? || '#%' ESCAPE '\\'
              AND dst.canonical_name LIKE ? || '#%' ESCAPE '\\'`,
-        )
-        .get(snapshotId, escapedMod, escapedMod) as { n: number }).n
+          )
+          .get(snapshotId, escapedMod, escapedMod) as { n: number }
+      ).n
 
       const score = deadExports * 10 + outgoing * 2 - internalCalls * 0.1
       results.push({
@@ -3019,7 +2808,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       .sort((a, b) => b.problem_score - a.problem_score)
       .slice(0, limit)
       .map((r) => ({
-        kind: 'module',
+        kind: "module",
         canonical_name: r.canonical_name,
         outgoing_imports: r.outgoing_imports,
         dead_exports: r.dead_exports,
@@ -3035,10 +2824,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    *
    * complexity_score = methods*1.5 + fields + total_calls*0.5 + type_deps*0.3
    */
-  private analyzeGodClasses(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private analyzeGodClasses(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         n.canonical_name AS canonical_name,
@@ -3068,9 +2854,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY (method_count + field_count) DESC, type_deps DESC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => {
       const methods = toNumber(obj.method_count)
       const fields = toNumber(obj.field_count)
@@ -3084,12 +2868,12 @@ export class SqliteDbLookup implements DbLookupRepository {
         complexity_score: (methods * 1.5 + fields + typeDeps * 0.3).toFixed(1),
         recommendation:
           methods > 20 && fields > 10
-            ? 'split_class'
+            ? "split_class"
             : methods > 20
-            ? 'extract_service'
-            : fields > 10
-            ? 'split_data_behavior'
-            : 'monitor',
+              ? "extract_service"
+              : fields > 10
+                ? "split_data_behavior"
+                : "monitor",
       }
     })
   }
@@ -3102,10 +2886,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    *
    * Ordered so unused types and hotspots appear first.
    */
-  private analyzeTypeHealth(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private analyzeTypeHealth(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         n.canonical_name AS canonical_name,
@@ -3137,18 +2918,13 @@ export class SqliteDbLookup implements DbLookupRepository {
         field_touches DESC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => {
       const consumers = toNumber(obj.consumers)
-      const touches   = toNumber(obj.field_touches)
-      const status =
-        consumers === 0 ? 'unused'
-        : touches > consumers * 5 ? 'hotspot'
-        : 'healthy'
+      const touches = toNumber(obj.field_touches)
+      const status = consumers === 0 ? "unused" : touches > consumers * 5 ? "hotspot" : "healthy"
       return {
-        kind: 'type_health',
+        kind: "type_health",
         canonical_name: obj.canonical_name,
         type_kind: obj.kind,
         field_count: toNumber(obj.field_count),
@@ -3166,10 +2942,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    *
    * Each row includes an `action` hint: remove_or_inline or remove_or_deprecate.
    */
-  private analyzeDeadCode(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private analyzeDeadCode(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const halfLimit = Math.ceil(limit / 2)
 
     // A function/method is dead only when it has:
@@ -3222,7 +2995,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       dead_reason: obj.dead_reason,
       file_path: extractFilePath(obj.location),
       line_number: extractLine(obj.location),
-      action: obj.dead_reason === 'no_callers' ? 'remove_or_inline' : 'remove_or_deprecate',
+      action: obj.dead_reason === "no_callers" ? "remove_or_inline" : "remove_or_deprecate",
     }))
   }
 
@@ -3231,10 +3004,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * (many cross-module calls + references). Returns the top pairs with a
    * human-readable suggestion message.
    */
-  private suggestRefactors(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private suggestRefactors(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         SUBSTR(src.canonical_name, 1, INSTR(src.canonical_name, '#') - 1) AS src_module,
@@ -3253,11 +3023,9 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY coupling_count DESC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
-      kind: 'refactor_suggestion',
+      kind: "refactor_suggestion",
       canonical_name: String(obj.src_module),
       source: obj.src_module,
       target: obj.dst_module,
@@ -3275,10 +3043,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    *   - min(50, (dead_api_count / api_count) * 100)
    *   - min(50, outgoing_imports * 10)
    */
-  private generateHealthReport(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private generateHealthReport(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const modules = this.raw
       .prepare(
         `SELECT node_id, canonical_name FROM graph_nodes
@@ -3304,13 +3069,11 @@ export class SqliteDbLookup implements DbLookupRepository {
 
       const score = Math.max(
         0,
-        100
-          - Math.min(50, (deadApiCount * 100) / Math.max(1, apiCount))
-          - Math.min(50, outgoingImports * 10),
+        100 - Math.min(50, (deadApiCount * 100) / Math.max(1, apiCount)) - Math.min(50, outgoingImports * 10),
       ).toFixed(1)
 
       report.push({
-        kind: 'module_health_report',
+        kind: "module_health_report",
         canonical_name: mod.canonical_name,
         symbol_count: toNumber((s as { symbol_count?: unknown }).symbol_count),
         exported_count: toNumber((s as { exported_count?: unknown }).exported_count),
@@ -3323,9 +3086,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       })
     }
 
-    return report.sort(
-      (a, b) => Number(a.module_health_score) - Number(b.module_health_score),
-    )
+    return report.sort((a, b) => Number(a.module_health_score) - Number(b.module_health_score))
   }
 
   /**
@@ -3346,10 +3107,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    *
    * Ordered by priority ASC, then by detail metric DESC.
    */
-  private generateActionPlan(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private generateActionPlan(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const items: Array<{
       priority: number
       category: string
@@ -3394,8 +3152,8 @@ export class SqliteDbLookup implements DbLookupRepository {
       const isModuleImported = api.module_import_count > 0
       items.push({
         priority: 1,
-        category: 'dead_code',
-        action: isModuleImported ? 'review_callback_or_reexport' : 'remove_or_inline',
+        category: "dead_code",
+        action: isModuleImported ? "review_callback_or_reexport" : "remove_or_inline",
         target: api.canonical_name,
         detail: isModuleImported
           ? `exported ${api.kind} with zero direct callers (module imported ${api.module_import_count}× — may be callback/re-export)`
@@ -3422,17 +3180,21 @@ export class SqliteDbLookup implements DbLookupRepository {
       LIMIT 30
     `
     const godRowsFast = this.raw.prepare(godSql).all(snapshotId) as Array<{
-      canonical_name: string; method_count: number; field_count: number
+      canonical_name: string
+      method_count: number
+      field_count: number
     }>
     for (const g of godRowsFast) {
       const score = g.method_count * 1.5 + g.field_count
       const recommendation =
-        g.method_count > 20 && g.field_count > 10 ? 'split_class'
-        : g.method_count > 20 ? 'extract_service'
-        : 'split_data_behavior'
+        g.method_count > 20 && g.field_count > 10
+          ? "split_class"
+          : g.method_count > 20
+            ? "extract_service"
+            : "split_data_behavior"
       items.push({
         priority: 2,
-        category: 'god_class',
+        category: "god_class",
         action: recommendation,
         target: g.canonical_name,
         detail: `complexity=${score.toFixed(1)} methods=${g.method_count} fields=${g.field_count}`,
@@ -3445,8 +3207,8 @@ export class SqliteDbLookup implements DbLookupRepository {
       if (Number(r.coupling_count) <= 10) continue
       items.push({
         priority: 3,
-        category: 'refactor',
-        action: 'consolidate_or_extract',
+        category: "refactor",
+        action: "consolidate_or_extract",
         target: `${r.source} ↔ ${r.target}`,
         detail: `${r.coupling_count} cross-module edges`,
       })
@@ -3470,18 +3232,17 @@ export class SqliteDbLookup implements DbLookupRepository {
       LIMIT 100
     `
     const typeRowsFast = this.raw.prepare(typeHealthSql).all(snapshotId) as Array<{
-      canonical_name: string; consumers: number; field_touches: number
+      canonical_name: string
+      consumers: number
+      field_touches: number
     }>
     for (const t of typeRowsFast) {
-      const status =
-        t.consumers === 0 ? 'unused'
-        : t.field_touches > t.consumers * 5 ? 'hotspot'
-        : null
+      const status = t.consumers === 0 ? "unused" : t.field_touches > t.consumers * 5 ? "hotspot" : null
       if (!status) continue
       items.push({
         priority: 4,
-        category: 'type_health',
-        action: status === 'unused' ? 'remove_or_deprecate' : 'review_contention',
+        category: "type_health",
+        action: status === "unused" ? "remove_or_deprecate" : "review_contention",
         target: t.canonical_name,
         detail: `status=${status} consumers=${t.consumers} touches=${t.field_touches}`,
       })
@@ -3491,7 +3252,7 @@ export class SqliteDbLookup implements DbLookupRepository {
     items.sort((a, b) => a.priority - b.priority || b.detail.length - a.detail.length)
 
     return items.slice(0, limit).map((item, idx) => ({
-      kind: 'action_item',
+      kind: "action_item",
       canonical_name: item.target,
       rank: idx + 1,
       priority: item.priority,
@@ -3516,14 +3277,11 @@ export class SqliteDbLookup implements DbLookupRepository {
    *   delta      current - previous (positive = got worse for counts, better for scores)
    *   trend      'improved' | 'regressed' | 'unchanged' | 'new'
    */
-  private compareSnapshots(
-    snapshotId: number,
-    prevSnapshotId: number,
-  ): Array<Record<string, unknown>> {
+  private compareSnapshots(snapshotId: number, prevSnapshotId: number): Array<Record<string, unknown>> {
     const measure = (sid: number) => {
-      const exists = this.raw
-        .prepare(`SELECT COUNT(*) AS n FROM graph_snapshots WHERE snapshot_id = ?`)
-        .get(sid) as { n: number }
+      const exists = this.raw.prepare(`SELECT COUNT(*) AS n FROM graph_snapshots WHERE snapshot_id = ?`).get(sid) as {
+        n: number
+      }
       if (exists.n === 0) return null
 
       const nodes = this.raw
@@ -3532,15 +3290,14 @@ export class SqliteDbLookup implements DbLookupRepository {
       const nodeMap = Object.fromEntries(nodes.map((r) => [r.kind, r.n]))
 
       const edges = this.raw
-        .prepare(
-          `SELECT edge_kind, COUNT(*) AS n FROM graph_edges WHERE snapshot_id = ? GROUP BY edge_kind`,
-        )
+        .prepare(`SELECT edge_kind, COUNT(*) AS n FROM graph_edges WHERE snapshot_id = ? GROUP BY edge_kind`)
         .all(sid) as Array<{ edge_kind: string; n: number }>
       const edgeMap = Object.fromEntries(edges.map((r) => [r.edge_kind, r.n]))
 
-      const deadExports = (this.raw
-        .prepare(
-          `SELECT COUNT(*) AS n FROM graph_nodes n
+      const deadExports = (
+        this.raw
+          .prepare(
+            `SELECT COUNT(*) AS n FROM graph_nodes n
            WHERE n.snapshot_id = ?
              AND json_extract(n.payload, '$.metadata.exported') = 1
              AND NOT EXISTS (
@@ -3549,12 +3306,14 @@ export class SqliteDbLookup implements DbLookupRepository {
                  AND e.edge_kind IN ('calls', 'references_type', 'imports')
                  AND e.dst_node_id = n.node_id
              )`,
-        )
-        .get(sid) as { n: number }).n
+          )
+          .get(sid) as { n: number }
+      ).n
 
-      const unusedFields = (this.raw
-        .prepare(
-          `SELECT COUNT(*) AS n FROM graph_nodes field
+      const unusedFields = (
+        this.raw
+          .prepare(
+            `SELECT COUNT(*) AS n FROM graph_nodes field
            WHERE field.snapshot_id = ?
              AND field.kind IN ('field', 'enum_variant')
              AND NOT EXISTS (
@@ -3563,14 +3322,12 @@ export class SqliteDbLookup implements DbLookupRepository {
                  AND access.edge_kind IN ('reads_field', 'writes_field')
                  AND access.dst_node_id = field.node_id
              )`,
-        )
-        .get(sid) as { n: number }).n
+          )
+          .get(sid) as { n: number }
+      ).n
 
-      const apiCount = (nodeMap['function'] ?? 0) + (nodeMap['method'] ?? 0)
-      const typeCount =
-        (nodeMap['typedef'] ?? 0) +
-        (nodeMap['enum'] ?? 0) +
-        (nodeMap['union'] ?? 0)
+      const apiCount = (nodeMap["function"] ?? 0) + (nodeMap["method"] ?? 0)
+      const typeCount = (nodeMap["typedef"] ?? 0) + (nodeMap["enum"] ?? 0) + (nodeMap["union"] ?? 0)
 
       const healthScore =
         100 -
@@ -3578,11 +3335,11 @@ export class SqliteDbLookup implements DbLookupRepository {
         Math.min(50, (unusedFields * 100) / Math.max(1, typeCount))
 
       return {
-        modules: nodeMap['module'] ?? 0,
-        classes: (nodeMap['class'] ?? 0) + (nodeMap['interface'] ?? 0) + (nodeMap['struct'] ?? 0),
+        modules: nodeMap["module"] ?? 0,
+        classes: (nodeMap["class"] ?? 0) + (nodeMap["interface"] ?? 0) + (nodeMap["struct"] ?? 0),
         apis: apiCount,
-        call_edges: edgeMap['calls'] ?? 0,
-        import_edges: edgeMap['imports'] ?? 0,
+        call_edges: edgeMap["calls"] ?? 0,
+        import_edges: edgeMap["imports"] ?? 0,
         dead_exports: deadExports,
         unused_fields: unusedFields,
         health_score: parseFloat(healthScore.toFixed(1)),
@@ -3599,40 +3356,37 @@ export class SqliteDbLookup implements DbLookupRepository {
       current: number
       previous: number | null
       delta: number | null
-      trend: 'improved' | 'regressed' | 'unchanged' | 'new'
+      trend: "improved" | "regressed" | "unchanged" | "new"
       // higher-is-better for health_score; lower-is-better for everything else
       higher_is_better: boolean
     }
 
-    const makeRow = (
-      metric: string,
-      higherIsBetter: boolean,
-    ): MetricRow => {
+    const makeRow = (metric: string, higherIsBetter: boolean): MetricRow => {
       const cur = curr[metric as keyof typeof curr] as number
       const pre = prev ? (prev[metric as keyof typeof prev] as number) : null
       const delta = pre != null ? parseFloat((cur - pre).toFixed(1)) : null
-      let trend: MetricRow['trend'] = 'new'
+      let trend: MetricRow["trend"] = "new"
       if (delta != null) {
-        if (delta === 0) trend = 'unchanged'
-        else if (higherIsBetter ? delta > 0 : delta < 0) trend = 'improved'
-        else trend = 'regressed'
+        if (delta === 0) trend = "unchanged"
+        else if (higherIsBetter ? delta > 0 : delta < 0) trend = "improved"
+        else trend = "regressed"
       }
       return { metric, current: cur, previous: pre, delta, trend, higher_is_better: higherIsBetter }
     }
 
     const rows: MetricRow[] = [
-      makeRow('health_score',   true),
-      makeRow('modules',        true),
-      makeRow('classes',        true),
-      makeRow('apis',           true),
-      makeRow('call_edges',     true),
-      makeRow('import_edges',   false),
-      makeRow('dead_exports',   false),
-      makeRow('unused_fields',  false),
+      makeRow("health_score", true),
+      makeRow("modules", true),
+      makeRow("classes", true),
+      makeRow("apis", true),
+      makeRow("call_edges", true),
+      makeRow("import_edges", false),
+      makeRow("dead_exports", false),
+      makeRow("unused_fields", false),
     ]
 
     return rows.map((r) => ({
-      kind: 'snapshot_diff',
+      kind: "snapshot_diff",
       canonical_name: r.metric,
       metric: r.metric,
       current: r.current,
@@ -3699,9 +3453,9 @@ export class SqliteDbLookup implements DbLookupRepository {
 
       if (c && !p) {
         results.push({
-          kind: 'module_diff',
+          kind: "module_diff",
           canonical_name: name,
-          change: 'added',
+          change: "added",
           current_symbols: c.symbol_count,
           prev_symbols: null,
           delta_symbols: null,
@@ -3710,9 +3464,9 @@ export class SqliteDbLookup implements DbLookupRepository {
         })
       } else if (!c && p) {
         results.push({
-          kind: 'module_diff',
+          kind: "module_diff",
           canonical_name: name,
-          change: 'removed',
+          change: "removed",
           current_symbols: null,
           prev_symbols: p.symbol_count,
           delta_symbols: null,
@@ -3721,10 +3475,10 @@ export class SqliteDbLookup implements DbLookupRepository {
         })
       } else if (c && p) {
         const delta = c.symbol_count - p.symbol_count
-        const change = delta > 0 ? 'grown' : delta < 0 ? 'shrunk' : 'unchanged'
-        if (change === 'unchanged') continue // omit noise
+        const change = delta > 0 ? "grown" : delta < 0 ? "shrunk" : "unchanged"
+        if (change === "unchanged") continue // omit noise
         results.push({
-          kind: 'module_diff',
+          kind: "module_diff",
           canonical_name: name,
           change,
           current_symbols: c.symbol_count,
@@ -3738,8 +3492,7 @@ export class SqliteDbLookup implements DbLookupRepository {
 
     // Sort: added/removed first, then by |delta_symbols| desc
     results.sort((a, b) => {
-      const priority = (c: unknown) =>
-        c === 'added' ? 0 : c === 'removed' ? 1 : 2
+      const priority = (c: unknown) => (c === "added" ? 0 : c === "removed" ? 1 : 2)
       const pa = priority(a.change)
       const pb = priority(b.change)
       if (pa !== pb) return pa - pb
@@ -3761,10 +3514,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * dependencies appear first. Each row has an `incoming_count` field
    * showing how many imports edges point at the package.
    */
-  private externalImports(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private externalImports(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         e.dst_node_id AS dst_id,
@@ -3784,9 +3534,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY usage_count DESC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: "module",
       canonical_name: obj.canonical_name,
@@ -3812,11 +3560,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * minLineCount field would be cleaner but adding fields to
    * QueryRequest each round adds clutter). Default 50 lines.
    */
-  private longFunctions(
-    snapshotId: number,
-    minLines: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private longFunctions(snapshotId: number, minLines: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         canonical_name,
@@ -3830,9 +3574,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY CAST(json_extract(payload, '$.metadata.lineCount') AS INTEGER) DESC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, minLines, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, minLines, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "function",
       canonical_name: obj.canonical_name,
@@ -3889,9 +3631,7 @@ export class SqliteDbLookup implements DbLookupRepository {
         json_extract(location, '$.line') DESC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, filePath, suffixPattern, lineNumber, lineNumber, limit) as Array<
+    const rows = this.raw.prepare(sql).all(snapshotId, filePath, suffixPattern, lineNumber, lineNumber, limit) as Array<
       Record<string, unknown>
     >
     return rows.map((obj) => ({
@@ -3968,9 +3708,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       LIMIT ?
     `
     type Row = { module_name: string; shortest_depth: number }
-    const rows = this.raw
-      .prepare(sql)
-      .all(rootName, snapshotId, rootName, snapshotId, maxDepth, limit) as Row[]
+    const rows = this.raw.prepare(sql).all(rootName, snapshotId, rootName, snapshotId, maxDepth, limit) as Row[]
     return rows.map((row) => ({
       kind: row.module_name.includes("#") ? "symbol" : "module",
       canonical_name: row.module_name,
@@ -3991,11 +3729,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * me all interfaces"). Sorts alphabetically for deterministic
    * pagination.
    */
-  private symbolsByKind(
-    snapshotId: number,
-    kind: string,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private symbolsByKind(snapshotId: number, kind: string, limit: number): Array<Record<string, unknown>> {
     if (!kind || kind.length === 0) return []
     const sql = `
       SELECT
@@ -4008,9 +3742,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY canonical_name
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, kind, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, kind, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? kind,
       canonical_name: obj.canonical_name,
@@ -4031,11 +3763,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * default for ASCII). Sorts alphabetically for deterministic
    * pagination.
    */
-  private symbolsByName(
-    snapshotId: number,
-    pattern: string,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private symbolsByName(snapshotId: number, pattern: string, limit: number): Array<Record<string, unknown>> {
     if (!pattern || pattern.length === 0) return []
     const sql = `
       SELECT
@@ -4051,9 +3779,7 @@ export class SqliteDbLookup implements DbLookupRepository {
     // Escape any LIKE wildcards in the user pattern so the search is literal.
     // ESCAPE '\\' in the SQL tells SQLite that '\' is the escape character.
     const safe = pattern.replace(/[\\%_]/g, "\\$&")
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, `%${safe}%`, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, `%${safe}%`, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "function",
       canonical_name: obj.canonical_name,
@@ -4141,9 +3867,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       depth_n: number
       path: string
     }
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, srcApi, snapshotId, maxDepth, dstApi, limit) as Row[]
+    const rows = this.raw.prepare(sql).all(snapshotId, srcApi, snapshotId, maxDepth, dstApi, limit) as Row[]
     // Take the shortest chain. Expand its path into per-hop rows.
     if (rows.length === 0) return []
     const shortest = rows[0]
@@ -4235,9 +3959,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       depth_n: number
       path: string
     }
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, srcType, snapshotId, maxDepth, dstType, limit) as Row[]
+    const rows = this.raw.prepare(sql).all(snapshotId, srcType, snapshotId, maxDepth, dstType, limit) as Row[]
     if (rows.length === 0) return []
     const shortest = rows[0]
     const segments = shortest.path.split(" -> ")
@@ -4287,10 +4009,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    *     a distinct overlay
    *   - kind = the canonical kind of the first type (struct/class/etc.)
    */
-  private structCycles(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private structCycles(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         a.canonical_name AS caller,
@@ -4315,9 +4034,7 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND a.canonical_name < b.canonical_name
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "struct",
       canonical_name: obj.canonical_name,
@@ -4425,16 +4142,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       location: string | null
       edge_kind: string
     }
-    const rows = this.raw
-      .prepare(sql)
-      .all(
-        apiName,
-        apiName,
-        snapshotId,
-        maxDepth,
-        snapshotId,
-        limit,
-      ) as Row[]
+    const rows = this.raw.prepare(sql).all(apiName, apiName, snapshotId, maxDepth, snapshotId, limit) as Row[]
     return rows.map((row) => ({
       kind: row.kind ?? "field",
       canonical_name: row.canonical_name,
@@ -4472,10 +4180,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    *   - field_count = how many fields the type has (so the visualizer
    *     can show density: "User has 5 fields touched by 27 APIs")
    */
-  private topTouchedTypes(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private topTouchedTypes(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       WITH owned_fields AS (
         SELECT
@@ -4523,9 +4228,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY toucher_count DESC, t.parent_name ASC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "struct",
       canonical_name: obj.canonical_name,
@@ -4558,10 +4261,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * Same self-join shape as find_struct_cycles, but on calls edges
    * with function/method endpoints.
    */
-  private callCycles(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private callCycles(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         a.canonical_name AS caller,
@@ -4586,9 +4286,7 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND a.canonical_name < b.canonical_name
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "function",
       canonical_name: obj.canonical_name,
@@ -4643,9 +4341,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY field_count DESC, api.canonical_name ASC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, edgeKind, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, edgeKind, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "function",
       canonical_name: obj.canonical_name,
@@ -4677,10 +4373,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * don't have to make a second query — the most useful "where is
    * this dead field" answer is the class that declares it.
    */
-  private unusedFields(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private unusedFields(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         f.canonical_name AS canonical_name,
@@ -4706,9 +4399,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY f.canonical_name ASC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "field",
       canonical_name: obj.canonical_name,
@@ -4743,10 +4434,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    *   - incoming_count = alias for toucher_count so the viewer's
    *     buildHubPanel renderer works without a new code path
    */
-  private topHotFields(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private topHotFields(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         f.canonical_name AS canonical_name,
@@ -4765,9 +4453,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY toucher_count DESC, f.canonical_name ASC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "field",
       canonical_name: obj.canonical_name,
@@ -4809,10 +4495,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * touch both fields). The visualizer can present these as
    * "consider extracting these into a sub-object" suggestions.
    */
-  private fieldCoAccess(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private fieldCoAccess(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         f1.canonical_name AS field_a,
@@ -4847,9 +4530,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY co_occurrence DESC, f1.canonical_name ASC, f2.canonical_name ASC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: "field",
       canonical_name: obj.field_a,
@@ -4883,10 +4564,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * calls this — not "called once" (a single caller might call
    * it multiple times). The DISTINCT is the important part.
    */
-  private uniqueCallers(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private uniqueCallers(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         callee.canonical_name AS canonical_name,
@@ -4912,9 +4590,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY callee.canonical_name ASC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "function",
       canonical_name: obj.canonical_name,
@@ -4945,10 +4621,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * method and the edge_kind set to "self_recursion" so the
    * visualizer can render it with a distinct overlay.
    */
-  private recursiveMethods(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private recursiveMethods(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT DISTINCT
         m.canonical_name AS canonical_name,
@@ -4964,9 +4637,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY m.canonical_name ASC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "function",
       canonical_name: obj.canonical_name,
@@ -5004,10 +4675,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * component using the existing intents if they want a
    * different lens.
    */
-  private godMethods(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private godMethods(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     // Three CTEs aggregate the per-method counts independently with
     // GROUP BY on the relevant edge column. The outer query LEFT
     // JOINs them to recover (canonical_name, kind, location). This
@@ -5062,9 +4730,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY complexity_score DESC, m.canonical_name ASC
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, snapshotId, snapshotId, snapshotId, limit) as Array<
+    const rows = this.raw.prepare(sql).all(snapshotId, snapshotId, snapshotId, snapshotId, limit) as Array<
       Record<string, unknown>
     >
     return rows.map((obj) => ({
@@ -5101,10 +4767,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * class does), so this query finds exported top-level functions,
    * classes, and interfaces specifically.
    */
-  private deadExports(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private deadExports(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         n.canonical_name AS canonical_name,
@@ -5123,9 +4786,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY n.canonical_name
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "function",
       canonical_name: obj.canonical_name,
@@ -5146,10 +4807,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * edge. Visualizers can use this to root the dependency tree or
    * highlight scripts that are only invoked externally.
    */
-  private moduleEntryPoints(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private moduleEntryPoints(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         m.canonical_name AS canonical_name,
@@ -5168,9 +4826,7 @@ export class SqliteDbLookup implements DbLookupRepository {
       ORDER BY m.canonical_name
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: "module",
       canonical_name: obj.canonical_name,
@@ -5219,9 +4875,7 @@ export class SqliteDbLookup implements DbLookupRepository {
     const params: Array<string | number> = [snapshotId, edgeKind]
     if (dstKind) params.push(dstKind)
     params.push(limit)
-    const rows = this.raw
-      .prepare(sql)
-      .all(...params) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(...params) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "module",
       canonical_name: obj.canonical_name,
@@ -5247,10 +4901,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * Visualizers can render these as bidirectional edges or refactor
    * suggestions.
    */
-  private importCycles(
-    snapshotId: number,
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private importCycles(snapshotId: number, limit: number): Array<Record<string, unknown>> {
     const sql = `
       SELECT
         a.canonical_name AS caller,
@@ -5277,9 +4928,7 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND a.canonical_name < b.canonical_name
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: "module",
       canonical_name: obj.canonical_name,
@@ -5320,9 +4969,7 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND e.edge_kind = ?
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, ...srcNames, edgeKind, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, ...srcNames, edgeKind, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "module",
       canonical_name: obj.canonical_name ?? obj.callee,
@@ -5363,9 +5010,7 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND e.edge_kind = ?
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, ...dstNames, edgeKind, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, ...dstNames, edgeKind, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "module",
       canonical_name: obj.canonical_name ?? obj.caller,
@@ -5391,11 +5036,7 @@ export class SqliteDbLookup implements DbLookupRepository {
    * find_module_symbols (which lists ALL contains-edge children
    * regardless of kind).
    */
-  private containedFields(
-    snapshotId: number,
-    srcNames: string[],
-    limit: number,
-  ): Array<Record<string, unknown>> {
+  private containedFields(snapshotId: number, srcNames: string[], limit: number): Array<Record<string, unknown>> {
     if (srcNames.length === 0) return []
     const sql = `
       SELECT
@@ -5419,9 +5060,7 @@ export class SqliteDbLookup implements DbLookupRepository {
         AND dst.kind IN ('field', 'enum_variant')
       LIMIT ?
     `
-    const rows = this.raw
-      .prepare(sql)
-      .all(snapshotId, ...srcNames, limit) as Array<Record<string, unknown>>
+    const rows = this.raw.prepare(sql).all(snapshotId, ...srcNames, limit) as Array<Record<string, unknown>>
     return rows.map((obj) => ({
       kind: obj.kind ?? "field",
       canonical_name: obj.canonical_name ?? obj.callee,

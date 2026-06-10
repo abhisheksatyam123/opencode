@@ -33,10 +33,7 @@ export interface SqliteIntelligenceBackend extends IntelligenceBackend {
 
 export async function createIntelligenceBackend(
   dbPath: string,
-  enrichers: Pick<
-    OrchestratorRunnerDeps,
-    "clangdEnricher" | "cParserEnricher" | "llmEnricher"
-  >,
+  enrichers: Pick<OrchestratorRunnerDeps, "clangdEnricher" | "cParserEnricher" | "llmEnricher">,
   lspClient?: LspClientForExtraction,
 ): Promise<SqliteIntelligenceBackend> {
   const { client: sqliteClient, foundation: db, sink, lookup } = createSqliteStore({ path: dbPath })

@@ -107,13 +107,7 @@ export interface ObservationFact extends FactEnvelope {
   }
 }
 
-export type Fact =
-  | SymbolFact
-  | TypeFact
-  | AggregateFieldFact
-  | EdgeFact
-  | EvidenceFact
-  | ObservationFact
+export type Fact = SymbolFact | TypeFact | AggregateFieldFact | EdgeFact | EvidenceFact | ObservationFact
 
 export type FactKind = Fact["kind"]
 
@@ -200,16 +194,12 @@ export function canonicalKey(fact: Fact): string {
     }
     case "edge": {
       const p = fact.payload
-      const loc = p.sourceLocation
-        ? `${p.sourceLocation.sourceFilePath}:${p.sourceLocation.sourceLineNumber}`
-        : ""
+      const loc = p.sourceLocation ? `${p.sourceLocation.sourceFilePath}:${p.sourceLocation.sourceLineNumber}` : ""
       return `edge|${p.edgeKind}|${p.srcSymbolName ?? ""}->${p.dstSymbolName ?? ""}|${loc}`
     }
     case "evidence": {
       const a = fact.attachedTo
-      const loc = fact.payload.location
-        ? `${fact.payload.location.filePath}:${fact.payload.location.line}`
-        : ""
+      const loc = fact.payload.location ? `${fact.payload.location.filePath}:${fact.payload.location.line}` : ""
       return `evidence|${a.factKind}|${a.canonicalKey}|${fact.payload.sourceKind}|${loc}`
     }
     case "observation": {
@@ -252,9 +242,7 @@ export class FactValidationError extends Error {
     public readonly reason: string,
     public readonly producedBy: readonly string[],
   ) {
-    super(
-      `[fact-validation] ${factKind} from ${producedBy.join(",") || "<unknown>"}: ${reason}`,
-    )
+    super(`[fact-validation] ${factKind} from ${producedBy.join(",") || "<unknown>"}: ${reason}`)
   }
 }
 
@@ -277,18 +265,10 @@ export function validateFact(fact: Fact): void {
     )
   }
   if (fact.confidence < 0 || fact.confidence > 1) {
-    throw new FactValidationError(
-      fact.kind,
-      `confidence must be in [0,1], got ${fact.confidence}`,
-      fact.producedBy,
-    )
+    throw new FactValidationError(fact.kind, `confidence must be in [0,1], got ${fact.confidence}`, fact.producedBy)
   }
   if (!Array.isArray(fact.producedBy) || fact.producedBy.length === 0) {
-    throw new FactValidationError(
-      fact.kind,
-      "producedBy must be a non-empty array",
-      fact.producedBy,
-    )
+    throw new FactValidationError(fact.kind, "producedBy must be a non-empty array", fact.producedBy)
   }
 
   switch (fact.kind) {
@@ -338,28 +318,16 @@ export function validateFact(fact: Fact): void {
     }
     case "evidence": {
       if (!fact.attachedTo?.canonicalKey) {
-        throw new FactValidationError(
-          fact.kind,
-          "evidence requires attachedTo.canonicalKey",
-          fact.producedBy,
-        )
+        throw new FactValidationError(fact.kind, "evidence requires attachedTo.canonicalKey", fact.producedBy)
       }
       if (!fact.payload.sourceKind) {
-        throw new FactValidationError(
-          fact.kind,
-          "evidence.payload.sourceKind is required",
-          fact.producedBy,
-        )
+        throw new FactValidationError(fact.kind, "evidence.payload.sourceKind is required", fact.producedBy)
       }
       return
     }
     case "observation": {
       if (!fact.payload.observationKind || !fact.payload.subject) {
-        throw new FactValidationError(
-          fact.kind,
-          "observation requires observationKind and subject",
-          fact.producedBy,
-        )
+        throw new FactValidationError(fact.kind, "observation requires observationKind and subject", fact.producedBy)
       }
       return
     }

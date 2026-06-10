@@ -40,7 +40,14 @@ export type ActionableState = {
   siblings?: string[]
 }
 
-const EMPTY_ACTIONABLE: ActionableState = { item: "", done_criteria: "", write_target: "", task_path: "", agent: "", siblings: [] }
+const EMPTY_ACTIONABLE: ActionableState = {
+  item: "",
+  done_criteria: "",
+  write_target: "",
+  task_path: "",
+  agent: "",
+  siblings: [],
+}
 
 export function nextActionable(_planText: string, taskPath = ""): ActionableState {
   return { ...EMPTY_ACTIONABLE, task_path: taskPath }
@@ -51,13 +58,27 @@ export function hasActionableStateChanged(prev: ActionableState, next: Actionabl
 }
 
 export function serialize(p: ContextPacket): string {
-  return [`## Task coordination`, "", `- task path: ${p.task_path || "none"}`, "- format-specific coordination parsing is disabled; inspect files with bash when needed."].join("\n")
+  return [
+    `## Task coordination`,
+    "",
+    `- task path: ${p.task_path || "none"}`,
+    "- format-specific coordination parsing is disabled; inspect files with bash when needed.",
+  ].join("\n")
 }
 
-export async function buildPacket(opts: { taskNotePath: string; notesRoot: string; mode: PacketMode; trigger: PacketTrigger }): Promise<PacketResult> {
+export async function buildPacket(opts: {
+  taskNotePath: string
+  notesRoot: string
+  mode: PacketMode
+  trigger: PacketTrigger
+}): Promise<PacketResult> {
   const actionable = nextActionable("", opts.taskNotePath)
   const packet: ContextPacket = { task_path: opts.taskNotePath, mode: opts.mode, trigger: opts.trigger, candidates: [] }
-  return { markdown: serialize(packet), meta: { task_path: opts.taskNotePath, mode: opts.mode, trigger: opts.trigger, actionable }, candidates: [] }
+  return {
+    markdown: serialize(packet),
+    meta: { task_path: opts.taskNotePath, mode: opts.mode, trigger: opts.trigger, actionable },
+    candidates: [],
+  }
 }
 
 export async function buildCompactionPrompt(_opts: { taskNotePath?: string; notesRoot?: string }): Promise<string> {
@@ -68,6 +89,10 @@ export function markPacketStale(_sessionID: string, _cause: string, _force = fal
 export function clearPacketFreshness(_sessionID: string) {}
 export function resetBgDeliveryCursors(): void {}
 
-export async function checkAndRebuildPacket(_opts: { sessionID: string; taskNotePath: string; notesRoot: string }): Promise<PacketResult | undefined> {
+export async function checkAndRebuildPacket(_opts: {
+  sessionID: string
+  taskNotePath: string
+  notesRoot: string
+}): Promise<PacketResult | undefined> {
   return undefined
 }

@@ -29,22 +29,9 @@ import { startHttp } from "./core/server.js"
 import { initLogger, log, logError, getLogFile } from "./logging/logger.js"
 import { initIntelligenceBackend, shutdownIntelligenceBackend } from "./intelligence/init.js"
 import { IndexTracker } from "./tracking/index.js"
-import {
-  normaliseRoot,
-  computeWorkspaceId,
-} from "./daemon/index.js"
-import {
-  parseArgs,
-  readWorkspaceConfig,
-  retryWithBackoff,
-  resolveIntelligenceBackend,
-} from "./config/bootstrap.js"
-import {
-  connectToClangd,
-  makeGetClient,
-  startAsHttpDaemon,
-  type LifecycleConfig,
-} from "./core/lifecycle.js"
+import { normaliseRoot, computeWorkspaceId } from "./daemon/index.js"
+import { parseArgs, readWorkspaceConfig, retryWithBackoff, resolveIntelligenceBackend } from "./config/bootstrap.js"
+import { connectToClangd, makeGetClient, startAsHttpDaemon, type LifecycleConfig } from "./core/lifecycle.js"
 import { createUnifiedBackend } from "./backend/unified-backend.js"
 import type { BackendDeps } from "./core/types.js"
 
@@ -112,9 +99,7 @@ async function main(): Promise<void> {
   // here (the composition root) so intelligence/init.ts stays free of tools/ imports.
   await initIntelligenceBackend(undefined, lazyLspClient, (deps) => {
     setIntelligenceDeps(deps)
-  }).catch((err) =>
-    log("WARN", "intelligence backend init failed — continuing without it", { err: String(err) }),
-  )
+  }).catch((err) => log("WARN", "intelligence backend init failed — continuing without it", { err: String(err) }))
 
   log("INFO", "intelgraph starting", {
     pid: process.pid,
@@ -140,24 +125,22 @@ async function main(): Promise<void> {
     process.exit(1)
   })
   process.on("unhandledRejection", (reason) => {
-    logError(
-      "UNHANDLED PROMISE REJECTION — continuing",
-      reason instanceof Error ? reason : new Error(String(reason)),
-    )
+    logError("UNHANDLED PROMISE REJECTION — continuing", reason instanceof Error ? reason : new Error(String(reason)))
     // Don't exit — log and continue
   })
 
   const getClient = makeGetClient(
     () => ({ currentClient, reconnectPromise }),
-    () => connectToClangd(
-      lifecycleConfig,
-      tracker,
-      (newClient) => {
-        currentClient = newClient
-        reconnectPromise = null
-      },
-      retryWithBackoff,
-    ),
+    () =>
+      connectToClangd(
+        lifecycleConfig,
+        tracker,
+        (newClient) => {
+          currentClient = newClient
+          reconnectPromise = null
+        },
+        retryWithBackoff,
+      ),
     (patch) => {
       if ("currentClient" in patch) currentClient = patch.currentClient ?? null
       if ("reconnectPromise" in patch) reconnectPromise = patch.reconnectPromise ?? null
@@ -186,8 +169,14 @@ async function main(): Promise<void> {
   if (cli.httpDaemon) {
     // ── HTTP daemon mode (spawned detached by lifecycle) ──────────────────────
     await startAsHttpDaemon(
-      getClient, tracker, cli.httpPort ?? port,
-      root, workspaceId, serverPath, serverArgs, language,
+      getClient,
+      tracker,
+      cli.httpPort ?? port,
+      root,
+      workspaceId,
+      serverPath,
+      serverArgs,
+      language,
       shutdownIntelligenceBackend,
     )
   } else {
@@ -204,7 +193,13 @@ async function main(): Promise<void> {
       retryWithBackoff,
     )
     const backend = createUnifiedBackend(getClient, tracker)
-    const deps: BackendDeps = { getClient, tracker, backend, workspaceRoot: root, onGracefulShutdown: shutdownIntelligenceBackend }
+    const deps: BackendDeps = {
+      getClient,
+      tracker,
+      backend,
+      workspaceRoot: root,
+      onGracefulShutdown: shutdownIntelligenceBackend,
+    }
     await startHttp(deps, port)
     log("INFO", "HTTP API server ready", { url: `http://localhost:${port}/`, port })
   }

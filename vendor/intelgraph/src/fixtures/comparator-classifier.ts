@@ -46,9 +46,17 @@ export const TAXONOMY_RULES: Record<string, ClassifierRule> = {
   "missing|data.items.length": { mismatch_type: "missing", severity: "S0", rule_id: "MISSING_ITEMS" },
   "source_mismatch|kind": { mismatch_type: "source_mismatch", severity: "S1", rule_id: "SOURCE_KIND" },
   "source_mismatch|kind_verbose": { mismatch_type: "source_mismatch", severity: "S1", rule_id: "SOURCE_KIND_VERBOSE" },
-  "unresolved_alias|canonical_name": { mismatch_type: "unresolved_alias", severity: "S2", rule_id: "ALIAS_CANONICAL_NAME" },
+  "unresolved_alias|canonical_name": {
+    mismatch_type: "unresolved_alias",
+    severity: "S2",
+    rule_id: "ALIAS_CANONICAL_NAME",
+  },
   "extra|rel.calls_out": { mismatch_type: "extra", severity: "S2", rule_id: "EXTRA_RELATION" },
-  "evidence_weak|rel.structures (minimum_count)": { mismatch_type: "evidence_weak", severity: "S3", rule_id: "WEAK_EVIDENCE" },
+  "evidence_weak|rel.structures (minimum_count)": {
+    mismatch_type: "evidence_weak",
+    severity: "S3",
+    rule_id: "WEAK_EVIDENCE",
+  },
 }
 
 /**

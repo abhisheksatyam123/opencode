@@ -34,30 +34,15 @@
 import { existsSync, readdirSync, statSync } from "node:fs"
 import { join, relative, dirname, resolve as resolvePath } from "node:path"
 import { defineExtractor } from "../../intelligence/extraction/contract.js"
-import type {
-  Capability,
-  WorkspaceProbe,
-} from "../../intelligence/extraction/contract.js"
+import type { Capability, WorkspaceProbe } from "../../intelligence/extraction/contract.js"
 import type { ExtractionContext } from "../../intelligence/extraction/context.js"
 import type { Fact } from "../../intelligence/extraction/facts.js"
-import type {
-  TsNode,
-  SupportedLanguage,
-} from "../../intelligence/extraction/services/treesitter-service.js"
+import type { TsNode, SupportedLanguage } from "../../intelligence/extraction/services/treesitter-service.js"
 import type { SymbolRow } from "../../intelligence/contracts/common.js"
 
 const CAPABILITIES: Capability[] = ["symbols", "types", "direct-calls"]
 
-const TS_EXTENSIONS = [
-  ".ts",
-  ".tsx",
-  ".mts",
-  ".cts",
-  ".js",
-  ".jsx",
-  ".mjs",
-  ".cjs",
-] as const
+const TS_EXTENSIONS = [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"] as const
 
 // Skip these directories during file walk — they generate noise and
 // blow up the symbol count without adding signal.
@@ -116,8 +101,7 @@ const tsCoreExtractor = defineExtractor({
 
     for (const file of files) {
       if (ctx.signal.aborted) return
-      const language: SupportedLanguage =
-        ctx.treesitter.inferLanguage(file) === "tsx" ? "tsx" : "typescript"
+      const language: SupportedLanguage = ctx.treesitter.inferLanguage(file) === "tsx" ? "tsx" : "typescript"
 
       const tStart = Date.now()
       const tree = await ctx.treesitter.parseFile(file, language)
@@ -307,15 +291,11 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
       // Methods are qualified with their enclosing class/interface so
       // `Greeter.greet` and a top-level `greet` don't collide. The
       // contains edge for a method points from the class, not the module.
-      const enclosingClass = classStack.length
-        ? classStack[classStack.length - 1]
-        : null
+      const enclosingClass = classStack.length ? classStack[classStack.length - 1] : null
       const isMember = kind === "method" && enclosingClass !== null
       const localName = isMember ? `${enclosingClass}.${name}` : name
       const canonicalName = `${moduleNodeName}#${localName}`
-      const containsSrc = isMember
-        ? `${moduleNodeName}#${enclosingClass}`
-        : moduleNodeName
+      const containsSrc = isMember ? `${moduleNodeName}#${enclosingClass}` : moduleNodeName
 
       // Track for intra-file resolution. Methods are NOT bare-callable
       // (you write `this.method()` not `method()`), so we skip adding
@@ -382,13 +362,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
 
         // extends / implements edges
         if (kind === "class" || kind === "interface") {
-          for (const inheritEdge of extractInheritanceEdges(
-            node,
-            canonicalName,
-            file,
-            resolver,
-            moduleNodeName,
-          )) {
+          for (const inheritEdge of extractInheritanceEdges(node, canonicalName, file, resolver, moduleNodeName)) {
             yield ctx.edge({ payload: inheritEdge })
           }
         }
@@ -398,13 +372,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
         // resolved type. Built-in types (Promise, string, …) miss the
         // resolver and are dropped to avoid noise.
         if (kind === "function" || kind === "method") {
-          for (const ref of extractTypeReferences(
-            node,
-            canonicalName,
-            resolver,
-            moduleNodeName,
-            file,
-          )) {
+          for (const ref of extractTypeReferences(node, canonicalName, resolver, moduleNodeName, file)) {
             yield ctx.edge({ payload: ref })
           }
         }
@@ -419,13 +387,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
           kind === "interface" ||
           kind === "typedef"
         ) {
-          for (const ref of extractGenericConstraintReferences(
-            node,
-            canonicalName,
-            resolver,
-            moduleNodeName,
-            file,
-          )) {
+          for (const ref of extractGenericConstraintReferences(node, canonicalName, resolver, moduleNodeName, file)) {
             yield ctx.edge({ payload: ref })
           }
         }
@@ -435,13 +397,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
         // FQ name. Built-ins (predefined_type) are auto-dropped because
         // they're not type_identifier nodes.
         if (kind === "class" || kind === "interface") {
-          for (const ref of extractFieldTypeReferences(
-            node,
-            canonicalName,
-            resolver,
-            moduleNodeName,
-            file,
-          )) {
+          for (const ref of extractFieldTypeReferences(node, canonicalName, resolver, moduleNodeName, file)) {
             yield ctx.edge({ payload: ref })
           }
 
@@ -458,12 +414,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
           // walking N fields and de-duping client-side.
           const aggregatedTargets = new Set<string>()
 
-          for (const fieldDecl of extractFieldDeclarations(
-            node,
-            name,
-            moduleNodeName,
-            file,
-          )) {
+          for (const fieldDecl of extractFieldDeclarations(node, name, moduleNodeName, file)) {
             if (seenSymbols.has(fieldDecl.canonicalName)) continue
             seenSymbols.add(fieldDecl.canonicalName)
             yield ctx.symbol({
@@ -548,11 +499,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
         // by the enum, and its literal value (if any) is recorded
         // in metadata.value.
         if (kind === "enum") {
-          for (const variant of extractTsEnumVariants(
-            node,
-            name,
-            moduleNodeName,
-          )) {
+          for (const variant of extractTsEnumVariants(node, name, moduleNodeName)) {
             if (seenSymbols.has(variant.canonicalName)) continue
             seenSymbols.add(variant.canonicalName)
             yield ctx.symbol({
@@ -590,14 +537,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
         // from the body walk (e.g. `type Box<T> = T | null` should
         // not emit Box → T).
         if (kind === "typedef") {
-          for (const ref of extractTypeAliasBodyReferences(
-            node,
-            canonicalName,
-            name,
-            resolver,
-            moduleNodeName,
-            file,
-          )) {
+          for (const ref of extractTypeAliasBodyReferences(node, canonicalName, name, resolver, moduleNodeName, file)) {
             yield ctx.edge({ payload: ref })
           }
         }
@@ -620,11 +560,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
               // won't resolve, so we drop it).
               const firstType = findFirstDescendantOfType(ann, "type_identifier")
               if (firstType) {
-                const resolved = resolveTypeName(
-                  firstType.text,
-                  resolver,
-                  moduleNodeName,
-                )
+                const resolved = resolveTypeName(firstType.text, resolver, moduleNodeName)
                 if (resolved) {
                   resolver.varTypes.set(name, resolved.name)
                 }
@@ -644,11 +580,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
               //   - new_expression: the constructor identifier is the type
               //   - as_expression:  the cast target is the type
               const value = declarator.childForFieldName("value")
-              const inferred = inferVarTypeFromValue(
-                value,
-                resolver,
-                moduleNodeName,
-              )
+              const inferred = inferVarTypeFromValue(value, resolver, moduleNodeName)
               if (inferred) {
                 resolver.varTypes.set(name, inferred.fq)
                 yield ctx.edge({
@@ -717,12 +649,8 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
       // `Class.method` so call edges originate from the right symbol
       // (matches the canonical_name used at declaration time).
       const enclosingClassForScope =
-        enter.kind === "method" && classStack.length
-          ? classStack[classStack.length - 1]
-          : null
-      const localName = enclosingClassForScope
-        ? `${enclosingClassForScope}.${enter.name}`
-        : enter.name
+        enter.kind === "method" && classStack.length ? classStack[classStack.length - 1] : null
+      const localName = enclosingClassForScope ? `${enclosingClassForScope}.${enter.name}` : enter.name
       const fqName = `${moduleNodeName}#${localName}`
       scopeStack.push({ name: fqName, node })
 
@@ -730,11 +658,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
       // function/method's formal_parameters. Each typed param gets
       // mapped to its resolved type FQ so member calls inside the
       // body can resolve via varTypes (param-member kind).
-      const paramFrame = collectParamTypes(
-        node,
-        resolver,
-        moduleNodeName,
-      )
+      const paramFrame = collectParamTypes(node, resolver, moduleNodeName)
       resolver.paramTypeStack.push(paramFrame)
     } else if (
       // D35: inline arrow/function_expression that maybeEnterScope
@@ -746,11 +670,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
       node.type === "arrow_function" ||
       node.type === "function_expression"
     ) {
-      const paramFrame = collectParamTypes(
-        node,
-        resolver,
-        moduleNodeName,
-      )
+      const paramFrame = collectParamTypes(node, resolver, moduleNodeName)
       // Push even when empty so the matching pop in the cleanup block
       // doesn't underflow. Empty frames are cheap.
       resolver.paramTypeStack.push(paramFrame)
@@ -762,15 +682,10 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
     // HTML tags (lowercase first letter) are not components and skipped.
     // We only handle the opening and self-closing forms — closing tags
     // would otherwise produce duplicate edges.
-    if (
-      node.type === "jsx_self_closing_element" ||
-      node.type === "jsx_opening_element"
-    ) {
+    if (node.type === "jsx_self_closing_element" || node.type === "jsx_opening_element") {
       const ref = extractJsxComponentRef(node, resolver, moduleNodeName)
       if (ref) {
-        const callerName = scopeStack.length
-          ? scopeStack[scopeStack.length - 1].name
-          : moduleNodeName
+        const callerName = scopeStack.length ? scopeStack[scopeStack.length - 1].name : moduleNodeName
         // D32: collect prop names from jsx_attribute children. Spread
         // props don't have a name, so we tag hasSpread separately.
         const propsInfo = collectJsxProps(node)
@@ -810,9 +725,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
       const ctor = node.namedChild(0)
       if (ctor && ctor.type === "identifier") {
         const resolved = resolveTypeName(ctor.text, resolver, moduleNodeName)
-        const callerName = scopeStack.length
-          ? scopeStack[scopeStack.length - 1].name
-          : moduleNodeName
+        const callerName = scopeStack.length ? scopeStack[scopeStack.length - 1].name : moduleNodeName
         yield ctx.edge({
           payload: {
             edgeKind: "calls",
@@ -883,19 +796,10 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
 
     // Call expressions inside the current scope
     if (node.type === "call_expression") {
-      const enclosingClassNow = classStack.length
-        ? classStack[classStack.length - 1]
-        : null
-      const callee = extractCalleeWithResolution(
-        node,
-        resolver,
-        moduleNodeName,
-        enclosingClassNow,
-      )
+      const enclosingClassNow = classStack.length ? classStack[classStack.length - 1] : null
+      const callee = extractCalleeWithResolution(node, resolver, moduleNodeName, enclosingClassNow)
       if (callee) {
-        const callerName = scopeStack.length
-          ? scopeStack[scopeStack.length - 1].name
-          : moduleNodeName // top-level call
+        const callerName = scopeStack.length ? scopeStack[scopeStack.length - 1].name : moduleNodeName // top-level call
         // Tagged template literal detection: a call_expression whose
         // second positional named child is a template_string instead
         // of arguments. e.g. sql`SELECT *` or styled.div`color: red`.
@@ -904,8 +808,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
         const isTaggedTemplate = isTaggedTemplateCall(node)
         // D33: detect await wrapping. `await foo()` parses as
         // await_expression > call_expression so we check the parent.
-        const isAwaited =
-          node.parent !== null && node.parent.type === "await_expression"
+        const isAwaited = node.parent !== null && node.parent.type === "await_expression"
         // D34: detect yield wrapping. `yield foo()` and `yield* foo()`
         // both parse as yield_expression > call_expression. Effect
         // generator code uses this heavily.
@@ -968,9 +871,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
 // Per-node extractors
 // ---------------------------------------------------------------------------
 
-function extractDeclaration(
-  node: TsNode,
-): { name: string; kind: SymbolRow["kind"] } | null {
+function extractDeclaration(node: TsNode): { name: string; kind: SymbolRow["kind"] } | null {
   switch (node.type) {
     case "function_declaration":
     case "generator_function_declaration": {
@@ -1039,10 +940,7 @@ function extractDeclaration(
       const nameNode = declarator.childForFieldName("name")
       const value = declarator.childForFieldName("value")
       if (!nameNode) return null
-      if (
-        value &&
-        (value.type === "arrow_function" || value.type === "function_expression")
-      ) {
+      if (value && (value.type === "arrow_function" || value.type === "function_expression")) {
         return { name: nameNode.text, kind: "function" }
       }
       // Typed top-level variable: emit as global_var so its
@@ -1273,11 +1171,7 @@ function extractCalleeWithResolution(
  *     │           └─ identifier (alias, optional)
  *     └─ string (source)                         `from "./x"`
  */
-function populateResolverFromImport(
-  importNode: TsNode,
-  dstFqModule: string,
-  resolver: FileResolver,
-): void {
+function populateResolverFromImport(importNode: TsNode, dstFqModule: string, resolver: FileResolver): void {
   // Find the import_clause child
   const clause = firstNamedChildOfType(importNode, "import_clause")
   if (!clause) return
@@ -1375,11 +1269,7 @@ function inferVarTypeFromValue(
  * For function_expression / arrow_function, the parameters live on the
  * node itself; for function_declaration / method_definition, same shape.
  */
-function collectParamTypes(
-  fnNode: TsNode,
-  resolver: FileResolver,
-  moduleNodeName: string,
-): Map<string, string> {
+function collectParamTypes(fnNode: TsNode, resolver: FileResolver, moduleNodeName: string): Map<string, string> {
   const out = new Map<string, string>()
   const params = firstNamedChildOfType(fnNode, "formal_parameters")
   if (!params) return out
@@ -1408,10 +1298,7 @@ function collectParamTypes(
  * Walk the param type stack from innermost to outermost and return the
  * first match for the given param name. Returns null if not bound.
  */
-function lookupParamType(
-  resolver: FileResolver,
-  name: string,
-): string | null {
+function lookupParamType(resolver: FileResolver, name: string): string | null {
   for (let i = resolver.paramTypeStack.length - 1; i >= 0; i--) {
     const frame = resolver.paramTypeStack[i]
     const t = frame.get(name)
@@ -1482,10 +1369,7 @@ function collectTopLevelDocs(rootNode: TsNode): Map<string, string> {
  * Skips declarations inside class bodies — methods are not in the
  * bare-call/type namespace.
  */
-function prepopulateLocalSymbols(
-  rootNode: TsNode,
-  resolver: FileResolver,
-): void {
+function prepopulateLocalSymbols(rootNode: TsNode, resolver: FileResolver): void {
   for (let i = 0; i < rootNode.namedChildCount; i++) {
     const stmt = rootNode.namedChild(i)
     if (!stmt) continue
@@ -1560,13 +1444,7 @@ function extractTypeReferences(
     }
   }
 
-  return extractTypeReferencesFromAnnotations(
-    annotations,
-    thisFqName,
-    resolver,
-    moduleNodeName,
-    file,
-  )
+  return extractTypeReferencesFromAnnotations(annotations, thisFqName, resolver, moduleNodeName, file)
 }
 
 interface TypeRefEdgePayload {
@@ -1915,10 +1793,7 @@ function extractFieldDeclarations(
   for (let i = 0; i < body.namedChildCount; i++) {
     const member = body.namedChild(i)
     if (!member) continue
-    if (
-      member.type !== "public_field_definition" &&
-      member.type !== "property_signature"
-    ) {
+    if (member.type !== "public_field_definition" && member.type !== "property_signature") {
       continue
     }
     // Extract the field's local name. property_identifier is the
@@ -1926,10 +1801,7 @@ function extractFieldDeclarations(
     // shorthand on parameter properties (rare in declared bodies).
     const nameNode = member.childForFieldName("name")
     if (!nameNode) continue
-    if (
-      nameNode.type !== "property_identifier" &&
-      nameNode.type !== "identifier"
-    ) {
+    if (nameNode.type !== "property_identifier" && nameNode.type !== "identifier") {
       // computed_property_name (`[Symbol.iterator]`) lands here. Skip:
       // no stable canonical name to attach edges to.
       continue
@@ -2058,9 +1930,7 @@ function extractFieldTypeEdges(
 ): Array<TypeRefEdgePayload> {
   // Get the type_annotation child. Both public_field_definition and
   // property_signature expose it under the same "type" field name.
-  const typeAnn =
-    firstNamedChildOfType(memberNode, "type_annotation") ??
-    memberNode.childForFieldName("type")
+  const typeAnn = firstNamedChildOfType(memberNode, "type_annotation") ?? memberNode.childForFieldName("type")
   if (!typeAnn) return []
 
   // The annotation wraps the actual type expression. The
@@ -2327,10 +2197,7 @@ function extractFieldTypeReferences(
 
     // Pick the right walking strategy by member kind.
     let walkRoot: TsNode | null = null
-    if (
-      member.type === "public_field_definition" ||
-      member.type === "property_signature"
-    ) {
+    if (member.type === "public_field_definition" || member.type === "property_signature") {
       // The type_annotation child carries the field's type. Walking
       // just that subtree avoids picking up unrelated identifiers
       // (e.g. inside a default value initializer).
@@ -2420,10 +2287,7 @@ function extractInheritanceEdges(
   // (find_class_inheritance / find_class_subtypes / find_interface_implementors)
   // would never join to a real graph_node row because the dst was bare.
   const seen = new Set<string>()
-  const pushEdge = (
-    kind: "extends" | "implements",
-    target: string,
-  ) => {
+  const pushEdge = (kind: "extends" | "implements", target: string) => {
     const key = `${kind}:${target}`
     if (seen.has(key)) return
     seen.add(key)
@@ -2452,8 +2316,7 @@ function extractInheritanceEdges(
     for (let i = 0; i < heritage.namedChildCount; i++) {
       const clause = heritage.namedChild(i)
       if (!clause) continue
-      const kind: "extends" | "implements" =
-        clause.type === "implements_clause" ? "implements" : "extends"
+      const kind: "extends" | "implements" = clause.type === "implements_clause" ? "implements" : "extends"
       for (const target of namedDescendantTexts(clause, "type_identifier")) {
         pushEdge(kind, target)
       }
@@ -2554,11 +2417,7 @@ function firstStringChildText(node: TsNode): string | null {
   return null
 }
 
-function resolveImportTarget(
-  source: string,
-  file: string,
-  workspaceRoot: string,
-): string {
+function resolveImportTarget(source: string, file: string, workspaceRoot: string): string {
   if (source.startsWith("./") || source.startsWith("../")) {
     const abs = resolveImportPath(resolvePath(dirname(file), source))
     return `module:${workspaceRelativePath(workspaceRoot, abs)}`
@@ -2656,7 +2515,7 @@ function resolveImportPath(basePath: string): string {
   // TS equivalent first. This is the .js→.ts normalization that prevents
   // cross-file edges from using mismatched extensions.
   const jsExts = [".js", ".mjs", ".cjs", ".jsx"]
-  const stripped = jsExts.reduce((p, ext) => p.endsWith(ext) ? p.slice(0, -ext.length) : p, basePath)
+  const stripped = jsExts.reduce((p, ext) => (p.endsWith(ext) ? p.slice(0, -ext.length) : p), basePath)
 
   const exts = [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"]
 
@@ -2686,10 +2545,7 @@ function resolveImportPath(basePath: string): string {
   return basePath
 }
 
-function locationOf(
-  file: string,
-  node: TsNode,
-): { filePath: string; line: number; column: number } {
+function locationOf(file: string, node: TsNode): { filePath: string; line: number; column: number } {
   return {
     filePath: file,
     line: node.startPosition.row + 1,
@@ -2728,11 +2584,7 @@ function extractJsxComponentRef(
   for (let i = 0; i < jsxNode.namedChildCount; i++) {
     const child = jsxNode.namedChild(i)
     if (!child) continue
-    if (
-      child.type === "identifier" ||
-      child.type === "member_expression" ||
-      child.type === "nested_identifier"
-    ) {
+    if (child.type === "identifier" || child.type === "member_expression" || child.type === "nested_identifier") {
       tagNode = child
       break
     }
@@ -2761,8 +2613,7 @@ function extractJsxComponentRef(
     // The component check applies to the LAST segment (the actual
     // rendered element); HTML lowercase tags don't appear here in
     // practice, but check anyway.
-    if (!isComponentTagName(propName) && obj.type === "identifier" &&
-        !isComponentTagName(obj.text)) {
+    if (!isComponentTagName(propName) && obj.type === "identifier" && !isComponentTagName(obj.text)) {
       return null
     }
     if (obj.type === "identifier") {

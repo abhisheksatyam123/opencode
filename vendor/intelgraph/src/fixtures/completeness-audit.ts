@@ -102,12 +102,10 @@ function calculateCompletenessScore(fixture: ApiFixture): ApiCompletenessScore {
   }
 
   // Tier 1: at least one incoming
-  const tier1Complete =
-    counts.calls_in_direct > 0 || counts.calls_in_runtime > 0 || counts.registrations_in > 0
+  const tier1Complete = counts.calls_in_direct > 0 || counts.calls_in_runtime > 0 || counts.registrations_in > 0
 
   // Tier 2: contextual relations (at least one of calls_out, structures, logs, owns)
-  const tier2Complete =
-    counts.calls_out > 0 || counts.structures > 0 || counts.logs > 0 || counts.owns > 0
+  const tier2Complete = counts.calls_out > 0 || counts.structures > 0 || counts.logs > 0 || counts.owns > 0
 
   // Tier 3: optional relations
   const tier3Complete = counts.uses > 0 || counts.registrations_out > 0
@@ -185,15 +183,9 @@ export async function generateCompletenessAudit(
   }
 
   // Calculate tier distribution
-  const tier1_only = apiScores.filter(
-    (s) => s.tier1_complete && !s.tier2_complete && !s.tier3_complete,
-  )
-  const tier1_and_2 = apiScores.filter(
-    (s) => s.tier1_complete && s.tier2_complete && !s.tier3_complete,
-  )
-  const tier1_and_2_and_3 = apiScores.filter(
-    (s) => s.tier1_complete && s.tier2_complete && s.tier3_complete,
-  )
+  const tier1_only = apiScores.filter((s) => s.tier1_complete && !s.tier2_complete && !s.tier3_complete)
+  const tier1_and_2 = apiScores.filter((s) => s.tier1_complete && s.tier2_complete && !s.tier3_complete)
+  const tier1_and_2_and_3 = apiScores.filter((s) => s.tier1_complete && s.tier2_complete && s.tier3_complete)
 
   // APIs needing follow-up: < 70% completeness
   const needsFollowup = apiScores
@@ -202,8 +194,7 @@ export async function generateCompletenessAudit(
     .slice(0, 10) // Top 10 most incomplete
 
   // Average completeness
-  const avgCompleteness =
-    apiScores.reduce((sum, s) => sum + s.completeness_score, 0) / apiScores.length
+  const avgCompleteness = apiScores.reduce((sum, s) => sum + s.completeness_score, 0) / apiScores.length
 
   const totalRelations = Object.values(relationDistribution).reduce((a, b) => a + b, 0)
 
@@ -249,9 +240,7 @@ export function formatAuditReport(report: AuditReport): string {
   lines.push("║ FIXTURE COMPLETENESS AUDIT REPORT                                          ║")
   lines.push("╠════════════════════════════════════════════════════════════════════════════╣")
   lines.push(`║ Total APIs: ${report.total_apis}`.padEnd(77) + "║")
-  lines.push(
-    `║ Average Completeness Score: ${report.average_completeness_score}%`.padEnd(77) + "║",
-  )
+  lines.push(`║ Average Completeness Score: ${report.average_completeness_score}%`.padEnd(77) + "║")
   lines.push("║ Tier Distribution:                                                         ║")
   lines.push(
     `║   - Tier 1 complete (${report.tier_distribution.tier1_only.count} APIs, ${report.tier_distribution.tier1_only.percentage}%):     calls_in_* or registrations_in`.padEnd(
@@ -272,33 +261,15 @@ export function formatAuditReport(report: AuditReport): string {
   lines.push("║ Relation Distribution:                                                     ║")
 
   const relDist = report.relation_distribution
-  lines.push(
-    `║   - calls_in_direct: ${relDist.calls_in_direct}`.padEnd(77) + "║",
-  )
-  lines.push(
-    `║   - calls_in_runtime: ${relDist.calls_in_runtime}`.padEnd(77) + "║",
-  )
-  lines.push(
-    `║   - calls_out: ${relDist.calls_out}`.padEnd(77) + "║",
-  )
-  lines.push(
-    `║   - registrations_in: ${relDist.registrations_in}`.padEnd(77) + "║",
-  )
-  lines.push(
-    `║   - structures: ${relDist.structures}`.padEnd(77) + "║",
-  )
-  lines.push(
-    `║   - logs: ${relDist.logs}`.padEnd(77) + "║",
-  )
-  lines.push(
-    `║   - owns: ${relDist.owns}`.padEnd(77) + "║",
-  )
-  lines.push(
-    `║   - registrations_out: ${relDist.registrations_out}`.padEnd(77) + "║",
-  )
-  lines.push(
-    `║   - uses: ${relDist.uses}`.padEnd(77) + "║",
-  )
+  lines.push(`║   - calls_in_direct: ${relDist.calls_in_direct}`.padEnd(77) + "║")
+  lines.push(`║   - calls_in_runtime: ${relDist.calls_in_runtime}`.padEnd(77) + "║")
+  lines.push(`║   - calls_out: ${relDist.calls_out}`.padEnd(77) + "║")
+  lines.push(`║   - registrations_in: ${relDist.registrations_in}`.padEnd(77) + "║")
+  lines.push(`║   - structures: ${relDist.structures}`.padEnd(77) + "║")
+  lines.push(`║   - logs: ${relDist.logs}`.padEnd(77) + "║")
+  lines.push(`║   - owns: ${relDist.owns}`.padEnd(77) + "║")
+  lines.push(`║   - registrations_out: ${relDist.registrations_out}`.padEnd(77) + "║")
+  lines.push(`║   - uses: ${relDist.uses}`.padEnd(77) + "║")
 
   lines.push("╠════════════════════════════════════════════════════════════════════════════╣")
 
@@ -352,33 +323,15 @@ export function formatAuditReportMarkdown(report: AuditReport): string {
   lines.push("\n## Relation Distribution\n")
   lines.push("| Relation Type | Count |")
   lines.push("|---|---|")
-  lines.push(
-    `| calls_in_direct | ${report.relation_distribution.calls_in_direct} |`,
-  )
-  lines.push(
-    `| calls_in_runtime | ${report.relation_distribution.calls_in_runtime} |`,
-  )
-  lines.push(
-    `| calls_out | ${report.relation_distribution.calls_out} |`,
-  )
-  lines.push(
-    `| registrations_in | ${report.relation_distribution.registrations_in} |`,
-  )
-  lines.push(
-    `| registrations_out | ${report.relation_distribution.registrations_out} |`,
-  )
-  lines.push(
-    `| structures | ${report.relation_distribution.structures} |`,
-  )
-  lines.push(
-    `| logs | ${report.relation_distribution.logs} |`,
-  )
-  lines.push(
-    `| owns | ${report.relation_distribution.owns} |`,
-  )
-  lines.push(
-    `| uses | ${report.relation_distribution.uses} |`,
-  )
+  lines.push(`| calls_in_direct | ${report.relation_distribution.calls_in_direct} |`)
+  lines.push(`| calls_in_runtime | ${report.relation_distribution.calls_in_runtime} |`)
+  lines.push(`| calls_out | ${report.relation_distribution.calls_out} |`)
+  lines.push(`| registrations_in | ${report.relation_distribution.registrations_in} |`)
+  lines.push(`| registrations_out | ${report.relation_distribution.registrations_out} |`)
+  lines.push(`| structures | ${report.relation_distribution.structures} |`)
+  lines.push(`| logs | ${report.relation_distribution.logs} |`)
+  lines.push(`| owns | ${report.relation_distribution.owns} |`)
+  lines.push(`| uses | ${report.relation_distribution.uses} |`)
 
   if (report.apis_needing_followup.length > 0) {
     lines.push("\n## APIs Needing Follow-up\n")

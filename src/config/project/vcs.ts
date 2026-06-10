@@ -124,7 +124,10 @@ export namespace Vcs {
     if (remote) {
       const head = yield* runGit(cwd, ["symbolic-ref", `refs/remotes/${remote}/HEAD`])
       if (head.exitCode === 0) {
-        const ref = head.text().trim().replace(/^refs\/remotes\//, "")
+        const ref = head
+          .text()
+          .trim()
+          .replace(/^refs\/remotes\//, "")
         const name = ref.startsWith(`${remote}/`) ? ref.slice(`${remote}/`.length) : ""
         if (name) return { name, ref } satisfies GitBase
       }
@@ -243,7 +246,16 @@ export namespace Vcs {
 
   const diffGit = Effect.fnUntraced(function* (cwd: string, ref: string) {
     const list = nuls(
-      yield* textGit(cwd, ["diff", "--no-ext-diff", "--no-renames", "--name-status", "-z", ref, "--", PROJECT_PATHSPEC]),
+      yield* textGit(cwd, [
+        "diff",
+        "--no-ext-diff",
+        "--no-renames",
+        "--name-status",
+        "-z",
+        ref,
+        "--",
+        PROJECT_PATHSPEC,
+      ]),
     )
     return list.flatMap((code, idx) => {
       if (idx % 2 !== 0) return []
@@ -256,27 +268,25 @@ export namespace Vcs {
   const statsGit = Effect.fnUntraced(function* (cwd: string, ref: string) {
     return nuls(
       yield* textGit(cwd, ["diff", "--no-ext-diff", "--no-renames", "--numstat", "-z", ref, "--", PROJECT_PATHSPEC]),
-    )
-      .flatMap((item) => {
-        const a = item.indexOf("\t")
-        const b = item.indexOf("\t", a + 1)
-        if (a === -1 || b === -1) return []
-        const file = item.slice(b + 1)
-        if (!file) return []
-        const adds = item.slice(0, a)
-        const dels = item.slice(a + 1, b)
-        const additions = adds === "-" ? 0 : Number.parseInt(adds || "0", 10)
-        const deletions = dels === "-" ? 0 : Number.parseInt(dels || "0", 10)
-        return [
-          {
-            file,
-            additions: Number.isFinite(additions) ? additions : 0,
-            deletions: Number.isFinite(deletions) ? deletions : 0,
-          } satisfies GitStat,
-        ]
-      })
+    ).flatMap((item) => {
+      const a = item.indexOf("\t")
+      const b = item.indexOf("\t", a + 1)
+      if (a === -1 || b === -1) return []
+      const file = item.slice(b + 1)
+      if (!file) return []
+      const adds = item.slice(0, a)
+      const dels = item.slice(a + 1, b)
+      const additions = adds === "-" ? 0 : Number.parseInt(adds || "0", 10)
+      const deletions = dels === "-" ? 0 : Number.parseInt(dels || "0", 10)
+      return [
+        {
+          file,
+          additions: Number.isFinite(additions) ? additions : 0,
+          deletions: Number.isFinite(deletions) ? deletions : 0,
+        } satisfies GitStat,
+      ]
+    })
   })
-
 
   const p4Records = (text: string) => {
     const out: PerforceItem[] = []
@@ -528,10 +538,7 @@ export namespace Vcs {
     }),
   )
 
-  const defaultLayer = layer.pipe(
-    Layer.provide(AppFileSystem.defaultLayer),
-    Layer.provide(Bus.layer),
-  )
+  const defaultLayer = layer.pipe(Layer.provide(AppFileSystem.defaultLayer), Layer.provide(Bus.layer))
 
   const { runPromise } = makeRuntime(Service, defaultLayer)
 

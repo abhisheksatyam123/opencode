@@ -1,10 +1,4 @@
-import type {
-  AggregateFieldRow,
-  EdgeRow,
-  IngestReport,
-  SymbolRow,
-  TypeRow,
-} from "./common.js"
+import type { AggregateFieldRow, EdgeRow, IngestReport, SymbolRow, TypeRow } from "./common.js"
 
 export interface ExtractionInput {
   workspaceRoot: string

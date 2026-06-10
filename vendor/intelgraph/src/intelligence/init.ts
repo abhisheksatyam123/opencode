@@ -50,8 +50,7 @@ export async function initIntelligenceBackend(
 ): Promise<boolean> {
   // Resolve the SQLite DB path. INTELLIGENCE_DB_PATH wins; otherwise
   // use .intelgraph/intelligence.db.
-  const sqliteDbPath =
-    process.env.INTELLIGENCE_DB_PATH ?? resolveDefaultDbPath()
+  const sqliteDbPath = process.env.INTELLIGENCE_DB_PATH ?? resolveDefaultDbPath()
 
   const noopEnricher = {
     source: "clangd" as const,
@@ -76,11 +75,7 @@ export async function initIntelligenceBackend(
     dbPath: sqliteDbPath,
   })
 
-  const backend: IntelligenceBackend = await createIntelligenceBackend(
-    sqliteDbPath,
-    resolvedEnrichers,
-    lspClient,
-  )
+  const backend: IntelligenceBackend = await createIntelligenceBackend(sqliteDbPath, resolvedEnrichers, lspClient)
   // initSchema runs inside createIntelligenceBackend; runMigrations is a
   // no-op alias today, called for forward compatibility.
   await backend.db.runMigrations()
@@ -186,7 +181,10 @@ export async function initIntelligenceBackend(
     const existingSnapshot = await backend.db.getLatestReadySnapshot(workspaceRoot)
 
     if (!existingSnapshot) {
-      log.info("intelligence backend: no ready snapshot — starting background extraction (run `npm run extract` to pre-build)", { workspaceRoot })
+      log.info(
+        "intelligence backend: no ready snapshot — starting background extraction (run `npm run extract` to pre-build)",
+        { workspaceRoot },
+      )
 
       // Fire-and-forget: don't block daemon init
       void (async () => {
@@ -317,7 +315,11 @@ export async function initIntelligenceBackend(
         log.warn("intelligence: file watcher error — incremental re-extraction disabled", {
           error: String(err),
         })
-        try { watcher.close() } catch { /* ignore */ }
+        try {
+          watcher.close()
+        } catch {
+          /* ignore */
+        }
         for (const timer of pendingExtracts.values()) clearTimeout(timer)
         pendingExtracts.clear()
       })

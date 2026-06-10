@@ -112,7 +112,10 @@ export namespace LSP {
     readonly prepareCallHierarchy: (input: LocInput) => Effect.Effect<any[]>
     readonly incomingCalls: (input: LocInput) => Effect.Effect<any[]>
     readonly outgoingCalls: (input: LocInput) => Effect.Effect<any[]>
-    readonly willSaveWaitUntil: (input: { file: string; reason?: number }) => Effect.Effect<{ ok: boolean; edits: TextEdit[] }>
+    readonly willSaveWaitUntil: (input: {
+      file: string
+      reason?: number
+    }) => Effect.Effect<{ ok: boolean; edits: TextEdit[] }>
   }
 
   export class Service extends ServiceMap.Service<Service, Interface>()("@opencode/LSP") {}

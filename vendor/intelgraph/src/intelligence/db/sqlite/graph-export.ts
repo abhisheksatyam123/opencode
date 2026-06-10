@@ -44,9 +44,7 @@ function parseMetadata(raw: string | null): Record<string, unknown> | null {
   }
 }
 
-function parseLocation(
-  raw: string | null,
-): { filePath?: string; line?: number } {
+function parseLocation(raw: string | null): { filePath?: string; line?: number } {
   if (!raw) return {}
   try {
     return JSON.parse(raw)
@@ -88,9 +86,7 @@ export function loadGraphJsonFromDb(
   // of opaque graph_node IDs.
   const nodeIdLookup = new Map<string, string>()
   const nodeIdRows = raw
-    .prepare(
-      `SELECT node_id, canonical_name FROM graph_nodes WHERE snapshot_id = ?`,
-    )
+    .prepare(`SELECT node_id, canonical_name FROM graph_nodes WHERE snapshot_id = ?`)
     .all(snapshotId) as Array<{ node_id: string; canonical_name: string }>
   for (const row of nodeIdRows) {
     nodeIdLookup.set(row.node_id, row.canonical_name)
@@ -98,9 +94,7 @@ export function loadGraphJsonFromDb(
 
   const allNodes = nodeRows.map((row) => {
     const loc = parseLocation(row.location)
-    const payload = parseMetadata(row.payload) as
-      | { metadata?: Record<string, unknown> }
-      | null
+    const payload = parseMetadata(row.payload) as { metadata?: Record<string, unknown> } | null
     const meta = payload?.metadata ?? {}
     return {
       id: row.canonical_name,
@@ -124,12 +118,8 @@ export function loadGraphJsonFromDb(
   // Symbol-kind filter: drop nodes whose kind isn't in the set, and
   // build a survivor set so the edge filter below can drop edges
   // where either endpoint was filtered out.
-  const nodes = filters.symbolKinds
-    ? allNodes.filter((n) => filters.symbolKinds!.has(n.kind))
-    : allNodes
-  const survivingNodeIds = filters.symbolKinds
-    ? new Set(nodes.map((n) => n.id))
-    : null
+  const nodes = filters.symbolKinds ? allNodes.filter((n) => filters.symbolKinds!.has(n.kind)) : allNodes
+  const survivingNodeIds = filters.symbolKinds ? new Set(nodes.map((n) => n.id)) : null
 
   const edges = edgeRows
     .map((row) => {
@@ -146,10 +136,7 @@ export function loadGraphJsonFromDb(
       }
       // Symbol-kind filter cascade: drop edges that connect to a
       // node that was filtered out
-      if (
-        survivingNodeIds &&
-        (!survivingNodeIds.has(src) || !survivingNodeIds.has(dst))
-      ) {
+      if (survivingNodeIds && (!survivingNodeIds.has(src) || !survivingNodeIds.has(dst))) {
         return null
       }
       const meta = parseMetadata(row.metadata)
@@ -157,8 +144,7 @@ export function loadGraphJsonFromDb(
         src,
         dst,
         kind: row.edge_kind,
-        resolution_kind:
-          (meta as { resolutionKind?: string } | null)?.resolutionKind ?? null,
+        resolution_kind: (meta as { resolutionKind?: string } | null)?.resolutionKind ?? null,
         metadata: meta,
       }
     })
@@ -187,24 +173,14 @@ export function loadGraphJsonFromDb(
   // call. The function is pure on the GraphJson and is also exported
   // for callers that have a graph in hand (e.g. tests).
   if (filters.centerOf) {
-    result = centerSubgraph(
-      result,
-      filters.centerOf,
-      filters.centerHops ?? 2,
-      filters.centerDirection ?? "both",
-    )
+    result = centerSubgraph(result, filters.centerOf, filters.centerHops ?? 2, filters.centerDirection ?? "both")
   }
   // dataPath: Phase 3h subgraph reducer. Walks field_of_type +
   // aggregates edges from src type to dst type. Applied after
   // centerOf so callers can scope to a region first, then ask for
   // the data path within it.
   if (filters.dataPathFrom && filters.dataPathTo) {
-    result = dataPathSubgraph(
-      result,
-      filters.dataPathFrom,
-      filters.dataPathTo,
-      filters.dataPathDepth ?? 6,
-    )
+    result = dataPathSubgraph(result, filters.dataPathFrom, filters.dataPathTo, filters.dataPathDepth ?? 6)
   }
   // maxNodes is applied LAST so it caps whatever the prior filters
   // produced. For unfiltered or lightly-filtered runs on big
@@ -318,9 +294,7 @@ export function topNByDegree(graph: GraphJson, n: number): GraphJson {
     workspace: graph.workspace,
     snapshot_id: graph.snapshot_id,
     nodes: graph.nodes.filter((node) => keep.has(node.id)),
-    edges: graph.edges.filter(
-      (edge) => keep.has(edge.src) && keep.has(edge.dst),
-    ),
+    edges: graph.edges.filter((edge) => keep.has(edge.src) && keep.has(edge.dst)),
     total_nodes: graph.total_nodes,
     total_edges: graph.total_edges,
   }
@@ -335,10 +309,7 @@ export function topNByDegree(graph: GraphJson, n: number): GraphJson {
  * themselves and report failures cleanly without invoking the full
  * subgraph reduction.
  */
-export function resolveCenterSymbol(
-  graph: GraphJson,
-  query: string,
-): string | null {
+export function resolveCenterSymbol(graph: GraphJson, query: string): string | null {
   if (!query) return null
   const ids = new Set(graph.nodes.map((n) => n.id))
   if (ids.has(query)) return query
@@ -469,12 +440,7 @@ export function centerSubgraph(
  *
  * Pure: no IO, no mutation of the input graph.
  */
-export function dataPathSubgraph(
-  graph: GraphJson,
-  srcQuery: string,
-  dstQuery: string,
-  maxDepth: number,
-): GraphJson {
+export function dataPathSubgraph(graph: GraphJson, srcQuery: string, dstQuery: string, maxDepth: number): GraphJson {
   const empty = (): GraphJson => ({
     workspace: graph.workspace,
     snapshot_id: graph.snapshot_id,
@@ -498,8 +464,7 @@ export function dataPathSubgraph(
   // helper unions them — they encode the same relationship at
   // different granularities, so the BFS naturally picks whichever
   // path is shortest.
-  const isDataEdge = (kind: string): boolean =>
-    kind === "field_of_type" || kind === "aggregates"
+  const isDataEdge = (kind: string): boolean => kind === "field_of_type" || kind === "aggregates"
   const succ = new Map<string, Set<string>>()
   for (const node of graph.nodes) succ.set(node.id, new Set())
   for (const edge of graph.edges) {
@@ -566,9 +531,7 @@ export function dataPathSubgraph(
     workspace: graph.workspace,
     snapshot_id: graph.snapshot_id,
     nodes: graph.nodes.filter((n) => keptNodes.has(n.id)),
-    edges: graph.edges.filter(
-      (e) => isDataEdge(e.kind) && keptEdges.has(e.src + "|" + e.dst),
-    ),
+    edges: graph.edges.filter((e) => isDataEdge(e.kind) && keptEdges.has(e.src + "|" + e.dst)),
     total_nodes: graph.total_nodes,
     total_edges: graph.total_edges,
   }

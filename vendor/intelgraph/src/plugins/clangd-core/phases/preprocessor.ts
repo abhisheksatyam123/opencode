@@ -12,7 +12,10 @@ type ConditionalFrame = {
 }
 
 function expressionIsEnabled(raw: string) {
-  const value = raw.replace(/\/\*.*?\*\//g, " ").replace(/\/\/.*$/, "").trim()
+  const value = raw
+    .replace(/\/\*.*?\*\//g, " ")
+    .replace(/\/\/.*$/, "")
+    .trim()
   if (!value) return true
   if (/^\(?\s*0\s*\)?(?:\s|$)/.test(value)) return false
   if (/^false\b/i.test(value)) return false

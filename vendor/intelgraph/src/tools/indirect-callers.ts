@@ -79,8 +79,8 @@ export async function collectIndirectCallers(
   const maxNodes = args.maxNodes ?? 50
   const shouldResolve = args.resolve ?? false
   const filePath = args.file
-  const line     = args.line - 1      // 0-based for LSP
-  let   charPos  = args.character - 1 // 0-based for LSP (may be refined below)
+  const line = args.line - 1 // 0-based for LSP
+  let charPos = args.character - 1 // 0-based for LSP (may be refined below)
 
   // Open the file so clangd can parse it (required before any position queries)
   let sourceText = ""
@@ -91,7 +91,9 @@ export async function collectIndirectCallers(
       // Always wait for the file to be ready, whether first open or re-open
       await waitForFileReady(client, filePath, 20000)
     }
-  } catch { /* proceed anyway — clangd may have it indexed */ }
+  } catch {
+    /* proceed anyway — clangd may have it indexed */
+  }
 
   // If character=1 (default), auto-detect the function name position on the line.
   // clangd's prepareCallHierarchy requires the cursor to be ON the function name token,
@@ -114,9 +116,7 @@ export async function collectIndirectCallers(
   if (!seed) return { seed: null, nodes: [] }
 
   const seedName = seed.name ?? "(unknown)"
-  const seedFile = seed.uri?.startsWith("file://")
-    ? fileURLToPath(seed.uri)
-    : (seed.uri ?? filePath)
+  const seedFile = seed.uri?.startsWith("file://") ? fileURLToPath(seed.uri) : (seed.uri ?? filePath)
 
   // Step 2: try direct incoming calls
   const rawCalls = await client.incomingCalls(filePath, line, charPos)
@@ -134,8 +134,10 @@ export async function collectIndirectCallers(
       // Use fromRanges (actual call sites inside the enclosing function) for classification.
       // fromRanges contains the positions where the callback is referenced — these are the
       // registration call sites we want to classify, not the enclosing function definition.
-      const fromRanges: Array<{ line: number; character: number }> = (call.fromRanges ?? [])
-        .map((r: any) => ({ line: r.start?.line ?? 0, character: r.start?.character ?? 0 }))
+      const fromRanges: Array<{ line: number; character: number }> = (call.fromRanges ?? []).map((r: any) => ({
+        line: r.start?.line ?? 0,
+        character: r.start?.character ?? 0,
+      }))
 
       // Try each fromRange for classification; use the first that matches a pattern
       let classified = { sourceText: "", match: null as any }
@@ -187,9 +189,9 @@ export async function collectIndirectCallers(
       }
 
       nodes.push({
-        name:       from.name ?? "(unknown)",
-        file:       fromFile,
-        line:       fromLine1,
+        name: from.name ?? "(unknown)",
+        file: fromFile,
+        line: fromLine1,
         sourceText: classified.sourceText,
         classification: classified.match,
         resolvedChain: chain,
@@ -209,7 +211,7 @@ export async function collectIndirectCallers(
   for (const ref of refs ?? []) {
     if (nodes.length >= maxNodes) break
 
-    const refUri  = ref.uri ?? ""
+    const refUri = ref.uri ?? ""
     const refLine = ref.range?.start?.line ?? 0
     const refChar = ref.range?.start?.character ?? 0
     const absPath = refUri.startsWith("file://") ? fileURLToPath(refUri) : refUri
@@ -257,9 +259,9 @@ export async function collectIndirectCallers(
         )
       }
       nodes.push({
-        name:       enc.name ?? "(unknown)",
-        file:       encFile,
-        line:       encLine1,
+        name: enc.name ?? "(unknown)",
+        file: encFile,
+        line: encLine1,
         sourceText: classified.sourceText,
         classification: classified.match,
         resolvedChain: chain,
@@ -373,7 +375,7 @@ function classifyFnBodyAssignment(
     return { sourceText: line.trim().slice(0, 200), match: null }
   }
 
-  const fieldPath = m[1]  // e.g. "current->restart_block.fn"
+  const fieldPath = m[1] // e.g. "current->restart_block.fn"
   // Extract the last field name as the dispatch key
   const parts = fieldPath.split(/->|\./)
   const fieldName = parts[parts.length - 1] ?? fieldPath
@@ -398,9 +400,7 @@ function classifyFunctionCall(call: FunctionCall): ClassificationResult {
   const pattern = CALL_PATTERNS.find((p) => p.registrationApi === call.name)
 
   if (pattern) {
-    const dispatchKey = pattern.keyArgIndex < call.args.length
-      ? call.args[pattern.keyArgIndex].trim()
-      : null
+    const dispatchKey = pattern.keyArgIndex < call.args.length ? call.args[pattern.keyArgIndex].trim() : null
     return {
       sourceText: call.fullText,
       match: {
@@ -436,9 +436,7 @@ function classifyInitializer(
     if (init.args.length > pattern.markerArgIndex) {
       const markerArg = init.args[pattern.markerArgIndex].trim()
       if (pattern.markerRegex.test(markerArg)) {
-        const dispatchKey = init.args.length > pattern.keyArgIndex
-          ? init.args[pattern.keyArgIndex].trim()
-          : null
+        const dispatchKey = init.args.length > pattern.keyArgIndex ? init.args[pattern.keyArgIndex].trim() : null
         return {
           sourceText: init.fullText,
           match: {
@@ -453,13 +451,7 @@ function classifyInitializer(
   }
 
   // ── Pass 2: generic struct-field-callback fallback ────────────────────
-  const generic = classifyGenericStructFieldCallback(
-    init,
-    callbackName,
-    filePath,
-    refLine0,
-    refChar0,
-  )
+  const generic = classifyGenericStructFieldCallback(init, callbackName, filePath, refLine0, refChar0)
   if (generic && generic.matchedPattern) {
     return {
       sourceText: generic.sourceText,
@@ -482,12 +474,18 @@ function classifyInitializer(
 /** Map trigger kind to endpoint kind for the TUI mediated-paths contract. */
 function triggerKindToEndpointKind(triggerKind: string): string {
   switch (triggerKind) {
-    case "hardware_interrupt": return "hw_irq_or_ring"
-    case "signal": return "signal"
-    case "event": return "host_event"
-    case "message": return "host_event"
-    case "timer_expiry": return "timer"
-    default: return "unknown"
+    case "hardware_interrupt":
+      return "hw_irq_or_ring"
+    case "signal":
+      return "signal"
+    case "event":
+      return "host_event"
+    case "message":
+      return "host_event"
+    case "timer_expiry":
+      return "timer"
+    default:
+      return "unknown"
   }
 }
 
@@ -495,16 +493,15 @@ function triggerKindToEndpointKind(triggerKind: string): string {
  * Format the indirect caller graph as plain text.
  * This is the output for lsp_indirect_callers when LLM is disabled.
  */
-export function formatIndirectCallerTree(
-  graph: IndirectCallerGraph,
-  root: string,
-): string {
+export function formatIndirectCallerTree(graph: IndirectCallerGraph, root: string): string {
   if (!graph.seed) return "No callers found — symbol not resolved by clangd."
   const seedName = graph.seed.name
 
   if (!graph.nodes.length) {
-    return `Callers of ${seedName}:\n  (none found)\n\n` +
+    return (
+      `Callers of ${seedName}:\n  (none found)\n\n` +
       `Tip: run lsp_reason_chain on this position to use LLM+cache analysis.`
+    )
   }
 
   const lines: string[] = [`Callers of ${seedName}  (${graph.nodes.length} reference sites found):`]
@@ -513,7 +510,9 @@ export function formatIndirectCallerTree(
 
   for (const node of graph.nodes) {
     const rel = root ? path.relative(root, node.file) : node.file
-    const tag = node.classification ? ` [${node.classification.registrationApi}:${node.classification.dispatchKey}]` : ""
+    const tag = node.classification
+      ? ` [${node.classification.registrationApi}:${node.classification.dispatchKey}]`
+      : ""
     lines.push(`  <- ${node.name}  at ${rel}:${node.line}${tag}`)
     if (node.sourceText) {
       lines.push(`     ${node.sourceText}`)
@@ -526,13 +525,15 @@ export function formatIndirectCallerTree(
         lines.push(`     store: ${chain.store.containerType} (${chain.store.confidence})`)
       }
       if (chain.dispatch.dispatchFunction) {
-        const dispatchRel = chain.dispatch.dispatchFile
-          ? path.relative(root, chain.dispatch.dispatchFile)
-          : "?"
-        lines.push(`     dispatch: ${chain.dispatch.dispatchFunction} at ${dispatchRel}:${(chain.dispatch.dispatchLine ?? 0) + 1} (${chain.dispatch.confidence})`)
+        const dispatchRel = chain.dispatch.dispatchFile ? path.relative(root, chain.dispatch.dispatchFile) : "?"
+        lines.push(
+          `     dispatch: ${chain.dispatch.dispatchFunction} at ${dispatchRel}:${(chain.dispatch.dispatchLine ?? 0) + 1} (${chain.dispatch.confidence})`,
+        )
       }
       if (chain.trigger.triggerKind) {
-        lines.push(`     trigger: ${chain.trigger.triggerKind}${chain.trigger.triggerKey ? ` [${chain.trigger.triggerKey}]` : ""} (${chain.trigger.confidence})`)
+        lines.push(
+          `     trigger: ${chain.trigger.triggerKind}${chain.trigger.triggerKey ? ` [${chain.trigger.triggerKey}]` : ""} (${chain.trigger.confidence})`,
+        )
       }
     }
   }
@@ -544,14 +545,15 @@ export function formatIndirectCallerTree(
     const mediatedPaths = nodesWithChains.map((node) => {
       const chain = node.resolvedChain!
       // Build endpoint from trigger or dispatch
-      const endpointId = chain.trigger.triggerKey
-        ?? chain.dispatch.dispatchFunction
-        ?? node.classification?.dispatchKey
-        ?? node.name
+      const endpointId =
+        chain.trigger.triggerKey ?? chain.dispatch.dispatchFunction ?? node.classification?.dispatchKey ?? node.name
       const endpointKind = chain.trigger.triggerKind
         ? triggerKindToEndpointKind(chain.trigger.triggerKind)
-        : chain.dispatch.dispatchFunction ? "dispatch" : "registration"
-      const endpointLabel = chain.trigger.triggerKind ?? chain.dispatch.dispatchFunction ?? node.classification?.registrationApi
+        : chain.dispatch.dispatchFunction
+          ? "dispatch"
+          : "registration"
+      const endpointLabel =
+        chain.trigger.triggerKind ?? chain.dispatch.dispatchFunction ?? node.classification?.registrationApi
 
       // Build stages from registration + dispatch
       const stages: Array<{ ownerSymbol: string; mechanism: string }> = []
@@ -579,7 +581,7 @@ export function formatIndirectCallerTree(
           endpointKind,
           endpointLabel,
           file: chain.trigger.triggerFile ?? chain.dispatch.dispatchFile ?? node.file,
-          line: ((chain.trigger.triggerLine ?? chain.dispatch.dispatchLine ?? node.line - 1)) + 1,
+          line: (chain.trigger.triggerLine ?? chain.dispatch.dispatchLine ?? node.line - 1) + 1,
         },
         stages,
       }
@@ -661,17 +663,13 @@ function tryDispatchChainTemplate(
   if (!tmpl) return null
 
   // Build the chain by replacing %CALLBACK% and %KEY% placeholders
-  const chain = tmpl.chain.map((s) =>
-    s.replace(/%CALLBACK%/g, callbackName).replace(/%KEY%/g, dispatchKey),
-  )
+  const chain = tmpl.chain.map((s) => s.replace(/%CALLBACK%/g, callbackName).replace(/%KEY%/g, dispatchKey))
 
   // Construct a ResolvedChain compatible with the existing formatter.
   // The chain has at least 2 entries: [... dispatch stages ..., callback].
   // The second-to-last entry is the immediate dispatch function.
   const dispatchFn = chain.length >= 3 ? chain[chain.length - 2] : chain[0]
-  const triggerDesc = tmpl.triggerDescription
-    .replace(/%KEY%/g, dispatchKey)
-    .replace(/%CALLBACK%/g, callbackName)
+  const triggerDesc = tmpl.triggerDescription.replace(/%KEY%/g, dispatchKey).replace(/%CALLBACK%/g, callbackName)
 
   return {
     confidenceScore: 4,
@@ -737,12 +735,43 @@ function readFileSafe(filePath: string): string {
  */
 function findFunctionNameChar(line: string): number {
   const C_KEYWORDS = new Set([
-    "void", "int", "char", "short", "long", "float", "double", "unsigned",
-    "signed", "static", "extern", "const", "volatile", "inline", "struct",
-    "union", "enum", "typedef", "return", "if", "else", "for", "while",
-    "do", "switch", "case", "break", "continue", "goto", "sizeof",
-    "A_STATUS", "A_UINT32", "A_UINT64", "A_INT32", "A_BOOL",
-    "OFFLOAD_STATUS", "wlan_status_t",
+    "void",
+    "int",
+    "char",
+    "short",
+    "long",
+    "float",
+    "double",
+    "unsigned",
+    "signed",
+    "static",
+    "extern",
+    "const",
+    "volatile",
+    "inline",
+    "struct",
+    "union",
+    "enum",
+    "typedef",
+    "return",
+    "if",
+    "else",
+    "for",
+    "while",
+    "do",
+    "switch",
+    "case",
+    "break",
+    "continue",
+    "goto",
+    "sizeof",
+    "A_STATUS",
+    "A_UINT32",
+    "A_UINT64",
+    "A_INT32",
+    "A_BOOL",
+    "OFFLOAD_STATUS",
+    "wlan_status_t",
   ])
 
   // Find the position of the first '(' — the function name is just before it

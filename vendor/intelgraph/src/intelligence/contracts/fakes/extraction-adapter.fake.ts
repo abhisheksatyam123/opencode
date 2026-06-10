@@ -63,10 +63,7 @@ export class FakeExtractionAdapter implements IExtractionAdapter {
     return { edges: [...this.seededEdges.edges] }
   }
 
-  async materializeSnapshot(
-    snapshotId: number,
-    batches: ExtractionBatches,
-  ): Promise<IngestReport> {
+  async materializeSnapshot(snapshotId: number, batches: ExtractionBatches): Promise<IngestReport> {
     this.materializeCalls.push({ snapshotId, batches })
     return {
       snapshotId,

@@ -1,10 +1,6 @@
 import z from "zod"
 
-export const CommandContractEventTypeSchema = z.enum([
-  "command.requested",
-  "command.updated",
-  "command.failed",
-])
+export const CommandContractEventTypeSchema = z.enum(["command.requested", "command.updated", "command.failed"])
 
 export type CommandContractEventType = z.infer<typeof CommandContractEventTypeSchema>
 

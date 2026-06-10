@@ -33,7 +33,7 @@ export type TrendAnalysis = {
 
 const CI_BOUNDARIES = {
   PASS: 0.85,
-  WARN: 0.70,
+  WARN: 0.7,
   FAIL: 0,
 } as const
 
@@ -80,12 +80,8 @@ function detectBoundaryCross(
  */
 export function analyzeTrend(prior_run: TrendEntry, current_run: TrendEntry): TrendAnalysis {
   const confidence_delta = current_run.aggregate_confidence - prior_run.aggregate_confidence
-  const severity_escalated =
-    SEVERITY_ORDER[current_run.max_severity] > SEVERITY_ORDER[prior_run.max_severity]
-  const ci_boundary_crossed = detectBoundaryCross(
-    prior_run.aggregate_confidence,
-    current_run.aggregate_confidence,
-  )
+  const severity_escalated = SEVERITY_ORDER[current_run.max_severity] > SEVERITY_ORDER[prior_run.max_severity]
+  const ci_boundary_crossed = detectBoundaryCross(prior_run.aggregate_confidence, current_run.aggregate_confidence)
 
   let verdict: TrendVerdicts = "STABLE"
 
@@ -161,9 +157,7 @@ export function formatTrendSummary(analysis: TrendAnalysis): string {
   }
 
   if (analysis.severity_escalated) {
-    lines.push(
-      `⚠️ Severity escalated: ${analysis.prior_run.max_severity} → ${analysis.current_run.max_severity}`,
-    )
+    lines.push(`⚠️ Severity escalated: ${analysis.prior_run.max_severity} → ${analysis.current_run.max_severity}`)
   }
 
   return lines.join("\n")

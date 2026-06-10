@@ -59,33 +59,21 @@ export interface TreeSitterService {
    * when no call exists at that location, or when the parser is not ready
    * and the character-level fallback also finds nothing.
    */
-  findEnclosingCall(
-    source: string,
-    line: number,
-    column: number,
-  ): Promise<FunctionCall | null>
+  findEnclosingCall(source: string, line: number, column: number): Promise<FunctionCall | null>
 
   /**
    * Like findEnclosingCall but also matches initializer_list constructs
    * (e.g. designated initializers in struct literals where dispatch tables
    * are declared statically).
    */
-  findEnclosingConstruct(
-    source: string,
-    line: number,
-    column: number,
-  ): Promise<FunctionCall | null>
+  findEnclosingConstruct(source: string, line: number, column: number): Promise<FunctionCall | null>
 
   /**
    * Read a file and find the enclosing call at a position in one shot.
    * Convenience for the common pattern of "I have a (file, line, col) and I
    * want the surrounding call." Returns null if the file is unreadable.
    */
-  findEnclosingCallAt(
-    filePath: string,
-    line: number,
-    column: number,
-  ): Promise<FunctionCall | null>
+  findEnclosingCallAt(filePath: string, line: number, column: number): Promise<FunctionCall | null>
 
   // ── Multi-language surface ─────────────────────────────────────────────
 
@@ -94,19 +82,13 @@ export interface TreeSitterService {
    * null if the grammar is not loadable (missing WASM, init failure) or
    * if parsing throws. Plugins should treat this as best-effort.
    */
-  parseSource(
-    language: SupportedLanguage,
-    source: string,
-  ): Promise<TsTree | null>
+  parseSource(language: SupportedLanguage, source: string): Promise<TsTree | null>
 
   /**
    * Read a file and parse it. Language is inferred from the extension if
    * not provided explicitly.
    */
-  parseFile(
-    filePath: string,
-    language?: SupportedLanguage,
-  ): Promise<TsTree | null>
+  parseFile(filePath: string, language?: SupportedLanguage): Promise<TsTree | null>
 
   /** Infer a language id from a file path's extension. */
   inferLanguage(filePath: string): SupportedLanguage | null
@@ -145,29 +127,17 @@ export class TreeSitterServiceImpl implements TreeSitterService {
     return this.initPromise
   }
 
-  async findEnclosingCall(
-    source: string,
-    line: number,
-    column: number,
-  ): Promise<FunctionCall | null> {
+  async findEnclosingCall(source: string, line: number, column: number): Promise<FunctionCall | null> {
     await this.ensureReady()
     return cFindEnclosingCall(source, line, column)
   }
 
-  async findEnclosingConstruct(
-    source: string,
-    line: number,
-    column: number,
-  ): Promise<FunctionCall | null> {
+  async findEnclosingConstruct(source: string, line: number, column: number): Promise<FunctionCall | null> {
     await this.ensureReady()
     return cFindEnclosingConstruct(source, line, column)
   }
 
-  async findEnclosingCallAt(
-    filePath: string,
-    line: number,
-    column: number,
-  ): Promise<FunctionCall | null> {
+  async findEnclosingCallAt(filePath: string, line: number, column: number): Promise<FunctionCall | null> {
     let source: string
     try {
       source = readFileSync(filePath, "utf8")
@@ -179,17 +149,11 @@ export class TreeSitterServiceImpl implements TreeSitterService {
 
   // ── Multi-language methods ───────────────────────────────────────────────
 
-  async parseSource(
-    language: SupportedLanguage,
-    source: string,
-  ): Promise<TsTree | null> {
+  async parseSource(language: SupportedLanguage, source: string): Promise<TsTree | null> {
     return registryParseSource(language, source)
   }
 
-  async parseFile(
-    filePath: string,
-    language?: SupportedLanguage,
-  ): Promise<TsTree | null> {
+  async parseFile(filePath: string, language?: SupportedLanguage): Promise<TsTree | null> {
     return registryParseFile(filePath, language)
   }
 

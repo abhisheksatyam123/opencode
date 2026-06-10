@@ -153,7 +153,9 @@ export namespace Quota {
       if (!result.success) {
         log.warn("validate.principal.invalid", {
           principal_id: key,
-          issues: result.error.issues.map((i) => `${i.path.join("@/process/session") || "<root>"}: ${i.message}`).join("; "),
+          issues: result.error.issues
+            .map((i) => `${i.path.join("@/process/session") || "<root>"}: ${i.message}`)
+            .join("; "),
         })
         continue
       }

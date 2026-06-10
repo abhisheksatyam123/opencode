@@ -72,7 +72,8 @@ function DetailRow(props: { text: string; prefix: string; kind?: "comment" | "le
             : isAgent()
               ? theme.success
               : theme.textMuted
-  const marker = () => (props.kind === "learning" ? "◆" : props.kind === "plan" ? "◇" : props.kind === "meta" ? "·" : "›")
+  const marker = () =>
+    props.kind === "learning" ? "◆" : props.kind === "plan" ? "◇" : props.kind === "meta" ? "·" : "›"
   return (
     <box flexDirection="row" gap={1} flexShrink={0}>
       <Show when={props.prefix.length > 0}>
@@ -132,20 +133,42 @@ function RecursiveTaskRow(props: { item: TodoItemData; depth: number; last: bool
         </Show>
       </box>
       <Show when={props.item.acceptance_signal}>
-        <DetailRow text={`accept: ${props.item.acceptance_signal}`} prefix={childPrefix(props.last, props.prefix)} kind="meta" />
+        <DetailRow
+          text={`accept: ${props.item.acceptance_signal}`}
+          prefix={childPrefix(props.last, props.prefix)}
+          kind="meta"
+        />
       </Show>
       <Show when={(props.item.depends_on?.length ?? 0) > 0}>
-        <DetailRow text={`depends on: ${(props.item.depends_on ?? []).join(", ")}`} prefix={childPrefix(props.last, props.prefix)} kind="meta" />
+        <DetailRow
+          text={`depends on: ${(props.item.depends_on ?? []).join(", ")}`}
+          prefix={childPrefix(props.last, props.prefix)}
+          kind="meta"
+        />
       </Show>
       <Show when={(props.item.blocked_by?.length ?? 0) > 0}>
-        <DetailRow text={`blocked by: ${(props.item.blocked_by ?? []).join(", ")}`} prefix={childPrefix(props.last, props.prefix)} kind="meta" />
+        <DetailRow
+          text={`blocked by: ${(props.item.blocked_by ?? []).join(", ")}`}
+          prefix={childPrefix(props.last, props.prefix)}
+          kind="meta"
+        />
       </Show>
       <Show when={props.item.parallel_group}>
-        <DetailRow text={`parallel group: ${props.item.parallel_group}`} prefix={childPrefix(props.last, props.prefix)} kind="meta" />
+        <DetailRow
+          text={`parallel group: ${props.item.parallel_group}`}
+          prefix={childPrefix(props.last, props.prefix)}
+          kind="meta"
+        />
       </Show>
-      <For each={props.item.plans ?? []}>{(c) => <DetailRow text={c} prefix={childPrefix(props.last, props.prefix)} kind="plan" />}</For>
-      <For each={props.item.learnings ?? []}>{(c) => <DetailRow text={c} prefix={childPrefix(props.last, props.prefix)} kind="learning" />}</For>
-      <For each={props.item.comments ?? []}>{(c) => <DetailRow text={c} prefix={childPrefix(props.last, props.prefix)} kind="comment" />}</For>
+      <For each={props.item.plans ?? []}>
+        {(c) => <DetailRow text={c} prefix={childPrefix(props.last, props.prefix)} kind="plan" />}
+      </For>
+      <For each={props.item.learnings ?? []}>
+        {(c) => <DetailRow text={c} prefix={childPrefix(props.last, props.prefix)} kind="learning" />}
+      </For>
+      <For each={props.item.comments ?? []}>
+        {(c) => <DetailRow text={c} prefix={childPrefix(props.last, props.prefix)} kind="comment" />}
+      </For>
       <Show when={children().length > 0}>
         <box flexDirection="column" gap={0}>
           <For each={children()}>

@@ -278,10 +278,7 @@ export function writeConfig(workspaceRoot: string, config: IntelgraphConfig): vo
 /**
  * Update specific config section
  */
-export function updateConfig(
-  workspaceRoot: string,
-  updates: Partial<IntelgraphConfig>
-): void {
+export function updateConfig(workspaceRoot: string, updates: Partial<IntelgraphConfig>): void {
   const config = readConfig(workspaceRoot)
   const merged = deepMerge(config, updates)
   writeConfig(workspaceRoot, merged)
@@ -332,10 +329,7 @@ export function clearDaemonState(workspaceRoot: string): void {
  * from the daemon module and projects it onto the IntelgraphConfig
  * `daemon` block, preserving other config sections.
  */
-export function updateDaemonState(
-  workspaceRoot: string,
-  state: DaemonState,
-): void {
+export function updateDaemonState(workspaceRoot: string, state: DaemonState): void {
   const daemon: NonNullable<IntelgraphConfig["daemon"]> = {
     port: state.port,
     bridgePid: state.bridgePid,
@@ -350,10 +344,7 @@ export function updateDaemonState(
 /**
  * Update index state in config
  */
-export function updateIndexState(
-  workspaceRoot: string,
-  state: NonNullable<IntelgraphConfig["index"]>
-): void {
+export function updateIndexState(workspaceRoot: string, state: NonNullable<IntelgraphConfig["index"]>): void {
   updateConfig(workspaceRoot, {
     index: {
       ...state,
@@ -370,10 +361,7 @@ export function addRecentFile(workspaceRoot: string, filePath: string): void {
   const recentFiles = config.memory?.recentFiles || []
 
   // Add to front, remove duplicates, limit to 50
-  const updated = [
-    filePath,
-    ...recentFiles.filter(f => f !== filePath),
-  ].slice(0, 50)
+  const updated = [filePath, ...recentFiles.filter((f) => f !== filePath)].slice(0, 50)
 
   updateConfig(workspaceRoot, {
     memory: {
@@ -416,11 +404,7 @@ export function generateExampleConfig(): string {
     version: "1.0.0",
     enabled: true,
     clangd: "/usr/local/bin/clangd-20",
-    args: [
-      "--background-index",
-      "--enable-config",
-      "--log=error",
-    ],
+    args: ["--background-index", "--enable-config", "--log=error"],
     compileCommandsCleaning: {
       enabled: true,
       removeTests: false,

@@ -130,16 +130,17 @@ function normalizeProposalResponse(
 
     const registrationGate = {
       registrarFn: p.invocationReason?.registrationGate?.registrarFn || p.registrarFn || "(unknown-registrar)",
-      registrationApi: p.invocationReason?.registrationGate?.registrationApi || p.registrationApi || "(unknown-registration-api)",
-      conditions:
-        p.invocationReason?.registrationGate?.conditions?.length
-          ? p.invocationReason.registrationGate.conditions
-          : (p.gates && p.gates.length ? p.gates : ["dispatch conditions unresolved"]),
+      registrationApi:
+        p.invocationReason?.registrationGate?.registrationApi || p.registrationApi || "(unknown-registration-api)",
+      conditions: p.invocationReason?.registrationGate?.conditions?.length
+        ? p.invocationReason.registrationGate.conditions
+        : p.gates && p.gates.length
+          ? p.gates
+          : ["dispatch conditions unresolved"],
     }
 
     const invocationReason = p.invocationReason ?? {
-      runtimeTrigger:
-        "Runtime trigger inferred from registration/dispatch evidence; confirm upstream event chain.",
+      runtimeTrigger: "Runtime trigger inferred from registration/dispatch evidence; confirm upstream event chain.",
       dispatchChain: [registrationGate.registrarFn, req.targetSymbol],
       dispatchSite: {
         file: dispatchFile,
@@ -150,13 +151,7 @@ function normalizeProposalResponse(
     }
 
     const requiredFiles = Array.from(
-      new Set(
-        [
-          ...(p.requiredFiles ?? []),
-          req.targetFile,
-          invocationReason.dispatchSite.file,
-        ].filter(Boolean),
-      ),
+      new Set([...(p.requiredFiles ?? []), req.targetFile, invocationReason.dispatchSite.file].filter(Boolean)),
     )
 
     return {
@@ -200,8 +195,7 @@ function normalizeProposalResponse(
       dispatchPattern: "other",
       gates: ["dispatch conditions unresolved"],
       invocationReason: {
-        runtimeTrigger:
-          "Runtime trigger inferred from deterministic evidence rescue; verify upstream event chain.",
+        runtimeTrigger: "Runtime trigger inferred from deterministic evidence rescue; verify upstream event chain.",
         dispatchChain: [registrarFn, req.targetSymbol],
         dispatchSite: {
           file: derived?.file || firstEvidence?.file || req.targetFile,
@@ -285,7 +279,13 @@ function deriveRegistrarFromWorkspace(
   // `rg --json` directly; the service centralizes that pattern with
   // typed RipgrepMatch results, glob defaults, and graceful handling
   // of "rg not on PATH".
-  const candidates: Array<{ registrarFn: string; registrationApi: string; file: string; line: number; snippet: string }> = []
+  const candidates: Array<{
+    registrarFn: string
+    registrationApi: string
+    file: string
+    line: number
+    snippet: string
+  }> = []
   try {
     const rg: RipgrepService = createRipgrepService(workspaceRoot)
     const matches = rg.search(targetSymbol, {
@@ -382,12 +382,19 @@ function loadRuleText(ruleFile?: string): string {
   const candidates = [
     ruleFile,
     path.join(process.cwd(), "doc/atomic/skill/indirect-caller-reasoning-rules.md"),
-    path.join(path.dirname(new URL(import.meta.url).pathname), "../../../doc/atomic/skill/indirect-caller-reasoning-rules.md"),
+    path.join(
+      path.dirname(new URL(import.meta.url).pathname),
+      "../../../doc/atomic/skill/indirect-caller-reasoning-rules.md",
+    ),
   ].filter(Boolean) as string[]
 
   for (const p of candidates) {
     if (!existsSync(p)) continue
-    try { return readFileSync(p, "utf8") } catch { /* try next */ }
+    try {
+      return readFileSync(p, "utf8")
+    } catch {
+      /* try next */
+    }
   }
   return ""
 }
@@ -397,36 +404,42 @@ function loadRuleText(ruleFile?: string): string {
 // ---------------------------------------------------------------------------
 
 function buildPrompt(req: ReasonProposalRequest, ruleText: string): string {
-  const schema = JSON.stringify({
-    proposedPaths: [{
-      registrarFn: "<function that called the registration API>",
-      registrationApi: "<registration API name>",
-      storageFieldPath: "<struct.field storing the fn-ptr>",
-      dispatchPattern: "<timer-callback|event-handler|dispatch-table|fn-ptr-field|linked-list|other>",
-      gates: ["<runtime condition 1>"],
-      invocationReason: {
-        runtimeTrigger: "<plain-English external event that causes the handler to be called>",
-        dispatchChain: ["<entry-point function>", "...", "<target-symbol>"],
-        dispatchSite: {
-          file: "<absolute path to file containing the fn-ptr call>",
-          line: 0,
-          snippet: "<the fn-ptr call expression>",
-        },
-        registrationGate: {
+  const schema = JSON.stringify(
+    {
+      proposedPaths: [
+        {
           registrarFn: "<function that called the registration API>",
           registrationApi: "<registration API name>",
-          conditions: ["<condition 1>", "<condition 2>"],
+          storageFieldPath: "<struct.field storing the fn-ptr>",
+          dispatchPattern: "<timer-callback|event-handler|dispatch-table|fn-ptr-field|linked-list|other>",
+          gates: ["<runtime condition 1>"],
+          invocationReason: {
+            runtimeTrigger: "<plain-English external event that causes the handler to be called>",
+            dispatchChain: ["<entry-point function>", "...", "<target-symbol>"],
+            dispatchSite: {
+              file: "<absolute path to file containing the fn-ptr call>",
+              line: 0,
+              snippet: "<the fn-ptr call expression>",
+            },
+            registrationGate: {
+              registrarFn: "<function that called the registration API>",
+              registrationApi: "<registration API name>",
+              conditions: ["<condition 1>", "<condition 2>"],
+            },
+          },
+          requiredFiles: ["<registration site file>", "<dispatch site file>"],
+          confidence: 0.0,
+          rationale: "<one sentence: evidence chain summary>",
         },
-      },
-      requiredFiles: ["<registration site file>", "<dispatch site file>"],
-      confidence: 0.0,
-      rationale: "<one sentence: evidence chain summary>",
-    }],
-    openQuestions: ["<anything that could not be determined>"],
-  }, null, 2)
+      ],
+      openQuestions: ["<anything that could not be determined>"],
+    },
+    null,
+    2,
+  )
 
   const evidenceLines = req.knownEvidence.length
-    ? req.knownEvidence.map(e => `  ${e.file}:${e.line}  ${e.text}`)
+    ? req.knownEvidence.map((e) => `  ${e.file}:${e.line}  ${e.text}`)
     : ["  (none — use search_code to find where the symbol appears as an argument)"]
 
   return [
@@ -499,7 +512,10 @@ function buildPrompt(req: ReasonProposalRequest, ruleText: string): string {
     "",
     `Suspected patterns: ${req.suspectedPatterns.length ? req.suspectedPatterns.join(", ") : "(unknown — infer from code)"}`,
     "",
-    ruleText ? "═══════════════════════════════════════════════════════════\nREASONING RULES\n═══════════════════════════════════════════════════════════\n" + ruleText : "",
+    ruleText
+      ? "═══════════════════════════════════════════════════════════\nREASONING RULES\n═══════════════════════════════════════════════════════════\n" +
+        ruleText
+      : "",
     "",
     "═══════════════════════════════════════════════════════════",
     "OUTPUT FORMAT",
@@ -519,7 +535,9 @@ function buildPrompt(req: ReasonProposalRequest, ruleText: string): string {
     "  6. registrationGate.conditions MUST be non-empty",
     "  7. requiredFiles MUST include both the registration file and the dispatch file",
     "  8. confidence MUST be ≥ 0.5",
-  ].filter(s => s !== undefined).join("\n")
+  ]
+    .filter((s) => s !== undefined)
+    .join("\n")
 }
 
 function buildJsonFinalizationPrompt(rawText: string): string {
@@ -559,7 +577,9 @@ function extractJson(raw: string, symbol: string): ReasonProposalResponse | null
       log.info("llm-advisor: JSON parsed directly", { symbol, pathCount: parsed.proposedPaths.length })
       return parsed
     }
-  } catch { /* fall through */ }
+  } catch {
+    /* fall through */
+  }
 
   // Strip markdown code fences
   const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/)
@@ -570,7 +590,9 @@ function extractJson(raw: string, symbol: string): ReasonProposalResponse | null
         log.info("llm-advisor: JSON extracted from markdown fence", { symbol, pathCount: parsed.proposedPaths.length })
         return parsed
       }
-    } catch { /* fall through */ }
+    } catch {
+      /* fall through */
+    }
   }
 
   // Find the first { ... } block
@@ -583,7 +605,9 @@ function extractJson(raw: string, symbol: string): ReasonProposalResponse | null
         log.info("llm-advisor: JSON extracted from brace scan", { symbol, pathCount: parsed.proposedPaths.length })
         return parsed
       }
-    } catch { /* fall through */ }
+    } catch {
+      /* fall through */
+    }
   }
 
   log.error("llm-advisor: JSON extraction failed — all strategies exhausted", {
@@ -631,20 +655,26 @@ function buildTools(ctx: LlmToolContext) {
 
     // OpenCode-compatible glob tool alias
     glob: tool({
-      description:
-        "Find files by glob pattern. Returns matching file paths sorted by tool output order.",
+      description: "Find files by glob pattern. Returns matching file paths sorted by tool output order.",
       parameters: z.object({
         pattern: z.string().describe("Glob pattern like '**/*.c'"),
         path: z.string().optional().describe("Optional root path (default: workspace root)"),
       }),
       execute: async ({ pattern, path: rootPath }) => {
         try {
-          const root = rootPath ? (path.isAbsolute(rootPath) ? rootPath : path.join(ctx.workspaceRoot, rootPath)) : ctx.workspaceRoot
+          const root = rootPath
+            ? path.isAbsolute(rootPath)
+              ? rootPath
+              : path.join(ctx.workspaceRoot, rootPath)
+            : ctx.workspaceRoot
           const escapedPattern = pattern.replace(/"/g, '\\"')
           const escapedRoot = root.replace(/"/g, '\\"')
           const cmd = `rg --files \"${escapedRoot}\" --glob \"${escapedPattern}\"`
           const raw = execSync(cmd, { stdio: "pipe", timeout: 15000 }).toString()
-          const files = raw.split("\n").map((x) => x.trim()).filter(Boolean)
+          const files = raw
+            .split("\n")
+            .map((x) => x.trim())
+            .filter(Boolean)
           return { count: files.length, files }
         } catch (err: any) {
           return { count: 0, files: [], error: err?.message ?? "glob failed" }
@@ -654,8 +684,7 @@ function buildTools(ctx: LlmToolContext) {
 
     // OpenCode-compatible grep tool alias
     grep: tool({
-      description:
-        "Search file contents by regex pattern. Returns file path + line number + snippet.",
+      description: "Search file contents by regex pattern. Returns file path + line number + snippet.",
       parameters: z.object({
         pattern: z.string().describe("Regex pattern"),
         path: z.string().optional().describe("Search root (default: workspace root)"),
@@ -663,7 +692,11 @@ function buildTools(ctx: LlmToolContext) {
       }),
       execute: async ({ pattern, path: rootPath, include }) => {
         try {
-          const root = rootPath ? (path.isAbsolute(rootPath) ? rootPath : path.join(ctx.workspaceRoot, rootPath)) : ctx.workspaceRoot
+          const root = rootPath
+            ? path.isAbsolute(rootPath)
+              ? rootPath
+              : path.join(ctx.workspaceRoot, rootPath)
+            : ctx.workspaceRoot
           const escapedPattern = pattern.replace(/"/g, '\\"')
           const escapedRoot = root.replace(/"/g, '\\"')
           const globArg = include ? `--glob \"${include.replace(/"/g, '\\"')}\"` : ""
@@ -709,7 +742,10 @@ function buildTools(ctx: LlmToolContext) {
           const lines = text.split(/\r?\n/)
           const s = Math.max(1, startLine ?? 1)
           const e = Math.min(lines.length, endLine ?? Math.min(lines.length, s + 149))
-          const out = lines.slice(s - 1, e).map((l, i) => `${s + i}: ${l}`).join("\n")
+          const out = lines
+            .slice(s - 1, e)
+            .map((l, i) => `${s + i}: ${l}`)
+            .join("\n")
           return { filePath: abs, lines: `${s}-${e} of ${lines.length}`, content: out }
         } catch (err: any) {
           return { error: err?.message ?? "read_file failed" }
@@ -746,7 +782,9 @@ function buildTools(ctx: LlmToolContext) {
                   text: (parsed.data?.lines?.text ?? "").trim(),
                 })
               }
-            } catch { /* skip non-JSON lines */ }
+            } catch {
+              /* skip non-JSON lines */
+            }
           }
           return { count: hits.length, hits }
         } catch (err: any) {
@@ -1020,7 +1058,12 @@ export async function requestReasonProposals(
   for (const modelName of uniqueModels) {
     for (let attempt = 1; attempt <= maxAttemptsPerModel; attempt += 1) {
       try {
-        log.info("llm-advisor: trying model", { symbol: req.targetSymbol, model: modelName, attempt, maxAttemptsPerModel })
+        log.info("llm-advisor: trying model", {
+          symbol: req.targetSymbol,
+          model: modelName,
+          attempt,
+          maxAttemptsPerModel,
+        })
         result = await generateOnce(modelName, maxSteps)
         log.info("llm-advisor: model call succeeded", { symbol: req.targetSymbol, model: modelName, attempt })
         break
@@ -1029,7 +1072,10 @@ export async function requestReasonProposals(
         const msg = String(err?.message ?? "")
         const modelUnavailable = /model not available/i.test(msg)
         const unsupportedProvider = /unsupported external provider/i.test(msg)
-        const tlsFailure = /self-signed certificate|unable to verify the first certificate|unable to get local issuer certificate/i.test(msg)
+        const tlsFailure =
+          /self-signed certificate|unable to verify the first certificate|unable to get local issuer certificate/i.test(
+            msg,
+          )
         const transientError = isTransientLlmError(msg)
         log.warn("llm-advisor: model call failed", {
           symbol: req.targetSymbol,

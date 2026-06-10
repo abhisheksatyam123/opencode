@@ -13,13 +13,12 @@
 import { parseSourceWith, findAllNodes } from "../../../tools/pattern-detector/c-parser.js"
 import type { FileSymbolMap, PhaseCtx } from "./types.js"
 
-interface IncludeEdge { includePath: string; line: number }
+interface IncludeEdge {
+  includePath: string
+  line: number
+}
 
-export async function* extractContainment(
-  ctx: PhaseCtx,
-  files: string[],
-  fileSymbols: FileSymbolMap,
-) {
+export async function* extractContainment(ctx: PhaseCtx, files: string[], fileSymbols: FileSymbolMap) {
   for (const file of files) {
     if (ctx.signal.aborted) return
     const text = ctx.workspace.readFile(file)

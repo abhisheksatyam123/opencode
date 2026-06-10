@@ -117,7 +117,12 @@ for (const rel of ["_shared/base.md", "_shared/tier1.md", "_shared/tier2.md", "_
 const base = existsSync(join(agentDir, "_shared/base.md"))
   ? (AgentPromptLoader.extractSection(read(join(agentDir, "_shared/base.md")), "System prompt") ?? "")
   : ""
-for (const sentinel of ["### Identity", "### Todo File Contract", "### Core Tool Contract", "This base prompt is the only system-prompt location for tool-use policy"]) {
+for (const sentinel of [
+  "### Identity",
+  "### Todo File Contract",
+  "### Core Tool Contract",
+  "This base prompt is the only system-prompt location for tool-use policy",
+]) {
   if (!base.includes(sentinel)) fail(`base prompt missing sentinel: ${sentinel}`)
 }
 if (base.length > 12_000) fail(`base prompt too large: ${base.length} chars > 12000`)

@@ -107,25 +107,25 @@ export interface LspDisconnected {
 
 export type AppEventMap = {
   // Persistence layer
-  "snapshot.began":       BusEvent<"snapshot.began",       SnapshotBegan>
-  "snapshot.committed":   BusEvent<"snapshot.committed",   SnapshotCommitted>
-  "snapshot.failed":      BusEvent<"snapshot.failed",      SnapshotFailed>
+  "snapshot.began": BusEvent<"snapshot.began", SnapshotBegan>
+  "snapshot.committed": BusEvent<"snapshot.committed", SnapshotCommitted>
+  "snapshot.failed": BusEvent<"snapshot.failed", SnapshotFailed>
 
   // Extraction layer
-  "plugin.started":       BusEvent<"plugin.started",       PluginStarted>
-  "plugin.completed":     BusEvent<"plugin.completed",     PluginCompleted>
-  "plugin.failed":        BusEvent<"plugin.failed",        PluginFailed>
+  "plugin.started": BusEvent<"plugin.started", PluginStarted>
+  "plugin.completed": BusEvent<"plugin.completed", PluginCompleted>
+  "plugin.failed": BusEvent<"plugin.failed", PluginFailed>
   "extraction.completed": BusEvent<"extraction.completed", ExtractionCompleted>
 
   // Orchestrator / query layer
-  "enrichment.started":   BusEvent<"enrichment.started",   EnrichmentStarted>
+  "enrichment.started": BusEvent<"enrichment.started", EnrichmentStarted>
   "enrichment.completed": BusEvent<"enrichment.completed", EnrichmentCompleted>
 
   // Tool / transport layer
-  "toolCall.received":    BusEvent<"toolCall.received",    ToolCallReceived>
-  "toolCall.responded":   BusEvent<"toolCall.responded",   ToolCallResponded>
+  "toolCall.received": BusEvent<"toolCall.received", ToolCallReceived>
+  "toolCall.responded": BusEvent<"toolCall.responded", ToolCallResponded>
 
   // LSP / infrastructure
-  "lsp.connected":        BusEvent<"lsp.connected",        LspConnected>
-  "lsp.disconnected":     BusEvent<"lsp.disconnected",     LspDisconnected>
+  "lsp.connected": BusEvent<"lsp.connected", LspConnected>
+  "lsp.disconnected": BusEvent<"lsp.disconnected", LspDisconnected>
 }

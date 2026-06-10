@@ -25,10 +25,7 @@
  */
 
 import type { CallPattern, InitPattern } from "./ports.js"
-import {
-  collectAllCallPatterns,
-  collectAllInitPatterns,
-} from "../../plugins/clangd-core/packs/index.js"
+import { collectAllCallPatterns, collectAllInitPatterns } from "../../plugins/clangd-core/packs/index.js"
 
 // ---------------------------------------------------------------------------
 // Flattened pattern arrays — collected at module load time across every

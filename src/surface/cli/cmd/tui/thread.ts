@@ -164,7 +164,11 @@ export const TuiThreadCommand = cmd({
         process.off("uncaughtException", error)
         process.off("unhandledRejection", error)
         process.off("SIGUSR2", reload)
-        await Sleep.withTimeout(client.call("shutdown", undefined), 5000, "TUI worker shutdown timed out after 5s").catch((error) => {
+        await Sleep.withTimeout(
+          client.call("shutdown", undefined),
+          5000,
+          "TUI worker shutdown timed out after 5s",
+        ).catch((error) => {
           Log.Default.warn("worker shutdown failed", {
             error: errorMessage(error),
           })
@@ -192,7 +196,12 @@ export const TuiThreadCommand = cmd({
 
       const transport = external
         ? {
-            url: (await client.call("server", { ...network, permissionMode: network.permissionMode as "default" | "plan" | "bypass" })).url,
+            url: (
+              await client.call("server", {
+                ...network,
+                permissionMode: network.permissionMode as "default" | "plan" | "bypass",
+              })
+            ).url,
             fetch: undefined,
             events: undefined,
           }

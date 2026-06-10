@@ -9,7 +9,12 @@
     "typecheck": "cd packages/app && bun run typecheck"
   },
   "workspaces": {
-    "packages": ["packages/app", "packages/ui", "packages/core", "packages/sdk/js"],
+    "packages": [
+      "packages/app",
+      "packages/ui",
+      "packages/core",
+      "packages/sdk/js"
+    ],
     "catalog": {
       "@effect/opentelemetry": "4.0.0-beta.65",
       "@effect/platform-node": "4.0.0-beta.65",
@@ -59,7 +64,9 @@
       "zod": "4.1.8"
     }
   },
-  "trustedDependencies": ["esbuild"],
+  "trustedDependencies": [
+    "esbuild"
+  ],
   "patchedDependencies": {
     "solid-js@1.9.10": "patches/solid-js@1.9.10.patch"
   }

@@ -100,12 +100,7 @@ export class SqliteDbFoundation implements IDbFoundation {
         createdAt: graphSnapshots.createdAt,
       })
       .from(graphSnapshots)
-      .where(
-        and(
-          eq(graphSnapshots.workspaceRoot, workspaceRoot),
-          eq(graphSnapshots.status, "ready"),
-        ),
-      )
+      .where(and(eq(graphSnapshots.workspaceRoot, workspaceRoot), eq(graphSnapshots.status, "ready")))
       .orderBy(desc(graphSnapshots.snapshotId))
       .limit(1)
       .all()
@@ -117,5 +112,4 @@ export class SqliteDbFoundation implements IDbFoundation {
       status: "ready",
     }
   }
-
 }

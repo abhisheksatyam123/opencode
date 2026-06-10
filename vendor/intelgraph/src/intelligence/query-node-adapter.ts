@@ -69,7 +69,8 @@ function mapKind(row: Record<string, unknown>): NodeItem["kind"] {
   if (raw === "module") return "module"
   if (raw === "hw_block" || raw === "hardware_block" || raw === "hwblock") return "hw_block"
   if (raw === "dispatch_table") return "dispatch_table"
-  if (raw === "message" || raw === "message_queue" || raw === "thread_message" || raw === "message_function") return "message"
+  if (raw === "message" || raw === "message_queue" || raw === "thread_message" || raw === "message_function")
+    return "message"
   if (raw === "log_point" || raw === "log") return "log_point"
   // Phase 3d / 3e: structural data + previously-missing language-agnostic kinds
   if (raw === "enum_variant" || raw === "variant") return "enum_variant"
@@ -81,56 +82,100 @@ function mapKind(row: Record<string, unknown>): NodeItem["kind"] {
 
 function mapKindVerbose(kind: NodeItem["kind"]): NodeItem["kind_verbose"] {
   switch (kind) {
-    case "api": return "application_programming_interface"
-    case "struct": return "structure_type"
-    case "union": return "union_type"
-    case "enum": return "enumeration_type"
-    case "typedef": return "typedef_alias"
-    case "class": return "class_type"
-    case "field": return "structure_field"
-    case "macro": return "preprocessor_macro"
-    case "global_var": return "global_variable"
-    case "param": return "function_parameter"
-    case "thread": return "thread_context"
-    case "signal": return "signal_trigger"
-    case "interrupt": return "interrupt_source"
-    case "timer": return "timer_trigger"
-    case "ring": return "ring_endpoint"
-    case "module": return "module_boundary"
-    case "hw_block": return "hardware_execution_block"
-    case "dispatch_table": return "dispatch_table"
-    case "message": return "inter_thread_message"
-    case "log_point": return "log_emission_point"
+    case "api":
+      return "application_programming_interface"
+    case "struct":
+      return "structure_type"
+    case "union":
+      return "union_type"
+    case "enum":
+      return "enumeration_type"
+    case "typedef":
+      return "typedef_alias"
+    case "class":
+      return "class_type"
+    case "field":
+      return "structure_field"
+    case "macro":
+      return "preprocessor_macro"
+    case "global_var":
+      return "global_variable"
+    case "param":
+      return "function_parameter"
+    case "thread":
+      return "thread_context"
+    case "signal":
+      return "signal_trigger"
+    case "interrupt":
+      return "interrupt_source"
+    case "timer":
+      return "timer_trigger"
+    case "ring":
+      return "ring_endpoint"
+    case "module":
+      return "module_boundary"
+    case "hw_block":
+      return "hardware_execution_block"
+    case "dispatch_table":
+      return "dispatch_table"
+    case "message":
+      return "inter_thread_message"
+    case "log_point":
+      return "log_emission_point"
     // Phase 3d / 3e additions
-    case "enum_variant": return "enum_variant_member"
-    case "interface": return "interface_type"
-    case "method": return "class_method"
-    case "namespace": return "namespace_module"
-    default: return "unknown_entity"
+    case "enum_variant":
+      return "enum_variant_member"
+    case "interface":
+      return "interface_type"
+    case "method":
+      return "class_method"
+    case "namespace":
+      return "namespace_module"
+    default:
+      return "unknown_entity"
   }
 }
 
 export function mapEdgeKindVerbose(edgeKind: EdgeRef["edge_kind"]): EdgeRef["edge_kind_verbose"] {
   switch (edgeKind) {
-    case "call_direct": return "static_direct_calls"
-    case "call_runtime": return "runtime_invokes_api"
-    case "register": return "registers_callback_handler"
-    case "dispatch": return "dispatches_execution_to_api"
-    case "read": return "reads_structure_field"
-    case "write": return "writes_structure_field"
-    case "init": return "initializes_structure_state"
-    case "mutate": return "mutates_structure_state"
-    case "owner": return "owns_structure_entity"
-    case "use": return "uses_dependency_entity"
-    case "inherit": return "inherits_from_parent_type"
-    case "implement": return "implemented_by_concrete_type"
-    case "emit_log": return "emits_runtime_log_event"
-    case "use_macro": return "uses_preprocessor_macro"
-    case "import": return "module_imports_dependency"
-    case "contain": return "namespace_contains_symbol"
-    case "reference_type": return "references_type_by_name"
-    case "field_type": return "field_declares_type"
-    case "aggregate": return "aggregates_type_structurally"
+    case "call_direct":
+      return "static_direct_calls"
+    case "call_runtime":
+      return "runtime_invokes_api"
+    case "register":
+      return "registers_callback_handler"
+    case "dispatch":
+      return "dispatches_execution_to_api"
+    case "read":
+      return "reads_structure_field"
+    case "write":
+      return "writes_structure_field"
+    case "init":
+      return "initializes_structure_state"
+    case "mutate":
+      return "mutates_structure_state"
+    case "owner":
+      return "owns_structure_entity"
+    case "use":
+      return "uses_dependency_entity"
+    case "inherit":
+      return "inherits_from_parent_type"
+    case "implement":
+      return "implemented_by_concrete_type"
+    case "emit_log":
+      return "emits_runtime_log_event"
+    case "use_macro":
+      return "uses_preprocessor_macro"
+    case "import":
+      return "module_imports_dependency"
+    case "contain":
+      return "namespace_contains_symbol"
+    case "reference_type":
+      return "references_type_by_name"
+    case "field_type":
+      return "field_declares_type"
+    case "aggregate":
+      return "aggregates_type_structurally"
   }
 }
 
@@ -193,17 +238,17 @@ export function mapRowEdgeKindToProtocolEdgeKind(row: Record<string, unknown>): 
 
 function rowName(row: Record<string, unknown>): string {
   return str(
-    row.canonical_name
-      ?? row.runtime_caller_api_name
-      ?? row.caller
-      ?? row.callee
-      ?? row.registrar
-      ?? row.callback
-      ?? row.src_symbol_name
-      ?? row.api_name
-      ?? row.name
-      ?? row.symbol
-      ?? "unknown",
+    row.canonical_name ??
+      row.runtime_caller_api_name ??
+      row.caller ??
+      row.callee ??
+      row.registrar ??
+      row.callback ??
+      row.src_symbol_name ??
+      row.api_name ??
+      row.name ??
+      row.symbol ??
+      "unknown",
     "unknown",
   )
 }
@@ -235,7 +280,10 @@ function maybeExecCtx(row: Record<string, unknown>): EdgeRef["exec_ctx"] | undef
   }
 }
 
-function maybeRegistration(row: Record<string, unknown>, loc: EdgeRef["evidence"][number]["loc"]): EdgeRef["registration"] | undefined {
+function maybeRegistration(
+  row: Record<string, unknown>,
+  loc: EdgeRef["evidence"][number]["loc"],
+): EdgeRef["registration"] | undefined {
   const registrar = nonEmpty(row.registrar)
   const callback = nonEmpty(row.callback)
   const registerCall = nonEmpty(row.registration_api)
@@ -249,7 +297,10 @@ function maybeRegistration(row: Record<string, unknown>, loc: EdgeRef["evidence"
   }
 }
 
-function maybeDispatch(row: Record<string, unknown>, loc: EdgeRef["evidence"][number]["loc"]): EdgeRef["dispatch"] | undefined {
+function maybeDispatch(
+  row: Record<string, unknown>,
+  loc: EdgeRef["evidence"][number]["loc"],
+): EdgeRef["dispatch"] | undefined {
   if (str(row.edge_kind).toLowerCase() !== "dispatches_to") return undefined
   return {
     dispatch_site: loc,
@@ -292,11 +343,7 @@ function relationPlacementForEdgeKind(
       }
     default:
       return {
-        bucket: itemIsSource
-          ? "calls_out"
-          : kind === "call_direct"
-            ? "calls_in_direct"
-            : "calls_in_runtime",
+        bucket: itemIsSource ? "calls_out" : kind === "call_direct" ? "calls_in_direct" : "calls_in_runtime",
         aliasBucket: itemIsSource
           ? "outgoing_call_relationships"
           : kind === "call_direct"
@@ -314,7 +361,11 @@ function resolveEdgePlacement(
   const loc = edgeLoc(row)
   const kind = mapRowEdgeKindToProtocolEdgeKind(row)
 
-  if (req.intent === "find_api_logs" || req.intent === "find_api_logs_by_level" || (mapKind(row) === "log_point" && nonEmpty(row.api_name))) {
+  if (
+    req.intent === "find_api_logs" ||
+    req.intent === "find_api_logs_by_level" ||
+    (mapKind(row) === "log_point" && nonEmpty(row.api_name))
+  ) {
     const srcName = nonEmpty(row.api_name) ?? req.apiName
     const dstName = item.name
     if (!srcName || !dstName) return null
@@ -323,8 +374,14 @@ function resolveEdgePlacement(
       aliasBucket: "log_emission_relationships",
       edge: {
         edge_id: str(row.edge_id, `emit_log:${srcName}->${dstName}`),
-        src_node_id: str(row.src_node_id, srcName === item.name ? item.nodeId : defaultNodeId(item.snapshotId, srcName)),
-        dst_node_id: str(row.dst_node_id, dstName === item.name ? item.nodeId : defaultNodeId(item.snapshotId, dstName)),
+        src_node_id: str(
+          row.src_node_id,
+          srcName === item.name ? item.nodeId : defaultNodeId(item.snapshotId, srcName),
+        ),
+        dst_node_id: str(
+          row.dst_node_id,
+          dstName === item.name ? item.nodeId : defaultNodeId(item.snapshotId, dstName),
+        ),
         edge_kind: "emit_log",
         edge_kind_verbose: mapEdgeKindVerbose("emit_log"),
         src_name: srcName,
@@ -346,8 +403,14 @@ function resolveEdgePlacement(
       aliasBucket: itemIsSource ? "outgoing_registration_relationships" : "incoming_registration_relationships",
       edge: {
         edge_id: str(row.edge_id, `register:${srcName}->${dstName}`),
-        src_node_id: str(row.src_node_id, srcName === item.name ? item.nodeId : defaultNodeId(item.snapshotId, srcName)),
-        dst_node_id: str(row.dst_node_id, dstName === item.name ? item.nodeId : defaultNodeId(item.snapshotId, dstName)),
+        src_node_id: str(
+          row.src_node_id,
+          srcName === item.name ? item.nodeId : defaultNodeId(item.snapshotId, srcName),
+        ),
+        dst_node_id: str(
+          row.dst_node_id,
+          dstName === item.name ? item.nodeId : defaultNodeId(item.snapshotId, dstName),
+        ),
         edge_kind: "register",
         edge_kind_verbose: mapEdgeKindVerbose("register"),
         src_name: srcName,
@@ -360,12 +423,10 @@ function resolveEdgePlacement(
   }
 
   const srcName =
-    nonEmpty(row.runtime_caller_api_name)
-    ?? nonEmpty(row.caller)
-    ?? (req.intent === "what_api_calls" ? req.apiName : undefined)
-  const dstName =
-    nonEmpty(row.callee)
-    ?? (req.intent === "what_api_calls" ? item.name : req.apiName)
+    nonEmpty(row.runtime_caller_api_name) ??
+    nonEmpty(row.caller) ??
+    (req.intent === "what_api_calls" ? req.apiName : undefined)
+  const dstName = nonEmpty(row.callee) ?? (req.intent === "what_api_calls" ? item.name : req.apiName)
   if (!srcName || !dstName) return null
 
   const itemIsSource = item.name === srcName
@@ -391,11 +452,7 @@ function resolveEdgePlacement(
   }
 }
 
-function rowToNode(
-  req: QueryRequest,
-  row: Record<string, unknown>,
-  snapshotId: number,
-): NodeItem {
+function rowToNode(req: QueryRequest, row: Record<string, unknown>, snapshotId: number): NodeItem {
   const name = rowName(row)
   const nodeId = str(row.node_id ?? row.id, `${snapshotId}:${name}`)
   const kind = mapKind(row)
@@ -425,8 +482,8 @@ function rowToNode(
   }
   const placement = resolveEdgePlacement(req, row, { name, nodeId, snapshotId })
   if (placement) {
-    (rel[placement.bucket] as EdgeRef[]).push(placement.edge);
-    (rel[placement.aliasBucket] as EdgeRef[]).push(placement.edge)
+    ;(rel[placement.bucket] as EdgeRef[]).push(placement.edge)
+    ;(rel[placement.aliasBucket] as EdgeRef[]).push(placement.edge)
   }
 
   return {
@@ -455,17 +512,18 @@ function rowToNode(
       overall_conf: num(row.overall_conf ?? row.confidence, 0.7),
     },
     rel,
-    facets: kind === "log_point" && nonEmpty(row.template)
-      ? {
-          log_point: {
-            template: str(row.template),
-            api_name: str(row.api_name),
-            // Carry actual log level and subsystem so toLegacyFlatResponse can re-emit them
-            level: str(row.log_level ?? row.level, "UNKNOWN"),
-            subsystem: nonEmpty(row.subsystem) ?? null,
-          },
-        }
-      : {},
+    facets:
+      kind === "log_point" && nonEmpty(row.template)
+        ? {
+            log_point: {
+              template: str(row.template),
+              api_name: str(row.api_name),
+              // Carry actual log level and subsystem so toLegacyFlatResponse can re-emit them
+              level: str(row.log_level ?? row.level, "UNKNOWN"),
+              subsystem: nonEmpty(row.subsystem) ?? null,
+            },
+          }
+        : {},
   }
 }
 
@@ -593,9 +651,9 @@ export function toLegacyFlatResponse(proto: NodeProtocolResponse): LegacyFlatRes
     if (item.kind === "log_point") {
       const lp = item.facets.log_point as Record<string, unknown> | undefined
       node["template"] = lp?.["template"] ?? item.canonical_name
-      node["level"]    = lp?.["level"]    ?? "UNKNOWN"
-      node["subsystem"]= lp?.["subsystem"] ?? null
-      node["api_name"] = lp?.["api_name"]  ?? null
+      node["level"] = lp?.["level"] ?? "UNKNOWN"
+      node["subsystem"] = lp?.["subsystem"] ?? null
+      node["api_name"] = lp?.["api_name"] ?? null
     }
 
     // ── GAP 1+2: Runtime caller fields (who_calls_api_at_runtime) ──
@@ -613,9 +671,7 @@ export function toLegacyFlatResponse(proto: NodeProtocolResponse): LegacyFlatRes
       //   dispatch → "runtime_dispatch_table_call"
       //   register → "runtime_callback_registration_call"
       const edge = item.rel.calls_in_runtime.find((e) => e.src_node_id === item.node_id)
-      const invocationType = edge
-        ? deriveInvocationType(edge)
-        : "runtime_function_pointer_call"
+      const invocationType = edge ? deriveInvocationType(edge) : "runtime_function_pointer_call"
       node["runtime_caller_invocation_type_classification"] = invocationType
     }
 
@@ -625,19 +681,17 @@ export function toLegacyFlatResponse(proto: NodeProtocolResponse): LegacyFlatRes
       const structEdge = item.rel.structures[0]!
       const edgeKindStr = protoEdgeKindToLegacyKind(structEdge.edge_kind)
       // writer = src_name, target = dst_name
-      node["writer"]    = structEdge.src_name
-      node["target"]    = structEdge.dst_name
+      node["writer"] = structEdge.src_name
+      node["target"] = structEdge.dst_name
       node["edge_kind"] = edgeKindStr
       // Derivation: infer from edge kind (write/mutate → runtime, read/init → static)
-      node["derivation"] = (structEdge.edge_kind === "write" || structEdge.edge_kind === "mutate")
-        ? "runtime"
-        : "static"
+      node["derivation"] = structEdge.edge_kind === "write" || structEdge.edge_kind === "mutate" ? "runtime" : "static"
       // Long-form alias names the frontend also checks (legacy SQL row leak)
-      node["current_structure_runtime_writer_api_name"]              = structEdge.src_name
-      node["current_structure_runtime_target_structure_name"]        = structEdge.dst_name
+      node["current_structure_runtime_writer_api_name"] = structEdge.src_name
+      node["current_structure_runtime_target_structure_name"] = structEdge.dst_name
       node["current_structure_runtime_structure_operation_type_classification"] = edgeKindStr
-      node["current_structure_runtime_relation_derivation_source"]   = node["derivation"]
-      node["current_api_runtime_structure_access_path_expression"]   =
+      node["current_structure_runtime_relation_derivation_source"] = node["derivation"]
+      node["current_api_runtime_structure_access_path_expression"] =
         (item.facets.struct as Record<string, unknown> | undefined)?.["access_path"] ?? null
     }
 
@@ -647,12 +701,12 @@ export function toLegacyFlatResponse(proto: NodeProtocolResponse): LegacyFlatRes
     // GAP 8: alias buckets (outgoing_call_relationships etc.) hold the SAME EdgeRef
     // objects, so we skip them and only iterate the canonical 7 buckets.
     for (const e of item.rel.calls_in_runtime) emitEdge(e)
-    for (const e of item.rel.calls_in_direct)  emitEdge(e)
-    for (const e of item.rel.calls_out)         emitEdge(e)
-    for (const e of item.rel.registrations_in)  emitEdge(e)
+    for (const e of item.rel.calls_in_direct) emitEdge(e)
+    for (const e of item.rel.calls_out) emitEdge(e)
+    for (const e of item.rel.registrations_in) emitEdge(e)
     for (const e of item.rel.registrations_out) emitEdge(e)
-    for (const e of item.rel.structures)        emitEdge(e)
-    for (const e of item.rel.logs)              emitEdge(e)
+    for (const e of item.rel.structures) emitEdge(e)
+    for (const e of item.rel.logs) emitEdge(e)
   }
 
   // De-duplicate edges by (from, to, kind)
@@ -675,26 +729,46 @@ export function toLegacyFlatResponse(proto: NodeProtocolResponse): LegacyFlatRes
 /** Map NodeProtocol edge_kind to the legacy EdgeKind strings the frontend's edgeKindToConnectionKind() handles. */
 export function protoEdgeKindToLegacyKind(kind: EdgeRef["edge_kind"]): string {
   switch (kind) {
-    case "call_direct":     return "calls"
-    case "call_runtime":    return "indirect_calls"
-    case "register":        return "registers_callback"
-    case "dispatch":        return "dispatches_to"
-    case "read":            return "reads_field"
-    case "write":           return "writes_field"
-    case "emit_log":        return "logs_event"
-    case "use":             return "operates_on_struct"
-    case "owner":           return "operates_on_struct"
-    case "init":            return "operates_on_struct"
-    case "mutate":          return "operates_on_struct"
-    case "inherit":         return "extends"
-    case "implement":       return "implements"
-    case "use_macro":       return "uses_macro"
-    case "import":          return "imports"
-    case "contain":         return "contains"
-    case "reference_type":  return "references_type"
-    case "field_type":      return "field_of_type"
-    case "aggregate":       return "aggregates"
-    default:                return String(kind)
+    case "call_direct":
+      return "calls"
+    case "call_runtime":
+      return "indirect_calls"
+    case "register":
+      return "registers_callback"
+    case "dispatch":
+      return "dispatches_to"
+    case "read":
+      return "reads_field"
+    case "write":
+      return "writes_field"
+    case "emit_log":
+      return "logs_event"
+    case "use":
+      return "operates_on_struct"
+    case "owner":
+      return "operates_on_struct"
+    case "init":
+      return "operates_on_struct"
+    case "mutate":
+      return "operates_on_struct"
+    case "inherit":
+      return "extends"
+    case "implement":
+      return "implements"
+    case "use_macro":
+      return "uses_macro"
+    case "import":
+      return "imports"
+    case "contain":
+      return "contains"
+    case "reference_type":
+      return "references_type"
+    case "field_type":
+      return "field_of_type"
+    case "aggregate":
+      return "aggregates"
+    default:
+      return String(kind)
   }
 }
 

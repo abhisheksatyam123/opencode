@@ -9,11 +9,11 @@
  */
 
 export type ConfidenceLevel =
-  | "registration_detected"   // L1: callback is passed to registration API
-  | "dispatch_key_extracted"  // L2: the key that maps this callback in the store
-  | "store_container_found"   // L3: the array/list/struct that holds the callback
-  | "dispatch_site_found"     // L4: the function that iterates and calls the callback
-  | "runtime_trigger_found"   // L5: the external event that drives the dispatch
+  | "registration_detected" // L1: callback is passed to registration API
+  | "dispatch_key_extracted" // L2: the key that maps this callback in the store
+  | "store_container_found" // L3: the array/list/struct that holds the callback
+  | "dispatch_site_found" // L4: the function that iterates and calls the callback
+  | "runtime_trigger_found" // L5: the external event that drives the dispatch
 
 export interface ResolvedChain {
   /** Registration site — always present (from the existing detector). */
@@ -28,7 +28,7 @@ export interface ResolvedChain {
 
   /** Store container — the struct/array/list holding the callback pointer. */
   store: {
-    containerType: string | null       // e.g., "struct WMI_EVT_DISPATCH", "offload_data[i]"
+    containerType: string | null // e.g., "struct WMI_EVT_DISPATCH", "offload_data[i]"
     containerFile: string | null
     containerLine: number | null
     confidence: "high" | "medium" | "low"
@@ -44,18 +44,18 @@ export interface ResolvedChain {
 
   /** Dispatch site — the function that iterates the store and invokes the callback. */
   dispatch: {
-    dispatchFunction: string | null    // e.g., "wmi_event_dispatch", "_offldmgr_enhanced_data_handler"
+    dispatchFunction: string | null // e.g., "wmi_event_dispatch", "_offldmgr_enhanced_data_handler"
     dispatchFile: string | null
     dispatchLine: number | null
-    invocationPattern: string | null   // e.g., "handler(ctx, event, len)", "data_handler(...)"
+    invocationPattern: string | null // e.g., "handler(ctx, event, len)", "data_handler(...)"
     confidence: "high" | "medium" | "low"
     evidence: string | null
   }
 
   /** Runtime trigger — the external event that drives the dispatch site. */
   trigger: {
-    triggerKind: string | null         // e.g., "hardware_interrupt", "wmi_event", "timer_expiry"
-    triggerKey: string | null          // e.g., "WMI_SERVICE_READY_EVENTID", "A_INUM_WSI"
+    triggerKind: string | null // e.g., "hardware_interrupt", "wmi_event", "timer_expiry"
+    triggerKey: string | null // e.g., "WMI_SERVICE_READY_EVENTID", "A_INUM_WSI"
     triggerFile: string | null
     triggerLine: number | null
     confidence: "high" | "medium" | "low"

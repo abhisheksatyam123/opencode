@@ -103,9 +103,7 @@ export class IndexTracker {
   onFileStatus(uri: string, state: string): void {
     try {
       // Simple file:// → path conversion without importing url module
-      const filePath = uri.startsWith("file://")
-        ? decodeURIComponent(new URL(uri).pathname)
-        : uri
+      const filePath = uri.startsWith("file://") ? decodeURIComponent(new URL(uri).pathname) : uri
       this._fileStates.set(filePath, (state as FileParseState) ?? "unknown")
     } catch {
       // ignore malformed URIs

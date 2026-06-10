@@ -241,9 +241,7 @@ export const SessionUnrewindCommand = cmd({
         process.exit(1)
       }
       await SessionRevert.unrevert({ sessionID })
-      UI.println(
-        UI.Style.TEXT_SUCCESS_BOLD + `Unrewound session ${args.sessionID}` + UI.Style.TEXT_NORMAL,
-      )
+      UI.println(UI.Style.TEXT_SUCCESS_BOLD + `Unrewound session ${args.sessionID}` + UI.Style.TEXT_NORMAL)
     })
   },
 })

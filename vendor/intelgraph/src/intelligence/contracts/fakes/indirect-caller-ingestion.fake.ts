@@ -58,10 +58,7 @@ export class FakeIndirectCallerIngestion implements IIndirectCallerIngestion {
 
   async persistRuntimeChains(snapshotId: number, linked: LinkReport): Promise<IngestReport> {
     this.calls.push({ method: "persistRuntimeChains", args: [snapshotId, linked] })
-    const participantsMaterialized = linked.linked.reduce(
-      (sum, row) => sum + (row.participants?.length ?? 0),
-      0,
-    )
+    const participantsMaterialized = linked.linked.reduce((sum, row) => sum + (row.participants?.length ?? 0), 0)
     return {
       snapshotId,
       inserted: {

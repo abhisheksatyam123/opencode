@@ -28,9 +28,12 @@ let force = false
 let rebuild = false
 
 for (const arg of args) {
-  if (arg === "--force" || arg === "-f") { force = true }
-  else if (arg === "--rebuild" || arg === "-r") { rebuild = true; force = true }
-  else if (arg === "--help" || arg === "-h") {
+  if (arg === "--force" || arg === "-f") {
+    force = true
+  } else if (arg === "--rebuild" || arg === "-r") {
+    rebuild = true
+    force = true
+  } else if (arg === "--help" || arg === "-h") {
     console.log("Usage: extract [workspace-path] [--force] [--rebuild]")
     console.log("\nBuilds .intelgraph/intelligence.db for the workspace.")
     console.log("  --force    Overwrite existing snapshot")
@@ -84,14 +87,22 @@ async function main() {
 
     const existing = await foundation.getLatestReadySnapshot(workspace)
     if (existing && !force) {
-      const n = (client.raw.prepare("SELECT COUNT(*) AS n FROM graph_nodes WHERE snapshot_id=?").get(existing.snapshotId) as { n: number }).n
-      const e = (client.raw.prepare("SELECT COUNT(*) AS n FROM graph_edges WHERE snapshot_id=?").get(existing.snapshotId) as { n: number }).n
+      const n = (
+        client.raw.prepare("SELECT COUNT(*) AS n FROM graph_nodes WHERE snapshot_id=?").get(existing.snapshotId) as {
+          n: number
+        }
+      ).n
+      const e = (
+        client.raw.prepare("SELECT COUNT(*) AS n FROM graph_edges WHERE snapshot_id=?").get(existing.snapshotId) as {
+          n: number
+        }
+      ).n
       console.log(`\nSnapshot ${existing.snapshotId} already exists (${n} nodes, ${e} edges).`)
       console.log("Use --force to rebuild, or --rebuild to keep it as baseline for --compare diffs.")
       return
     }
 
-    const baselineId = rebuild ? existing?.snapshotId ?? null : null
+    const baselineId = rebuild ? (existing?.snapshotId ?? null) : null
     if (rebuild && baselineId) {
       console.log(`\nBaseline snapshot: #${baselineId} (kept for comparison)`)
     }
@@ -117,8 +128,16 @@ async function main() {
     await foundation.commitSnapshot(ref.snapshotId)
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(1)
-    const n = (client.raw.prepare("SELECT COUNT(*) AS n FROM graph_nodes WHERE snapshot_id=?").get(ref.snapshotId) as { n: number }).n
-    const e = (client.raw.prepare("SELECT COUNT(*) AS n FROM graph_edges WHERE snapshot_id=?").get(ref.snapshotId) as { n: number }).n
+    const n = (
+      client.raw.prepare("SELECT COUNT(*) AS n FROM graph_nodes WHERE snapshot_id=?").get(ref.snapshotId) as {
+        n: number
+      }
+    ).n
+    const e = (
+      client.raw.prepare("SELECT COUNT(*) AS n FROM graph_edges WHERE snapshot_id=?").get(ref.snapshotId) as {
+        n: number
+      }
+    ).n
 
     console.log(`\nDone in ${elapsed}s (snapshot ${ref.snapshotId})`)
     console.log(`  Nodes: ${n}`)
@@ -126,7 +145,9 @@ async function main() {
     for (const p of report.perPlugin) {
       if (p.status === "skipped") continue
       const files = Object.entries(p.metrics?.counters ?? {}).find(([k]) => k.endsWith("files-discovered"))?.[1] ?? 0
-      console.log(`  ${p.status === "success" ? "+" : "!"} ${p.name} — ${files} files, ${p.factsYielded} facts, ${p.durationMs}ms`)
+      console.log(
+        `  ${p.status === "success" ? "+" : "!"} ${p.name} — ${files} files, ${p.factsYielded} facts, ${p.durationMs}ms`,
+      )
     }
     if (baselineId) {
       console.log(`\nBaseline: #${baselineId}   New: #${ref.snapshotId}`)

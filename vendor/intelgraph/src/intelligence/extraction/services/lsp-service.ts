@@ -31,11 +31,7 @@ import type { ILanguageClient } from "../../../lsp/ports.js"
 // Public types
 // ---------------------------------------------------------------------------
 
-export type LspErrorClass =
-  | "non-added-document"
-  | "timeout"
-  | "transport"
-  | "other"
+export type LspErrorClass = "non-added-document" | "timeout" | "transport" | "other"
 
 export interface LspCallResult<T> {
   /** The LSP response, or null on error or no result. */
@@ -84,31 +80,18 @@ export interface LspService {
   /**
    * Timed incomingCalls with auto-file-open.
    */
-  incomingCalls(
-    filePath: string,
-    fileText: string,
-    line: number,
-    character: number,
-  ): Promise<LspCallResult<unknown[]>>
+  incomingCalls(filePath: string, fileText: string, line: number, character: number): Promise<LspCallResult<unknown[]>>
 
   /**
    * Timed outgoingCalls with auto-file-open.
    */
-  outgoingCalls(
-    filePath: string,
-    fileText: string,
-    line: number,
-    character: number,
-  ): Promise<LspCallResult<unknown[]>>
+  outgoingCalls(filePath: string, fileText: string, line: number, character: number): Promise<LspCallResult<unknown[]>>
 
   /**
    * Timed documentSymbol with auto-file-open. The most common entry point
    * for plugins that walk a workspace symbol-by-symbol.
    */
-  documentSymbol(
-    filePath: string,
-    fileText: string,
-  ): Promise<LspCallResult<unknown[]>>
+  documentSymbol(filePath: string, fileText: string): Promise<LspCallResult<unknown[]>>
 }
 
 // ---------------------------------------------------------------------------
@@ -264,10 +247,7 @@ export class LspServiceImpl implements LspService {
     }
   }
 
-  async documentSymbol(
-    filePath: string,
-    fileText: string,
-  ): Promise<LspCallResult<unknown[]>> {
+  async documentSymbol(filePath: string, fileText: string): Promise<LspCallResult<unknown[]>> {
     await this.openFileIfNeeded(filePath, fileText)
     const started = Date.now()
     this.logger.debug("lsp:document-symbol:start", { filePath })

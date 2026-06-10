@@ -25,9 +25,7 @@ function rowsToResponseData(rows: Array<Record<string, unknown>>): NormalizedQue
           ? (first.observations as Array<Record<string, unknown>>)
           : undefined,
         summary:
-          first.summary && typeof first.summary === "object"
-            ? (first.summary as Record<string, unknown>)
-            : undefined,
+          first.summary && typeof first.summary === "object" ? (first.summary as Record<string, unknown>) : undefined,
       }
     }
   }
@@ -69,11 +67,7 @@ function buildResponse(params: {
   const projectedRows = params.rows
   const llmUsed = params.attempts.some((a) => a.source === "llm" && a.status === "success")
   const path: NormalizedQueryResponse["provenance"]["path"] =
-    params.status === "hit"
-      ? "db_hit"
-      : llmUsed
-        ? "db_miss_llm_last_resort"
-        : "db_miss_deterministic"
+    params.status === "hit" ? "db_hit" : llmUsed ? "db_miss_llm_last_resort" : "db_miss_deterministic"
 
   return {
     snapshotId: params.request.snapshotId,
@@ -82,9 +76,7 @@ function buildResponse(params: {
     data: rowsToResponseData(projectedRows),
     provenance: {
       path,
-      deterministicAttempts: params.attempts
-        .filter((a) => a.source !== "llm")
-        .map((a) => `${a.source}:${a.status}`),
+      deterministicAttempts: params.attempts.filter((a) => a.source !== "llm").map((a) => `${a.source}:${a.status}`),
       llmUsed,
     },
     runtime_facet_completeness_status_map: buildFacetCompletenessStatusMap(params.status),
@@ -130,9 +122,11 @@ export async function executeOrchestratedQuery(
     if (action.type === "return_hit") {
       return buildResponse({
         request,
-        status: initialHit ? "hit" : attempts.some((a) => a.source === "llm" && a.status === "success")
-          ? "llm_fallback"
-          : "enriched",
+        status: initialHit
+          ? "hit"
+          : attempts.some((a) => a.source === "llm" && a.status === "success")
+            ? "llm_fallback"
+            : "enriched",
         rows: lookup.rows,
         attempts,
       })

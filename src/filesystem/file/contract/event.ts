@@ -1,10 +1,6 @@
 import z from "zod"
 
-export const FileContractEventTypeSchema = z.enum([
-  "file.requested",
-  "file.updated",
-  "file.failed",
-])
+export const FileContractEventTypeSchema = z.enum(["file.requested", "file.updated", "file.failed"])
 
 export type FileContractEventType = z.infer<typeof FileContractEventTypeSchema>
 

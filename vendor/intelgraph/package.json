@@ -51,7 +51,7 @@
     "validate:01880": "env WLAN_WORKSPACE_ROOT=/local/mnt/workspace/code1/WLAN.CNG.1.0-01880.3-QCACNGSWPL_V1_V2_SILICON-1 CLANGD_TCP_BRIDGE_PORT=35101 CHAIN_TEST_TIMEOUT_01880_MS=60000 CHAIN_RETRY_TIMEOUT_01880=1 CHAIN_RESOLVE_TIMEOUT_MS=20000 npx vitest run test/integration/chain-resolver-ground-truth.test.ts",
     "lint": "eslint src/ --ext .ts",
     "validate:matrix:conditional-go": "npm run validate:unit && npm run typecheck && npm run validate:01880",
-    "validate:graph": "npm run build && npm run typecheck && env WLAN_WORKSPACE_ROOT=/local/mnt/workspace/code1/WLAN.CNG.1.0-01880.3-QCACNGSWPL_V1_V2_SILICON-1/wlan_proc npm run test:unit && echo '\u2713 graph validation: build + unit checks passed'",
+    "validate:graph": "npm run build && npm run typecheck && env WLAN_WORKSPACE_ROOT=/local/mnt/workspace/code1/WLAN.CNG.1.0-01880.3-QCACNGSWPL_V1_V2_SILICON-1/wlan_proc npm run test:unit && echo '✓ graph validation: build + unit checks passed'",
     "validate:graph:sqlite": "npx vitest run test/integration/sqlite-backend.test.ts"
   },
   "dependencies": {

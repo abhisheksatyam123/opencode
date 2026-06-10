@@ -33,7 +33,7 @@ import { ProviderService } from "@/provider/port"
  * ProviderService.Tag key, so both tags resolve to the same service
  * instance in the Effect runtime.
  */
- 
+
 export const ProviderAdapterLayer = Provider.defaultLayer
 
 // Re-export Provider namespace for callers that need direct access

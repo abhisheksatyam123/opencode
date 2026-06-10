@@ -218,10 +218,7 @@ export interface EnrichmentMetadata {
  * Select applicable intents for a given API based on its fixture metadata.
  * Default: all Phase 1-3 intents unless role-based filtering suggests otherwise.
  */
-export function selectIntentsForApi(
-  _apiName: string,
-  _fixture: ApiFixture,
-): QueryIntent[] {
+export function selectIntentsForApi(_apiName: string, _fixture: ApiFixture): QueryIntent[] {
   // Default: query all core intents
   return [
     "who_calls_api",

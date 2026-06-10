@@ -185,9 +185,7 @@ export namespace Command {
     }),
   )
 
-  export const defaultLayer = layer.pipe(
-    Layer.provide(Config.defaultLayer),
-  )
+  export const defaultLayer = layer.pipe(Layer.provide(Config.defaultLayer))
 
   const { runPromise } = makeRuntime(Service, defaultLayer)
 

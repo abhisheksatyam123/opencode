@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs"
 import { resolveIndirectRegisteredCallers } from "./indirect-callers"
-import { canonicalizeIntelGraphSourcePath, canonicalizeIntelGraphSymbol, isIntelGraphPrimarySourcePath } from "../source-path-policy"
+import {
+  canonicalizeIntelGraphSourcePath,
+  canonicalizeIntelGraphSymbol,
+  isIntelGraphPrimarySourcePath,
+} from "../source-path-policy"
 import {
   IntelGraphRelationKinds,
   createEmptyRelationMap,
@@ -160,13 +164,18 @@ async function searchSymbol(
       limit,
     })
 
-    const matches = rows
-      .slice(0, limit)
-      .map((row, index) => symbolMatchFromLsp({
-        ...row,
-        symbol: row.symbol ? canonicalizeIntelGraphSymbol(row.symbol) : row.symbol,
-        file: canonicalizeIntelGraphSourcePath(row.file),
-      }, query, defaultLanguage, index))
+    const matches = rows.slice(0, limit).map((row, index) =>
+      symbolMatchFromLsp(
+        {
+          ...row,
+          symbol: row.symbol ? canonicalizeIntelGraphSymbol(row.symbol) : row.symbol,
+          file: canonicalizeIntelGraphSourcePath(row.file),
+        },
+        query,
+        defaultLanguage,
+        index,
+      ),
+    )
 
     return {
       query,
@@ -262,7 +271,13 @@ async function resolveRelations(
           : emptyFallback()
       const registrationFallback =
         nodes.length === 0 && directFallback.nodes.length === 0
-          ? await indirectCallerNodesFromRegistrationTextReferences(lsp, canonicalRequest, symbol, defaultLanguage, limit)
+          ? await indirectCallerNodesFromRegistrationTextReferences(
+              lsp,
+              canonicalRequest,
+              symbol,
+              defaultLanguage,
+              limit,
+            )
           : emptyFallback()
       root.relations.indirect_registered_callers =
         nodes.length > 0 ? nodes : directFallback.nodes.length > 0 ? directFallback.nodes : registrationFallback.nodes
@@ -355,7 +370,9 @@ async function resolveApiCallers(
     const nodes = primarySourceRelationNodes(
       calls
         .slice(0, limit)
-        .flatMap((call, index) => nodeFromIncomingCall(call, symbol, defaultLanguage, index, `direct call to ${symbol}`)),
+        .flatMap((call, index) =>
+          nodeFromIncomingCall(call, symbol, defaultLanguage, index, `direct call to ${symbol}`),
+        ),
     )
     if (nodes.length > 0 || !lsp.textReferences) return { nodes, diagnostics: [] }
 
@@ -452,7 +469,9 @@ async function resolveApiRegistrations(
         .map((reference, index) => nodeFromReference(reference, symbol, defaultLanguage, index, operation)),
     )
     const textFallback =
-      nodes.length === 0 ? await registrationNodesFromTextReferences(lsp, request, symbol, defaultLanguage, limit, operation) : emptyFallback()
+      nodes.length === 0
+        ? await registrationNodesFromTextReferences(lsp, request, symbol, defaultLanguage, limit, operation)
+        : emptyFallback()
     const bridgeFallback =
       operation === "registration" && nodes.length === 0 && textFallback.nodes.length === 0
         ? await registrationNodesThroughDirectCallers(lsp, request, symbol, defaultLanguage, limit)
@@ -514,7 +533,8 @@ async function indirectCallerNodesFromRegistrationTextReferences(
     const originalFile = uriToPath(reference.uri)
     const file = canonicalizeIntelGraphSourcePath(originalFile)
     const start = reference.range?.start
-    if (!originalFile || !isIntelGraphPrimarySourcePath(originalFile) || !file || typeof start?.line !== "number") continue
+    if (!originalFile || !isIntelGraphPrimarySourcePath(originalFile) || !file || typeof start?.line !== "number")
+      continue
     const source = readFile(file)
     const dispatch = source ? registrationRuntimeDispatchInfo(source, start.line, symbol) : undefined
     if (!source || !dispatch) continue
@@ -593,7 +613,8 @@ async function registrationNodesFromTextReferences(
     const originalFile = uriToPath(reference.uri)
     const file = canonicalizeIntelGraphSourcePath(originalFile)
     const start = reference.range?.start
-    if (!originalFile || !isIntelGraphPrimarySourcePath(originalFile) || !file || typeof start?.line !== "number") continue
+    if (!originalFile || !isIntelGraphPrimarySourcePath(originalFile) || !file || typeof start?.line !== "number")
+      continue
     const source = readFile(file)
     if (!source || registrationReferenceOperation(source, start.line, symbol) !== operation) continue
     const node = nodeFromReference(reference, symbol, defaultLanguage, nodes.length, operation)
@@ -848,7 +869,14 @@ function nodeFromTextReference(
   const originalFile = uriToPath(reference.uri)
   const file = canonicalizeIntelGraphSourcePath(originalFile)
   const start = reference.range?.start
-  if (!originalFile || !isIntelGraphPrimarySourcePath(originalFile) || !file || typeof start?.line !== "number" || typeof start.character !== "number") return undefined
+  if (
+    !originalFile ||
+    !isIntelGraphPrimarySourcePath(originalFile) ||
+    !file ||
+    typeof start?.line !== "number" ||
+    typeof start.character !== "number"
+  )
+    return undefined
   const source = readFile(file)
   if (!source || isRegistrationReference(source, start.line, targetSymbol)) return undefined
   const caller = enclosingCFunction(source, start.line, start.character)

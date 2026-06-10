@@ -15,18 +15,18 @@
  */
 
 export type ConfidenceInput = {
-  coverage_score: number           // 0–1 from completeness audit
-  backend_match_score: number      // 0–1 fraction of fixture relations confirmed
-  evidence_quality_score: number   // 0–1 fraction with non-weak evidence
-  consistency_score: number        // 0 or 1
-  has_s0_s1_mismatch: boolean      // override flag
+  coverage_score: number // 0–1 from completeness audit
+  backend_match_score: number // 0–1 fraction of fixture relations confirmed
+  evidence_quality_score: number // 0–1 fraction with non-weak evidence
+  consistency_score: number // 0 or 1
+  has_s0_s1_mismatch: boolean // override flag
 }
 
 export type ConfidenceResult = {
-  aggregate_confidence: number     // 0–1 weighted score
+  aggregate_confidence: number // 0–1 weighted score
   ci_outcome: "PASS" | "WARN" | "FAIL"
   dimension_scores: ConfidenceInput
-  remediation_hints: string[]      // actionable guidance
+  remediation_hints: string[] // actionable guidance
 }
 
 export type FamilyConfidenceSummary = {
@@ -34,19 +34,19 @@ export type FamilyConfidenceSummary = {
   entity_count: number
   avg_confidence: number
   ci_outcome: "PASS" | "WARN" | "FAIL"
-  low_confidence_entities: string[]  // canonical_names below warn threshold
+  low_confidence_entities: string[] // canonical_names below warn threshold
 }
 
 export const CONFIDENCE_WEIGHTS = {
   coverage: 0.25,
   backend_match: 0.35,
-  evidence_quality: 0.20,
-  consistency: 0.20,
+  evidence_quality: 0.2,
+  consistency: 0.2,
 } as const
 
 export const CONFIDENCE_THRESHOLDS = {
   pass: 0.85,
-  warn: 0.70,
+  warn: 0.7,
 } as const
 
 /**
@@ -54,16 +54,13 @@ export const CONFIDENCE_THRESHOLDS = {
  */
 function buildHints(input: ConfidenceInput, aggregate: number): string[] {
   const hints: string[] = []
-  if (input.coverage_score < 0.5)
-    hints.push("Run enrichment pipeline to populate missing relation buckets")
+  if (input.coverage_score < 0.5) hints.push("Run enrichment pipeline to populate missing relation buckets")
   if (input.backend_match_score < 0.7)
     hints.push("Backend is missing fixture-expected relations — check DB snapshot freshness")
   if (input.evidence_quality_score < 0.7)
     hints.push("Relations have weak evidence — re-run enrichment with higher confidence threshold")
-  if (input.consistency_score < 1.0)
-    hints.push("Mock/live backend inconsistency detected — investigate DB query path")
-  if (aggregate < CONFIDENCE_THRESHOLDS.warn)
-    hints.push("Entity below release threshold — remediate before merge")
+  if (input.consistency_score < 1.0) hints.push("Mock/live backend inconsistency detected — investigate DB query path")
+  if (aggregate < CONFIDENCE_THRESHOLDS.warn) hints.push("Entity below release threshold — remediate before merge")
   return hints
 }
 
@@ -125,7 +122,10 @@ export function aggregateFamilyConfidence(
       family,
       entity_count: entries.length,
       avg_confidence: avg,
-      ci_outcome: deriveOutcome(avg, entries.some((e) => e.confidence.ci_outcome === "FAIL" && e.confidence.dimension_scores.has_s0_s1_mismatch)),
+      ci_outcome: deriveOutcome(
+        avg,
+        entries.some((e) => e.confidence.ci_outcome === "FAIL" && e.confidence.dimension_scores.has_s0_s1_mismatch),
+      ),
       low_confidence_entities: low,
     })
   }

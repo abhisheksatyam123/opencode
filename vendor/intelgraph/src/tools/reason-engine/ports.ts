@@ -27,11 +27,7 @@ export interface ReasonEngineResult {
 }
 
 export interface IReasonEngine {
-  run(
-    client: ILanguageClient,
-    input: ReasonEngineInput,
-    llmConfig?: LlmReasoningConfig,
-  ): Promise<ReasonEngineResult>
+  run(client: ILanguageClient, input: ReasonEngineInput, llmConfig?: LlmReasoningConfig): Promise<ReasonEngineResult>
 }
 
 export type { ReasonEngineInput, LlmReasoningConfig, ReasonPath }

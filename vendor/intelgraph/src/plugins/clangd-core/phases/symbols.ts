@@ -16,13 +16,20 @@ import { disabledPreprocessorLineSet, isLineInDisabledPreprocessorRegion } from 
 // LSP SymbolKind → internal kind
 function mapLspSymbolKind(k: number): SymbolRow["kind"] {
   switch (k) {
-    case 12: return "function"
-    case 23: return "struct"
-    case 10: return "enum"
-    case 26: return "typedef"
-    case 13: return "field"
-    case 14: return "param"
-    default: return "function"
+    case 12:
+      return "function"
+    case 23:
+      return "struct"
+    case 10:
+      return "enum"
+    case 26:
+      return "typedef"
+    case 13:
+      return "field"
+    case 14:
+      return "param"
+    default:
+      return "function"
   }
 }
 
@@ -38,11 +45,7 @@ interface RawLspSymbol {
  * Phase 1: extract symbols and types from each file via clangd LSP.
  * Populates fileSymbols map as a side effect for use by later phases.
  */
-export async function* extractSymbols(
-  ctx: PhaseCtx,
-  files: string[],
-  fileSymbols: FileSymbolMap,
-) {
+export async function* extractSymbols(ctx: PhaseCtx, files: string[], fileSymbols: FileSymbolMap) {
   for (const file of files) {
     if (ctx.signal.aborted) return
 
@@ -72,9 +75,7 @@ export async function* extractSymbols(
       const symbolRow: SymbolRow = {
         kind: mapLspSymbolKind((s.kind as number) ?? 12),
         name: String(s.name ?? ""),
-        qualifiedName: s.containerName
-          ? `${String(s.containerName)}::${String(s.name)}`
-          : undefined,
+        qualifiedName: s.containerName ? `${String(s.containerName)}::${String(s.name)}` : undefined,
         location: {
           filePath: file,
           line,
@@ -112,9 +113,10 @@ export async function* extractSymbols(
             while (inner && inner.type === "pointer_declarator") {
               inner = inner.childForFieldName?.("declarator") ?? inner.firstChild ?? undefined
             }
-            const nameNode = inner?.type === "function_declarator"
-              ? (inner.childForFieldName?.("declarator") ?? inner.firstChild)
-              : inner
+            const nameNode =
+              inner?.type === "function_declarator"
+                ? (inner.childForFieldName?.("declarator") ?? inner.firstChild)
+                : inner
             const rawName = nameNode?.text ?? ""
             const name = rawName.replace(/[^a-zA-Z0-9_]/g, "")
             if (!name) continue

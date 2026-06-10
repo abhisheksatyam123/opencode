@@ -1,10 +1,6 @@
 import z from "zod"
 
-export const ProviderContractEventTypeSchema = z.enum([
-  "provider.requested",
-  "provider.updated",
-  "provider.failed",
-])
+export const ProviderContractEventTypeSchema = z.enum(["provider.requested", "provider.updated", "provider.failed"])
 
 export type ProviderContractEventType = z.infer<typeof ProviderContractEventTypeSchema>
 

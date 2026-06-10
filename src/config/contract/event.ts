@@ -1,10 +1,6 @@
 import z from "zod"
 
-export const ConfigContractEventTypeSchema = z.enum([
-  "config.requested",
-  "config.updated",
-  "config.failed",
-])
+export const ConfigContractEventTypeSchema = z.enum(["config.requested", "config.updated", "config.failed"])
 
 export type ConfigContractEventType = z.infer<typeof ConfigContractEventTypeSchema>
 

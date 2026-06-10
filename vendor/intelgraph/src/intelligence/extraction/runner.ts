@@ -38,16 +38,8 @@ import type { Fact, FactKind } from "./facts.js"
 import { FactBus } from "./fact-bus.js"
 import type { FactBusOptions } from "./fact-bus.js"
 import type { IFactBus, FactBusReport } from "../contracts/fact-bus.js"
-import {
-  ExtractionContextImpl,
-  type ExtractionContextOptions,
-} from "./context.js"
-import {
-  LspServiceImpl,
-  RipgrepServiceImpl,
-  TreeSitterServiceImpl,
-  WorkspaceServiceImpl,
-} from "./services/index.js"
+import { ExtractionContextImpl, type ExtractionContextOptions } from "./context.js"
+import { LspServiceImpl, RipgrepServiceImpl, TreeSitterServiceImpl, WorkspaceServiceImpl } from "./services/index.js"
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -75,10 +67,7 @@ export interface ExtractorRunnerOptions {
    * Optional log sink. If absent, plugin logs go to console.error for
    * info/warn/error and are silent for debug.
    */
-  logSink?: (
-    level: "debug" | "info" | "warn" | "error",
-    line: string,
-  ) => void
+  logSink?: (level: "debug" | "info" | "warn" | "error", line: string) => void
   /**
    * Optional file filter for incremental extraction. When set, only
    * files whose absolute path is in this set will be returned by
@@ -176,9 +165,7 @@ export class ExtractorRunner {
     const bus: IFactBus = makebus(busOpts)
 
     // ---- Filter by appliesTo ----
-    type PluginEntry =
-      | { kind: "run"; plugin: IExtractor }
-      | { kind: "skip"; plugin: IExtractor; reason: string }
+    type PluginEntry = { kind: "run"; plugin: IExtractor } | { kind: "skip"; plugin: IExtractor; reason: string }
 
     const entries: PluginEntry[] = this.opts.plugins.map((plugin) => {
       try {
@@ -188,9 +175,7 @@ export class ExtractorRunner {
         return { kind: "run", plugin }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
-        warnings.push(
-          `[runner] plugin ${plugin.metadata.name}.appliesTo threw: ${msg}; treating as skipped`,
-        )
+        warnings.push(`[runner] plugin ${plugin.metadata.name}.appliesTo threw: ${msg}; treating as skipped`)
         return { kind: "skip", plugin, reason: `appliesTo threw: ${msg}` }
       }
     })
@@ -199,9 +184,7 @@ export class ExtractorRunner {
     const seenNames = new Set<string>()
     for (const entry of entries) {
       if (seenNames.has(entry.plugin.metadata.name)) {
-        warnings.push(
-          `[runner] duplicate plugin name: ${entry.plugin.metadata.name}`,
-        )
+        warnings.push(`[runner] duplicate plugin name: ${entry.plugin.metadata.name}`)
       }
       seenNames.add(entry.plugin.metadata.name)
     }
@@ -336,8 +319,12 @@ class FilteredWorkspaceService implements WorkspaceService {
     private readonly allowedFiles: Set<string>,
   ) {}
 
-  get root(): string { return this.inner.root }
-  get hasCompileCommands(): boolean { return this.inner.hasCompileCommands }
+  get root(): string {
+    return this.inner.root
+  }
+  get hasCompileCommands(): boolean {
+    return this.inner.hasCompileCommands
+  }
 
   async walkFiles(opts?: WalkFilesOptions): Promise<string[]> {
     const allFiles = await this.inner.walkFiles(opts)

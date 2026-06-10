@@ -89,12 +89,7 @@ export function readCache(
 /**
  * Write a result to the cache.
  */
-export function writeCache(
-  workspaceRoot: string,
-  cacheKey: string,
-  result: any,
-  evidenceFiles: string[],
-): void {
+export function writeCache(workspaceRoot: string, cacheKey: string, result: any, evidenceFiles: string[]): void {
   const dir = cacheDir(workspaceRoot)
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
 

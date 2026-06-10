@@ -1,9 +1,4 @@
-import type {
-  DbLookupRepository,
-  LookupResult,
-  QueryIntent,
-  QueryRequest,
-} from "../orchestrator.js"
+import type { DbLookupRepository, LookupResult, QueryIntent, QueryRequest } from "../orchestrator.js"
 
 /**
  * Predicate used to select which seeded rows are returned for a given
@@ -33,11 +28,7 @@ export class FakeDbLookup implements DbLookupRepository {
    * Register rows that the fake will return for matching requests.
    * `match` defaults to "every request with this intent".
    */
-  seed(
-    intent: QueryIntent,
-    rows: Array<Record<string, unknown>>,
-    match: RequestMatcher = () => true,
-  ): void {
+  seed(intent: QueryIntent, rows: Array<Record<string, unknown>>, match: RequestMatcher = () => true): void {
     this.seeds.push({ intent, match, rows })
   }
 
@@ -50,9 +41,7 @@ export class FakeDbLookup implements DbLookupRepository {
   async lookup(request: QueryRequest): Promise<LookupResult> {
     this.calls.push(request)
 
-    const matching = this.seeds.filter(
-      (s) => s.intent === request.intent && s.match(request),
-    )
+    const matching = this.seeds.filter((s) => s.intent === request.intent && s.match(request))
     const rows = matching.flatMap((s) => s.rows)
 
     return {

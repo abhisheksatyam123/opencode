@@ -62,11 +62,7 @@ export function inflightIndirectCallerKey(workspaceRoot: string, cacheKey: strin
   return `${workspaceRoot}::${cacheKey}`
 }
 
-export async function withFile(
-  client: ILanguageClient,
-  filePath: string,
-  fn: () => Promise<string>,
-): Promise<string> {
+export async function withFile(client: ILanguageClient, filePath: string, fn: () => Promise<string>): Promise<string> {
   try {
     const text = readFileSync(filePath, "utf8")
     const isFirstOpen = await client.openFile(filePath, text)

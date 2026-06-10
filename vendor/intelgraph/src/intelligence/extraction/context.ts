@@ -31,21 +31,9 @@ import type {
   SymbolFactInput,
   TypeFactInput,
 } from "./facts.js"
-import type {
-  AggregateFieldFact,
-  EdgeFact,
-  EvidenceFact,
-  ObservationFact,
-  SymbolFact,
-  TypeFact,
-} from "./facts.js"
+import type { AggregateFieldFact, EdgeFact, EvidenceFact, ObservationFact, SymbolFact, TypeFact } from "./facts.js"
 import type { SourceLocation } from "../contracts/common.js"
-import type {
-  LspService,
-  TreeSitterService,
-  RipgrepService,
-  WorkspaceService,
-} from "./services/index.js"
+import type { LspService, TreeSitterService, RipgrepService, WorkspaceService } from "./services/index.js"
 import { loggerPort } from "../../logging/logger.js"
 
 const _log = loggerPort.child("extraction:context")
@@ -219,10 +207,7 @@ export class InMemoryKeyedCache implements KeyedCache {
 export class PrefixedPluginLogger implements PluginLogger {
   constructor(
     private readonly extractorName: string,
-    private readonly sink: (
-      level: "debug" | "info" | "warn" | "error",
-      line: string,
-    ) => void = defaultLogSink,
+    private readonly sink: (level: "debug" | "info" | "warn" | "error", line: string) => void = defaultLogSink,
   ) {}
 
   debug(message: string, context: Record<string, unknown> = {}): void {
@@ -238,20 +223,13 @@ export class PrefixedPluginLogger implements PluginLogger {
     this.emit("error", message, context)
   }
 
-  private emit(
-    level: "debug" | "info" | "warn" | "error",
-    message: string,
-    context: Record<string, unknown>,
-  ): void {
+  private emit(level: "debug" | "info" | "warn" | "error", message: string, context: Record<string, unknown>): void {
     const ctxJson = Object.keys(context).length > 0 ? " " + JSON.stringify(context) : ""
     this.sink(level, `[${this.extractorName}] ${message}${ctxJson}`)
   }
 }
 
-function defaultLogSink(
-  level: "debug" | "info" | "warn" | "error",
-  line: string,
-): void {
+function defaultLogSink(level: "debug" | "info" | "warn" | "error", line: string): void {
   if (level === "error") {
     _log.error(line)
   } else if (level === "warn") {
@@ -321,10 +299,7 @@ export interface ExtractionContextOptions {
   ripgrep: RipgrepService
   workspace: WorkspaceService
   signal?: AbortSignal
-  logSink?: (
-    level: "debug" | "info" | "warn" | "error",
-    line: string,
-  ) => void
+  logSink?: (level: "debug" | "info" | "warn" | "error", line: string) => void
 }
 
 /**

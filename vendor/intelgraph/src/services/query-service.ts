@@ -9,11 +9,7 @@
  * No transport imports. No ToolDef. No Promise<string> business logic.
  */
 
-import {
-  validateQueryRequest,
-  executeOrchestratedQuery,
-  queryNodeAdapter,
-} from "../intelligence/public-api.js"
+import { validateQueryRequest, executeOrchestratedQuery, queryNodeAdapter } from "../intelligence/public-api.js"
 import type { NodeProtocolResponse } from "../intelligence/contracts/node-protocol.js"
 import type { AppContext } from "./app-context.js"
 
@@ -41,10 +37,7 @@ export type QueryResult = QueryResponse | QueryError
  * @param ctx  Application context providing intelligence deps and workspace info.
  * @returns    Typed NodeProtocolResponse on success, or QueryError on failure.
  */
-export async function executeQuery(
-  req: unknown,
-  ctx: AppContext,
-): Promise<QueryResult> {
+export async function executeQuery(req: unknown, ctx: AppContext): Promise<QueryResult> {
   // 1. Guard: intelligence backend must be initialized.
   if (!ctx.intelligenceDeps) {
     return { ok: false, errors: ["intelligence backend not initialized"] }

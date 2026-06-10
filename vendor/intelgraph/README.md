@@ -144,11 +144,7 @@ You can commit a `.intelgraph.json` file at the workspace root:
 ```json
 {
   "clangd": "/usr/local/bin/clangd-20",
-  "args": [
-    "--background-index",
-    "--enable-config",
-    "--log=error"
-  ],
+  "args": ["--background-index", "--enable-config", "--log=error"],
   "enabled": true
 }
 ```
@@ -177,7 +173,7 @@ Index:
 Diagnostics:
   ClangTidy:
     Add: []
-    Remove: ['*']
+    Remove: ["*"]
 
 InlayHints:
   Enabled: Yes

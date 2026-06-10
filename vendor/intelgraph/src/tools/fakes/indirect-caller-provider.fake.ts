@@ -18,10 +18,7 @@ export class FakeIndirectCallerProvider implements IIndirectCallerProvider {
     this.seeds.set(this.key(query), graph)
   }
 
-  async collectIndirectCallers(
-    _client: ILanguageClient,
-    args: IndirectCallerQuery,
-  ): Promise<IndirectCallerGraph> {
+  async collectIndirectCallers(_client: ILanguageClient, args: IndirectCallerQuery): Promise<IndirectCallerGraph> {
     this.calls.push({ kind: "collectIndirectCallers", args })
     const hit = this.seeds.get(this.key(args))
     if (hit) return hit

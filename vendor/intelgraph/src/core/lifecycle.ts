@@ -17,10 +17,7 @@ import { cleanCompileCommands } from "../utils/compile-commands-cleaner.js"
 import { configLoader } from "../config/config.js"
 import { IndexTracker } from "../tracking/index.js"
 import { loggerPort } from "../logging/logger.js"
-import {
-  retryWithBackoff,
-  RECONNECT_DEBOUNCE_MS,
-} from "../config/bootstrap.js"
+import { retryWithBackoff, RECONNECT_DEBOUNCE_MS } from "../config/bootstrap.js"
 import { startHttp } from "./server.js"
 import type { BackendDeps } from "./types.js"
 import { createUnifiedBackend } from "../backend/unified-backend.js"
@@ -50,9 +47,7 @@ export interface LifecycleConfig {
  * (needs initialize handshake) and isNew=false means we're reconnecting
  * to an already-initialized clangd (skip initialize).
  */
-export async function getOrStartDaemon(
-  config: LifecycleConfig,
-): Promise<{ port: number; isNew: boolean }> {
+export async function getOrStartDaemon(config: LifecycleConfig): Promise<{ port: number; isNew: boolean }> {
   const { root, workspaceId, serverPath, serverArgs, language, wsCompileCommandsPolicy } = config
   const state = readState(root)
 

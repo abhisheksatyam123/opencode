@@ -12,10 +12,7 @@ interface RawCallHierarchyOutgoing {
   name?: unknown
 }
 
-export async function* extractCalls(
-  ctx: PhaseCtx,
-  fileSymbols: FileSymbolMap,
-) {
+export async function* extractCalls(ctx: PhaseCtx, fileSymbols: FileSymbolMap) {
   for (const [file, symbols] of fileSymbols.entries()) {
     if (ctx.signal.aborted) return
     const text = ctx.workspace.readFile(file)

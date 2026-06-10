@@ -39,11 +39,7 @@ async function queryBackend(request: QueryRequest): Promise<NormalizedQueryRespo
  * Load an existing fixture from disk by API name.
  */
 async function loadFixture(apiName: string): Promise<ApiFixture> {
-  const fixturePath = path.join(
-    process.cwd(),
-    "test/fixtures/c/wlan/api",
-    `${apiName}.json`,
-  )
+  const fixturePath = path.join(process.cwd(), "test/fixtures/c/wlan/api", `${apiName}.json`)
 
   try {
     const content = await fs.readFile(fixturePath, "utf-8")
@@ -57,11 +53,7 @@ async function loadFixture(apiName: string): Promise<ApiFixture> {
  * Save an enriched fixture to disk.
  */
 async function saveFixture(apiName: string, fixture: ApiFixture): Promise<void> {
-  const fixturePath = path.join(
-    process.cwd(),
-    "test/fixtures/c/wlan/api",
-    `${apiName}.json`,
-  )
+  const fixturePath = path.join(process.cwd(), "test/fixtures/c/wlan/api", `${apiName}.json`)
 
   const content = JSON.stringify(fixture, null, 2)
   await fs.writeFile(fixturePath, content, "utf-8")
@@ -78,10 +70,7 @@ async function saveFixture(apiName: string, fixture: ApiFixture): Promise<void> 
  * 5. Generate dynamic contract from populated arrays
  * 6. Return enriched fixture with metadata
  */
-export async function enrichApiFixture(
-  apiName: string,
-  snapshotId: number,
-): Promise<ApiFixture> {
+export async function enrichApiFixture(apiName: string, snapshotId: number): Promise<ApiFixture> {
   // Phase 1: Load existing fixture
   const existingFixture = await loadFixture(apiName)
 
@@ -97,12 +86,7 @@ export async function enrichApiFixture(
         intent,
         snapshotId,
         apiName,
-        apiNameAliases: [
-          apiName,
-          `_${apiName}`,
-          `${apiName}___RAM`,
-          `_${apiName}___RAM`,
-        ],
+        apiNameAliases: [apiName, `_${apiName}`, `${apiName}___RAM`, `_${apiName}___RAM`],
       }
 
       const result = await queryBackend(req)
@@ -180,14 +164,10 @@ export interface FixtureEnrichmentReport {
 /**
  * Enrich all API fixtures in the test/fixtures/c/wlan/api directory.
  */
-export async function enrichAllApis(
-  snapshotIds: Record<string, number>,
-): Promise<FixtureEnrichmentReport> {
+export async function enrichAllApis(snapshotIds: Record<string, number>): Promise<FixtureEnrichmentReport> {
   const fixturesDir = path.join(process.cwd(), "test/fixtures/c/wlan/api")
   const files = await fs.readdir(fixturesDir)
-  const apiNames = files
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => f.replace(".json", ""))
+  const apiNames = files.filter((f) => f.endsWith(".json")).map((f) => f.replace(".json", ""))
 
   const defaultSnapshotId = snapshotIds.default ?? 1
   const report: FixtureEnrichmentReport = {

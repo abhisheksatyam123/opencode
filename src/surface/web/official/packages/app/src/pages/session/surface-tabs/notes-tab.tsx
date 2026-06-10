@@ -1085,7 +1085,9 @@ export function SurfaceNotesTab() {
                     </div>
                     <div class="mt-1 text-11-regular text-text-weak" role="status" aria-live="polite">
                       {state.noteSaveStatus ||
-                        (readOnly() ? "Read-only access: note editing is disabled." : "Preview or edit this vault note.")}
+                        (readOnly()
+                          ? "Read-only access: note editing is disabled."
+                          : "Preview or edit this vault note.")}
                     </div>
                   </div>
                   <div class="flex shrink-0 flex-wrap items-center gap-1">
@@ -1157,7 +1159,9 @@ export function SurfaceNotesTab() {
                   <Match when={true}>
                     <NotePreview
                       ext={data.ext}
-                      content={state.draftLoadedPath === data.path && state.noteDirty ? state.draftContent : data.content}
+                      content={
+                        state.draftLoadedPath === data.path && state.noteDirty ? state.draftContent : data.content
+                      }
                       path={data.path}
                       files={files()}
                       pendingAnchor={state.pendingAnchor}

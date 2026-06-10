@@ -7,7 +7,15 @@ export const srcLocSchema = z.object({
 })
 
 export const evidenceSchema = z.object({
-  kind: z.enum(["call_expr", "fn_ptr_assign", "dispatch_table_entry", "register_call", "log_site", "field_access", "unknown"]),
+  kind: z.enum([
+    "call_expr",
+    "fn_ptr_assign",
+    "dispatch_table_entry",
+    "register_call",
+    "log_site",
+    "field_access",
+    "unknown",
+  ]),
   loc: srcLocSchema,
   snippet_hash: z.string().optional(),
 })
@@ -56,13 +64,13 @@ export const edgeRefSchema = z.object({
     // Language-agnostic structural kinds (introduced to give every
     // common.ts `EdgeKind` value a 1:1 protocol representation —
     // previously unmapped kinds silently fell through to "call_runtime").
-    "use_macro",       // ← common.ts EdgeKind "uses_macro"
-    "import",          // ← common.ts EdgeKind "imports"
-    "contain",         // ← common.ts EdgeKind "contains"
-    "reference_type",  // ← common.ts EdgeKind "references_type"
+    "use_macro", // ← common.ts EdgeKind "uses_macro"
+    "import", // ← common.ts EdgeKind "imports"
+    "contain", // ← common.ts EdgeKind "contains"
+    "reference_type", // ← common.ts EdgeKind "references_type"
     // Data-structure kinds (Phase 3 of the data-flow story).
-    "field_type",      // ← common.ts EdgeKind "field_of_type"
-    "aggregate",       // ← common.ts EdgeKind "aggregates"
+    "field_type", // ← common.ts EdgeKind "field_of_type"
+    "aggregate", // ← common.ts EdgeKind "aggregates"
   ]),
   edge_kind_verbose: z.enum([
     "static_direct_calls",
@@ -244,7 +252,14 @@ export const observationSchema = z.object({
 })
 
 export const protocolErrorSchema = z.object({
-  code: z.enum(["VALIDATION_ERROR", "NOT_INITIALIZED", "SNAPSHOT_NOT_READY", "NOT_FOUND", "DB_ERROR", "INTERNAL_ERROR"]),
+  code: z.enum([
+    "VALIDATION_ERROR",
+    "NOT_INITIALIZED",
+    "SNAPSHOT_NOT_READY",
+    "NOT_FOUND",
+    "DB_ERROR",
+    "INTERNAL_ERROR",
+  ]),
   message: z.string(),
   field: z.string().optional(),
   retryable: z.boolean().optional(),

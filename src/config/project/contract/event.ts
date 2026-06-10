@@ -1,10 +1,6 @@
 import z from "zod"
 
-export const ProjectContractEventTypeSchema = z.enum([
-  "project.requested",
-  "project.updated",
-  "project.failed",
-])
+export const ProjectContractEventTypeSchema = z.enum(["project.requested", "project.updated", "project.failed"])
 
 export type ProjectContractEventType = z.infer<typeof ProjectContractEventTypeSchema>
 

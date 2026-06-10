@@ -7,12 +7,7 @@ export * from "@/tool/task/contract/event"
 export * from "@/tool/task/contract/conformance"
 import { TaskContractVersion } from "@/tool/task/contract/version"
 
-import {
-  ensureBudget,
-  incrementBudget,
-  readBudget,
-  type BudgetEntry,
-} from "@/tool/task/budget"
+import { ensureBudget, incrementBudget, readBudget, type BudgetEntry } from "@/tool/task/budget"
 
 export const TaskPortSchema = z.object({
   version: z.literal(TaskContractVersion),
@@ -25,10 +20,6 @@ export namespace Task {
   export class Service extends ServiceMap.Service<Service, TaskPort>()("@opencode/ToolTask") {}
 }
 
-export {
-  readBudget,
-  ensureBudget,
-  incrementBudget,
-}
+export { readBudget, ensureBudget, incrementBudget }
 
 export type { BudgetEntry }

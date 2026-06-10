@@ -655,8 +655,6 @@ default for any missing/invalid key (per-key fallback per
       stats.files_skipped += policySeedCatalogue().length
     }
 
-
-
     return stats
   }
 

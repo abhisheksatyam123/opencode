@@ -66,24 +66,13 @@ export interface GraphWriteSink {
 }
 
 function id(parts: Array<string | number | undefined>): string {
-  return parts
-    .filter((part): part is string | number => part !== undefined && part !== null && part !== "")
-    .join(":")
+  return parts.filter((part): part is string | number => part !== undefined && part !== null && part !== "").join(":")
 }
 
 function isSymbolBackedKind(kind: string): boolean {
-  return [
-    "function",
-    "api",
-    "struct",
-    "union",
-    "enum",
-    "typedef",
-    "macro",
-    "global_var",
-    "field",
-    "param",
-  ].includes(kind)
+  return ["function", "api", "struct", "union", "enum", "typedef", "macro", "global_var", "field", "param"].includes(
+    kind,
+  )
 }
 
 function normalizeGraphKind(kind: RuntimeGraphNodeKind): string {
@@ -98,10 +87,7 @@ function runtimeNodeId(snapshotId: number, participant: { name: string; kind: st
   return id(["graph_node", snapshotId, "runtime", participant.kind, participant.name])
 }
 
-function runtimeParticipantNode(
-  snapshotId: number,
-  participant: RuntimeGraphParticipantRow,
-): GraphNodeRow {
+function runtimeParticipantNode(snapshotId: number, participant: RuntimeGraphParticipantRow): GraphNodeRow {
   const kind = normalizeGraphKind(participant.kind)
   return {
     snapshot_id: snapshotId,
@@ -155,9 +141,7 @@ function participantsForRuntimeRow(row: RuntimeCallerRow): RuntimeGraphParticipa
     push(placeholderRuntimeParticipant(row, "invoker", row.immediateInvoker, "unknown", row.dispatchSite))
   }
 
-  const chain = row.dispatchChain.length > 0
-    ? row.dispatchChain
-    : [row.immediateInvoker, row.targetApi]
+  const chain = row.dispatchChain.length > 0 ? row.dispatchChain : [row.immediateInvoker, row.targetApi]
 
   chain.forEach((name: string, index: number) => {
     if (participantsByName.has(name)) return
@@ -169,11 +153,10 @@ function participantsForRuntimeRow(row: RuntimeCallerRow): RuntimeGraphParticipa
           : index === 0
             ? "trigger"
             : "dispatch_step"
-    const kind: RuntimeGraphNodeKind =
-      name === row.targetApi
-        ? row.targetKind ?? "function"
-        : "unknown"
-    push(placeholderRuntimeParticipant(row, role, name, kind, index === chain.length - 1 ? row.dispatchSite : undefined))
+    const kind: RuntimeGraphNodeKind = name === row.targetApi ? (row.targetKind ?? "function") : "unknown"
+    push(
+      placeholderRuntimeParticipant(row, role, name, kind, index === chain.length - 1 ? row.dispatchSite : undefined),
+    )
   })
 
   return [...participantsByName.values()]
@@ -184,9 +167,7 @@ function runtimeChainEdges(
   row: RuntimeCallerRow,
   participantsByName: Map<string, RuntimeGraphParticipantRow>,
 ): GraphEdgeRow[] {
-  const chain = row.dispatchChain.length > 0
-    ? row.dispatchChain
-    : [row.immediateInvoker, row.targetApi]
+  const chain = row.dispatchChain.length > 0 ? row.dispatchChain : [row.immediateInvoker, row.targetApi]
 
   const edges: GraphEdgeRow[] = []
   const seen = new Set<string>()
@@ -194,8 +175,16 @@ function runtimeChainEdges(
   for (let i = 0; i < chain.length - 1; i += 1) {
     const srcName = chain[i]!
     const dstName = chain[i + 1]!
-    const srcParticipant = participantsByName.get(srcName) ?? placeholderRuntimeParticipant(row, "dispatch_step", srcName, "unknown")
-    const dstParticipant = participantsByName.get(dstName) ?? placeholderRuntimeParticipant(row, "dispatch_step", dstName, dstName === row.targetApi ? row.targetKind ?? "function" : "unknown")
+    const srcParticipant =
+      participantsByName.get(srcName) ?? placeholderRuntimeParticipant(row, "dispatch_step", srcName, "unknown")
+    const dstParticipant =
+      participantsByName.get(dstName) ??
+      placeholderRuntimeParticipant(
+        row,
+        "dispatch_step",
+        dstName,
+        dstName === row.targetApi ? (row.targetKind ?? "function") : "unknown",
+      )
     const isFinalStep = srcName === row.immediateInvoker && dstName === row.targetApi
     const edge_id = isFinalStep
       ? id(["graph_edge", snapshotId, "runtime_invokes", row.immediateInvoker, row.targetApi])
@@ -206,8 +195,14 @@ function runtimeChainEdges(
       snapshot_id: snapshotId,
       edge_id,
       edge_kind: "runtime_calls",
-      src_node_id: runtimeNodeId(snapshotId, { name: srcParticipant.name, kind: normalizeGraphKind(srcParticipant.kind) }),
-      dst_node_id: runtimeNodeId(snapshotId, { name: dstParticipant.name, kind: normalizeGraphKind(dstParticipant.kind) }),
+      src_node_id: runtimeNodeId(snapshotId, {
+        name: srcParticipant.name,
+        kind: normalizeGraphKind(srcParticipant.kind),
+      }),
+      dst_node_id: runtimeNodeId(snapshotId, {
+        name: dstParticipant.name,
+        kind: normalizeGraphKind(dstParticipant.kind),
+      }),
       confidence: row.confidence,
       derivation: "runtime",
       metadata: {
@@ -270,7 +265,10 @@ export function evidenceRow(snapshotId: number, edgeId: string, evidence?: Evide
   }
 }
 
-export function runtimeRows(snapshotId: number, row: RuntimeCallerRow): {
+export function runtimeRows(
+  snapshotId: number,
+  row: RuntimeCallerRow,
+): {
   nodes: GraphNodeRow[]
   edges: GraphEdgeRow[]
   observation: GraphObservationRow
@@ -280,10 +278,13 @@ export function runtimeRows(snapshotId: number, row: RuntimeCallerRow): {
   const participantsByName = new Map(participants.map((participant) => [participant.name, participant]))
   const nodes = participants.map((participant) => runtimeParticipantNode(snapshotId, participant))
   const edges = runtimeChainEdges(snapshotId, row, participantsByName)
-  const primaryEdge = edges.find((edge) =>
-    edge.edge_id === id(["graph_edge", snapshotId, "runtime_invokes", row.immediateInvoker, row.targetApi]),
-  ) ?? edges[edges.length - 1]
-  const dst = primaryEdge?.dst_node_id ?? runtimeNodeId(snapshotId, { name: row.targetApi, kind: normalizeGraphKind(row.targetKind ?? "function") })
+  const primaryEdge =
+    edges.find(
+      (edge) => edge.edge_id === id(["graph_edge", snapshotId, "runtime_invokes", row.immediateInvoker, row.targetApi]),
+    ) ?? edges[edges.length - 1]
+  const dst =
+    primaryEdge?.dst_node_id ??
+    runtimeNodeId(snapshotId, { name: row.targetApi, kind: normalizeGraphKind(row.targetKind ?? "function") })
   return {
     nodes,
     edges,
@@ -302,6 +303,10 @@ export function runtimeRows(snapshotId: number, row: RuntimeCallerRow): {
         dispatch_site: row.dispatchSite,
       },
     },
-    evidence: evidenceRow(snapshotId, primaryEdge?.edge_id ?? id(["graph_edge", snapshotId, "runtime_invokes", row.immediateInvoker, row.targetApi]), row.evidence),
+    evidence: evidenceRow(
+      snapshotId,
+      primaryEdge?.edge_id ?? id(["graph_edge", snapshotId, "runtime_invokes", row.immediateInvoker, row.targetApi]),
+      row.evidence,
+    ),
   }
 }

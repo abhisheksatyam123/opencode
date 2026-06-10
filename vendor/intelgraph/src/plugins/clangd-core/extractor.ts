@@ -46,12 +46,7 @@ import { extractTypeRefs } from "./phases/type-refs.js"
 import { extractSyscallMacros } from "./phases/syscall-macros.js"
 import type { FileSymbolMap } from "./phases/types.js"
 
-const CAPABILITIES: Capability[] = [
-  "symbols",
-  "types",
-  "direct-calls",
-  "log-events",
-]
+const CAPABILITIES: Capability[] = ["symbols", "types", "direct-calls", "log-events"]
 
 const C_FAMILY_EXTENSIONS = [".c", ".h", ".cpp", ".cc", ".cxx", ".hpp"] as const
 
@@ -83,13 +78,16 @@ const clangdCoreExtractor = defineExtractor({
     // Optional comma-separated priority subdirs (e.g. "wlan_proc/wlan/syssw_platform,wlan_proc/wlan/protocol").
     // Each subdir is front-loaded before backfilling from workspace root.
     const prioritySubdirEnv = process.env.INTELGRAPH_C_PRIORITY_DIR
-    const prioritySubdirs = prioritySubdirEnv ? prioritySubdirEnv.split(",").map((s) => s.trim()).filter(Boolean) : []
+    const prioritySubdirs = prioritySubdirEnv
+      ? prioritySubdirEnv
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : []
     // Optional comma-separated dir names to skip (e.g. "bsp,build,rom" to skip ROM binary dirs).
     const skipDirsEnv = process.env.INTELGRAPH_C_SKIP_DIRS
     const skipDirSet = skipDirsEnv ? new Set(skipDirsEnv.split(",").map((s) => s.trim())) : null
-    const skipDirFn = skipDirSet
-      ? (name: string) => name.startsWith(".") || skipDirSet.has(name)
-      : undefined
+    const skipDirFn = skipDirSet ? (name: string) => name.startsWith(".") || skipDirSet.has(name) : undefined
 
     let files: string[]
     if (prioritySubdirs.length > 0) {
@@ -107,7 +105,11 @@ const clangdCoreExtractor = defineExtractor({
           ...(skipDirFn ? { skipDir: skipDirFn } : {}),
         })
         for (const f of priorityFiles) {
-          if (!seen.has(f)) { seen.add(f); files.push(f); if (files.length >= fileLimit) break }
+          if (!seen.has(f)) {
+            seen.add(f)
+            files.push(f)
+            if (files.length >= fileLimit) break
+          }
         }
       }
       // Backfill remaining budget from workspace root (dedup by Set)
@@ -118,7 +120,11 @@ const clangdCoreExtractor = defineExtractor({
           ...(skipDirFn ? { skipDir: skipDirFn } : {}),
         })
         for (const f of rest) {
-          if (!seen.has(f)) { seen.add(f); files.push(f); if (files.length >= fileLimit) break }
+          if (!seen.has(f)) {
+            seen.add(f)
+            files.push(f)
+            if (files.length >= fileLimit) break
+          }
         }
       }
     } else {
@@ -188,7 +194,11 @@ const C_FAMILY_FILE_EXTS = [".c", ".h", ".cpp", ".cc", ".cxx", ".hpp"]
 function hasCFamilyShallow(dir: string): boolean {
   if (!existsSync(dir)) return false
   let entries
-  try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return false }
+  try {
+    entries = readdirSync(dir, { withFileTypes: true })
+  } catch {
+    return false
+  }
   for (const entry of entries) {
     const name = entry.name
     if (entry.isFile()) {
@@ -199,7 +209,9 @@ function hasCFamilyShallow(dir: string): boolean {
         for (const sub of subEntries) {
           if (sub.isFile() && C_FAMILY_FILE_EXTS.some((ext) => sub.name.endsWith(ext))) return true
         }
-      } catch { /* unreadable */ }
+      } catch {
+        /* unreadable */
+      }
     }
   }
   return false

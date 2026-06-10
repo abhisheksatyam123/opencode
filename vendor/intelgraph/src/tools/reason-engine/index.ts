@@ -125,7 +125,7 @@ export async function runReasonEngine(
     log.warn("reason-engine: proposals rejected by validator", {
       symbol: input.targetSymbol,
       rejectedCount: validated.rejected.length,
-      reasons: validated.rejected.map(r => ({ rationale: r.path.rationale?.slice(0, 80), reason: r.reason })),
+      reasons: validated.rejected.map((r) => ({ rationale: r.path.rationale?.slice(0, 80), reason: r.reason })),
     })
   }
 
@@ -154,9 +154,7 @@ export async function runReasonEngine(
 
   // ── Persist ─────────────────────────────────────────────────────────────────
   if (mapped.length > 0) {
-    const requiredFiles = Array.from(
-      new Set(mapped.flatMap((rp) => rp.evidence.map((e) => e.file))),
-    )
+    const requiredFiles = Array.from(new Set(mapped.flatMap((rp) => rp.evidence.map((e) => e.file))))
     const hashManifest: Record<string, string> = {}
     for (const f of requiredFiles) {
       const h = computeFileHash(f)

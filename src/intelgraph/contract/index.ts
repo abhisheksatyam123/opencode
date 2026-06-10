@@ -9,13 +9,7 @@ export type IntelGraphRelationKind = (typeof IntelGraphRelationKinds)[number]
 
 export type IntelGraphLanguage = "c" | (string & {})
 
-export type IntelGraphNodeKind =
-  | "function"
-  | "api"
-  | "registration"
-  | "struct_field"
-  | "callsite"
-  | (string & {})
+export type IntelGraphNodeKind = "function" | "api" | "registration" | "struct_field" | "callsite" | (string & {})
 
 export type IntelGraphDiagnosticSeverity = "debug" | "info" | "warn" | "error"
 
@@ -55,7 +49,6 @@ export type IntelGraphRelationNode = {
   diagnostics?: IntelGraphDiagnostic[]
   truncated?: boolean
 }
-
 
 export type IntelGraphParsedRelationSymbol = {
   symbol: string

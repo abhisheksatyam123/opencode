@@ -43,9 +43,7 @@ type OpenApp = (typeof OPEN_APPS)[number]
 type OS = "macos" | "windows" | "linux" | "unknown"
 type SessionPanel = "files" | "tasks" | "context" | "stats" | "agents" | "notes" | "intelgraph" | "logs" | "review"
 type SessionTabId = "chat" | "tasks" | "stats" | "review" | "files" | "notes" | "intelgraph" | "logs"
-type SessionTabAction =
-  | { kind: "chat" }
-  | { kind: "panel"; panel: Exclude<SessionPanel, "context"> }
+type SessionTabAction = { kind: "chat" } | { kind: "panel"; panel: Exclude<SessionPanel, "context"> }
 type SessionTabDefinition = {
   id: SessionTabId
   label: string

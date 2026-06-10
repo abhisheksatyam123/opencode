@@ -21,8 +21,8 @@ tags:
 id: planner
 aliases: [planner]
 ---
-# planner
 
+# planner
 
 ## System prompt
 

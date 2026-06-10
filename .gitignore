@@ -31,8 +31,8 @@ out/
 # Local opencode config snapshots.
 # opencode.json itself holds session state (todo budgets, bindings)
 # and is intentionally local-only.
-opencode.json
-opencode.jsonc
+/opencode.json
+/opencode.jsonc
 
 # Local docs / derived vault snapshot
 doc/

@@ -26,16 +26,9 @@ import type { RuntimeCallerRow, SymbolRow, SourceLocation } from "../contracts/c
 import type { GraphProjectionRepository } from "../contracts/orchestrator.js"
 import type { IndirectCallerGraph } from "../../tools/indirect-callers.js"
 import type { ILanguageClient } from "../../lsp/ports.js"
-import type {
-  GraphNodeRow,
-  GraphWriteBatch,
-  GraphWriteSink,
-} from "../db/graph-rows.js"
+import type { GraphNodeRow, GraphWriteBatch, GraphWriteSink } from "../db/graph-rows.js"
 import type { IExtractor } from "../extraction/contract.js"
-import {
-  ExtractorRunner,
-  type RunnerReport,
-} from "../extraction/runner.js"
+import { ExtractorRunner, type RunnerReport } from "../extraction/runner.js"
 import { loggerPort } from "../../logging/logger.js"
 
 const _log = loggerPort.child("ingest-tool")
@@ -65,11 +58,7 @@ export interface IngestDeps {
   /** Plugins to run. Defaults to BUILT_IN_EXTRACTORS in prod init. */
   plugins: IExtractor[]
   /** Optional test override for runner construction. */
-  runnerFactory?: (opts: {
-    snapshotId: number
-    workspaceRoot: string
-    sink: GraphWriteSink
-  }) => ExtractorRunner
+  runnerFactory?: (opts: { snapshotId: number; workspaceRoot: string; sink: GraphWriteSink }) => ExtractorRunner
   projection: GraphProjectionRepository
   ingestion?: IIndirectCallerIngestion
   indirectCallerResolver?: (sym: { name: string; file?: string; line?: number }) => Promise<IndirectCallerGraph | null>
@@ -86,12 +75,20 @@ export function setIngestDeps(deps: IngestDeps | null): void {
 // ---------------------------------------------------------------------------
 
 export const ingestInputSchema = z.object({
-  workspaceRoot: z.string().optional().describe("Absolute path to workspace root (defaults to WLAN_WORKSPACE_ROOT when omitted/empty)"),
+  workspaceRoot: z
+    .string()
+    .optional()
+    .describe("Absolute path to workspace root (defaults to WLAN_WORKSPACE_ROOT when omitted/empty)"),
   compileDbHash: z.string().optional().describe("Hash of compile_commands.json (auto-computed if omitted)"),
   parserVersion: z.string().optional().describe("Parser version string (default: 1.0.0)"),
   fileLimit: z.number().int().positive().optional().describe("Max files to extract (default: 200)"),
   syncProjection: z.boolean().optional().describe("Sync projection after ingest (default: true)"),
-  maxRuntimeTargets: z.number().int().positive().optional().describe("Max function symbols to resolve indirect callers for (default: 200)"),
+  maxRuntimeTargets: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe("Max function symbols to resolve indirect callers for (default: 200)"),
 })
 
 // ---------------------------------------------------------------------------
@@ -154,10 +151,7 @@ class FunctionSymbolCaptureSink implements GraphWriteSink {
  * target symbol.  One row is emitted per IndirectCallerNode that has at
  * least an enclosing-function name and a file location.
  */
-function graphNodesToRuntimeCallerRows(
-  targetApi: string,
-  graph: IndirectCallerGraph,
-): RuntimeCallerRow[] {
+function graphNodesToRuntimeCallerRows(targetApi: string, graph: IndirectCallerGraph): RuntimeCallerRow[] {
   const rows: RuntimeCallerRow[] = []
 
   for (const node of graph.nodes) {
@@ -179,10 +173,7 @@ function graphNodesToRuntimeCallerRows(
 
     // Derive runtimeTrigger from resolved chain trigger or fall back to classification
     const runtimeTrigger =
-      chain?.trigger.triggerKind ??
-      chain?.trigger.triggerKey ??
-      node.classification?.patternName ??
-      "unknown"
+      chain?.trigger.triggerKind ?? chain?.trigger.triggerKey ?? node.classification?.patternName ?? "unknown"
 
     // Confidence: scale confidenceScore (1–5) to 0–1, or use 0.5 as fallback
     const confidence = chain ? Math.min(chain.confidenceScore / 5.0, 1.0) : 0.5
@@ -253,12 +244,8 @@ export async function executeIngestTool(args: z.infer<typeof ingestInputSchema>)
 
     const runReport: RunnerReport = await runner.run()
     const counts = runReport.bus.byKind
-    lines.push(
-      `Extracted: symbols=${counts.symbol ?? 0} types=${counts.type ?? 0} edges=${counts.edge ?? 0}`,
-    )
-    lines.push(
-      `Persisted: symbols=${counts.symbol ?? 0} types=${counts.type ?? 0} edges=${counts.edge ?? 0}`,
-    )
+    lines.push(`Extracted: symbols=${counts.symbol ?? 0} types=${counts.type ?? 0} edges=${counts.edge ?? 0}`)
+    lines.push(`Persisted: symbols=${counts.symbol ?? 0} types=${counts.type ?? 0} edges=${counts.edge ?? 0}`)
     if (runReport.pluginsFailed > 0) {
       lines.push(
         `Plugins failed: ${runReport.pluginsFailed} (${runReport.perPlugin
@@ -275,10 +262,7 @@ export async function executeIngestTool(args: z.infer<typeof ingestInputSchema>)
     // Phase 2: Runtime caller ingestion via C-parser + clangd indirect caller resolution
     // Only run if an indirect caller resolver is available
     if (INGEST_DEPS.ingestion && INGEST_DEPS.indirectCallerResolver) {
-      const functionSymbols = captureSink.functionSymbols.slice(
-        0,
-        args.maxRuntimeTargets ?? 200,
-      )
+      const functionSymbols = captureSink.functionSymbols.slice(0, args.maxRuntimeTargets ?? 200)
 
       let runtimeInserted = 0
       for (const sym of functionSymbols) {
@@ -294,7 +278,9 @@ export async function executeIngestTool(args: z.infer<typeof ingestInputSchema>)
           const runtimeReport = await INGEST_DEPS.ingestion.persistRuntimeChains(snapshotId, linked)
           runtimeInserted += runtimeReport.inserted.runtimeCallers ?? 0
         } catch (err) {
-          _log.warn(`runtime caller resolution failed for ${sym.name}`, { error: err instanceof Error ? err.message : String(err) })
+          _log.warn(`runtime caller resolution failed for ${sym.name}`, {
+            error: err instanceof Error ? err.message : String(err),
+          })
         }
       }
 

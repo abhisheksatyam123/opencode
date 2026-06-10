@@ -104,7 +104,9 @@ function AppShellProviders(props: ParentProps<{ embedded?: boolean }>) {
                 <HighlightsProvider>
                   <Show
                     when={!props.embedded}
-                    fallback={<div class="h-dvh w-screen min-h-0 overflow-hidden bg-background-base">{props.children}</div>}
+                    fallback={
+                      <div class="h-dvh w-screen min-h-0 overflow-hidden bg-background-base">{props.children}</div>
+                    }
                   >
                     <Layout>{props.children}</Layout>
                   </Show>

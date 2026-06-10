@@ -36,14 +36,14 @@
 // the full client↔proxy contract this module implements on the client side.
 
 export type Upstream =
-  | "azure-openai"      // Azure/OpenAI-compatible cache key works directly
-  | "openai"            // direct OpenAI provider — same as azure-openai
-  | "anthropic"         // Anthropic-family models need cache_control markers
-  | "vertex-gemini"     // Vertex Gemini-family models use cachedContents resources
-  | "vertex-anthropic"  // Vertex Anthropic-family models use Anthropic markers
+  | "azure-openai" // Azure/OpenAI-compatible cache key works directly
+  | "openai" // direct OpenAI provider — same as azure-openai
+  | "anthropic" // Anthropic-family models need cache_control markers
+  | "vertex-gemini" // Vertex Gemini-family models use cachedContents resources
+  | "vertex-anthropic" // Vertex Anthropic-family models use Anthropic markers
   | "bedrock-anthropic" // bedrock::anthropic.* — cachePoint markers
-  | "bedrock-nova"      // bedrock::amazon.nova-* — cachePoint markers
-  | "unknown"           // unrecognized — fall back to generic key
+  | "bedrock-nova" // bedrock::amazon.nova-* — cachePoint markers
+  | "unknown" // unrecognized — fall back to generic key
 
 /**
  * Detect the upstream provider family from a (possibly proxy-prefixed)

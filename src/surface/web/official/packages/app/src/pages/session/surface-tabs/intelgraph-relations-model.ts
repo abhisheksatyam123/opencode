@@ -73,7 +73,6 @@ export type IntelGraphRelationUiModel = {
   layout: RelationLayoutScores
 }
 
-
 export type IntelGraphRelationGraphState = {
   nodes: Record<string, SurfaceIntelGraphNode>
   edges: Record<string, SurfaceIntelGraphEdge>
@@ -127,7 +126,10 @@ export function resolveIntelGraphVisualYOverlaps<T extends IntelGraphVisualYNode
   const adjusted = new Map<string, number>()
   for (const [, levelNodes] of byLevel) {
     const ordered = [...levelNodes].sort(
-      (a, b) => a.yLevel - b.yLevel || nodeLabel(a.node).localeCompare(nodeLabel(b.node)) || a.visualId.localeCompare(b.visualId),
+      (a, b) =>
+        a.yLevel - b.yLevel ||
+        nodeLabel(a.node).localeCompare(nodeLabel(b.node)) ||
+        a.visualId.localeCompare(b.visualId),
     )
     let cursor = Number.NEGATIVE_INFINITY
     for (const node of ordered) {
@@ -136,9 +138,12 @@ export function resolveIntelGraphVisualYOverlaps<T extends IntelGraphVisualYNode
       cursor = nextY
     }
     const originalCenter = ordered.reduce((total, node) => total + node.yLevel, 0) / Math.max(1, ordered.length)
-    const adjustedCenter = ordered.reduce((total, node) => total + (adjusted.get(node.visualId) ?? node.yLevel), 0) / Math.max(1, ordered.length)
+    const adjustedCenter =
+      ordered.reduce((total, node) => total + (adjusted.get(node.visualId) ?? node.yLevel), 0) /
+      Math.max(1, ordered.length)
     const recenterDelta = adjustedCenter - originalCenter
-    for (const node of ordered) adjusted.set(node.visualId, (adjusted.get(node.visualId) ?? node.yLevel) - recenterDelta)
+    for (const node of ordered)
+      adjusted.set(node.visualId, (adjusted.get(node.visualId) ?? node.yLevel) - recenterDelta)
   }
   return nodes.map((node) => ({ ...node, yLevel: adjusted.get(node.visualId) ?? node.yLevel }))
 }
@@ -412,12 +417,14 @@ export function relationEdgeFamilyKey(
   // Direction-less call edges still get connection-set colors. Right-to-root/
   // right-to-right edges are caller/incoming buckets keyed by destination;
   // root/left-to-left edges are callee/outgoing buckets keyed by source.
-  if (srcLevel > dstLevel) return dstLevel >= 0
-    ? `${RELATION_CONNECTION_VIEW_POLICY.incomingFamilyPrefix}:${edge.dst}`
-    : `${RELATION_CONNECTION_VIEW_POLICY.outgoingFamilyPrefix}:${edge.src}`
-  if (dstLevel > srcLevel) return srcLevel <= 0
-    ? `${RELATION_CONNECTION_VIEW_POLICY.outgoingFamilyPrefix}:${edge.src}`
-    : `${RELATION_CONNECTION_VIEW_POLICY.incomingFamilyPrefix}:${edge.dst}`
+  if (srcLevel > dstLevel)
+    return dstLevel >= 0
+      ? `${RELATION_CONNECTION_VIEW_POLICY.incomingFamilyPrefix}:${edge.dst}`
+      : `${RELATION_CONNECTION_VIEW_POLICY.outgoingFamilyPrefix}:${edge.src}`
+  if (dstLevel > srcLevel)
+    return srcLevel <= 0
+      ? `${RELATION_CONNECTION_VIEW_POLICY.outgoingFamilyPrefix}:${edge.src}`
+      : `${RELATION_CONNECTION_VIEW_POLICY.incomingFamilyPrefix}:${edge.dst}`
   return srcLevel >= 0
     ? `${RELATION_CONNECTION_VIEW_POLICY.incomingFamilyPrefix}:${edge.dst}`
     : `${RELATION_CONNECTION_VIEW_POLICY.outgoingFamilyPrefix}:${edge.src}`
@@ -589,17 +596,17 @@ function computeRelationBranchAnchors(
         return Math.sign(neighborLevel) === sign && Math.abs(neighborLevel) < Math.abs(level) && anchors[neighbor]
       })
       .map((neighbor) => anchors[neighbor])
-    anchors[id] = [...new Set(candidates)].sort((a, b) => {
-      const nodeA = nodeById.get(a)
-      const nodeB = nodeById.get(b)
-      const keyA = nodeA ? relationNodeSortKey(nodeA) : a
-      const keyB = nodeB ? relationNodeSortKey(nodeB) : b
-      return keyA.localeCompare(keyB)
-    })[0] ?? id
+    anchors[id] =
+      [...new Set(candidates)].sort((a, b) => {
+        const nodeA = nodeById.get(a)
+        const nodeB = nodeById.get(b)
+        const keyA = nodeA ? relationNodeSortKey(nodeA) : a
+        const keyB = nodeB ? relationNodeSortKey(nodeB) : b
+        return keyA.localeCompare(keyB)
+      })[0] ?? id
   }
   return anchors
 }
-
 
 const RELATION_CHILD_ROW_GAP = 1
 const RELATION_BUCKET_GAP_ROWS = 1
@@ -610,7 +617,12 @@ type RelationTreeBucket = {
   children: string[]
 }
 
-function relationParentChild(edge: SurfaceIntelGraphEdge, levels: Record<string, number>, nodeIds: Set<string>, rootId: string) {
+function relationParentChild(
+  edge: SurfaceIntelGraphEdge,
+  levels: Record<string, number>,
+  nodeIds: Set<string>,
+  rootId: string,
+) {
   if (!nodeIds.has(edge.src) || !nodeIds.has(edge.dst) || edge.src === edge.dst) return undefined
   if (edge.direction === "incoming") return { parent: edge.dst, child: edge.src }
   if (edge.direction === "outgoing") return { parent: edge.src, child: edge.dst }
@@ -618,14 +630,21 @@ function relationParentChild(edge: SurfaceIntelGraphEdge, levels: Record<string,
   const dstLevel = levels[edge.dst] ?? 0
   if (edge.src === rootId) return { parent: edge.src, child: edge.dst }
   if (edge.dst === rootId) return { parent: edge.dst, child: edge.src }
-  return Math.abs(srcLevel) <= Math.abs(dstLevel) ? { parent: edge.src, child: edge.dst } : { parent: edge.dst, child: edge.src }
+  return Math.abs(srcLevel) <= Math.abs(dstLevel)
+    ? { parent: edge.src, child: edge.dst }
+    : { parent: edge.dst, child: edge.src }
 }
 
 function relationBucketKey(edge: SurfaceIntelGraphEdge) {
   return `${edge.direction ?? "both"}:${edge.kind}`
 }
 
-function relationParentChildBuckets(edges: SurfaceIntelGraphEdge[], levels: Record<string, number>, nodeIds: Set<string>, rootId: string) {
+function relationParentChildBuckets(
+  edges: SurfaceIntelGraphEdge[],
+  levels: Record<string, number>,
+  nodeIds: Set<string>,
+  rootId: string,
+) {
   const bucketsByParent = new Map<string, Map<string, Set<string>>>()
   for (const edge of edges) {
     const relation = relationParentChild(edge, levels, nodeIds, rootId)
@@ -1040,10 +1059,9 @@ function relationEdgeFromV1(
 
 export function adaptV1RelationResult(data: SurfaceIntelGraphV1RelationResult): IntelGraphRelationData {
   const relationRecord: IntelGraphNodeRelationRecord = { node: nodeFromV1(data.root), relations: [] }
-  for (const [kind, relatedNodes] of Object.entries(data.root.relations) as Array<[
-    SurfaceIntelGraphV1RelationKind,
-    SurfaceIntelGraphV1RelationNode[] | undefined,
-  ]>) {
+  for (const [kind, relatedNodes] of Object.entries(data.root.relations) as Array<
+    [SurfaceIntelGraphV1RelationKind, SurfaceIntelGraphV1RelationNode[] | undefined]
+  >) {
     if (!relatedNodes?.length) continue
     relationRecord.relations.push({
       type: kind,
@@ -1143,7 +1161,9 @@ export function buildIntelGraphRelationUiModel(
         const yBandEnd = Math.max(...yValues)
         const yCenter = (yBandStart + yBandEnd) / 2
         const firstRelation = items[0]?.relation
-        const colorKey = firstRelation ? relationEdgeFamilyKey(firstRelation, layout.levels, layout.branchAnchors) : undefined
+        const colorKey = firstRelation
+          ? relationEdgeFamilyKey(firstRelation, layout.levels, layout.branchAnchors)
+          : undefined
         return {
           type: bucket.type,
           direction: bucket.direction,

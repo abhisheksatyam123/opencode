@@ -22,7 +22,7 @@
 
 import * as path from "path"
 
-const HARDCODED_DEFAULT = "/local/mnt/workspace/notes"
+const HARDCODED_DEFAULT = path.join(process.env.HOME || process.env.USERPROFILE || "/tmp", "notes")
 
 function defaultNotesRoot(): string {
   return process.env.OPENCODE_DEFAULT_NOTES_ROOT?.trim() || HARDCODED_DEFAULT

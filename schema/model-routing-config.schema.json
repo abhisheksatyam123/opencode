@@ -26,11 +26,7 @@
               "type": "object",
               "properties": {
                 "tier": {
-                  "enum": [
-                    "tier0",
-                    "tier1",
-                    "tier2"
-                  ],
+                  "enum": ["tier0", "tier1", "tier2"],
                   "description": "Capability tier for this model."
                 }
               },

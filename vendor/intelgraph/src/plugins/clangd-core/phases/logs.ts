@@ -24,11 +24,7 @@ interface LogEdge {
   file: string
 }
 
-export async function* extractLogs(
-  ctx: PhaseCtx,
-  fileSymbols: FileSymbolMap,
-  logMacroMap: Map<string, LogMacroDef>,
-) {
+export async function* extractLogs(ctx: PhaseCtx, fileSymbols: FileSymbolMap, logMacroMap: Map<string, LogMacroDef>) {
   if (logMacroMap.size === 0) return
 
   for (const [file, symbols] of fileSymbols.entries()) {
@@ -46,61 +42,76 @@ export async function* extractLogs(
       }
     }
     fnRangesUnsorted.sort((a, b) => a.startLine - b.startLine)
-    const fnRanges: Array<{ name: string; startLine: number; endLine: number }> = fnRangesUnsorted.map(
-      (fn, i) => ({
-        name: fn.name,
-        startLine: fn.startLine,
-        endLine: i + 1 < fnRangesUnsorted.length ? fnRangesUnsorted[i + 1].startLine - 1 : fn.startLine + 10000,
-      }),
-    )
+    const fnRanges: Array<{ name: string; startLine: number; endLine: number }> = fnRangesUnsorted.map((fn, i) => ({
+      name: fn.name,
+      startLine: fn.startLine,
+      endLine: i + 1 < fnRangesUnsorted.length ? fnRangesUnsorted[i + 1].startLine - 1 : fn.startLine + 10000,
+    }))
 
     // Parse once, extract all log edges, then delete the tree immediately
-    const logEdges = parseSourceWith(text, (root): LogEdge[] => {
-      const edges: LogEdge[] = []
-      const callNodes = findAllNodes(root, "call_expression")
-      for (const callNode of callNodes) {
-        const fnNode = callNode.childForFieldName?.("function")
-        if (!fnNode) continue
-        const calleeName = fnNode.type === "identifier"
-          ? fnNode.text
-          : fnNode.type === "field_expression"
-            ? fnNode.childForFieldName?.("field")?.text
-            : null
-        if (!calleeName) continue
+    const logEdges =
+      parseSourceWith(text, (root): LogEdge[] => {
+        const edges: LogEdge[] = []
+        const callNodes = findAllNodes(root, "call_expression")
+        for (const callNode of callNodes) {
+          const fnNode = callNode.childForFieldName?.("function")
+          if (!fnNode) continue
+          const calleeName =
+            fnNode.type === "identifier"
+              ? fnNode.text
+              : fnNode.type === "field_expression"
+                ? fnNode.childForFieldName?.("field")?.text
+                : null
+          if (!calleeName) continue
 
-        const macroDef = logMacroMap.get(calleeName)
-        if (!macroDef) continue
+          const macroDef = logMacroMap.get(calleeName)
+          if (!macroDef) continue
 
-        const argsNode = callNode.childForFieldName?.("arguments")
-        if (!argsNode) continue
-        const argTexts: string[] = []
-        for (let i = 0; i < argsNode.childCount; i++) {
-          const child = argsNode.child(i)
-          if (!child || child.type === "(" || child.type === ")" || child.type === ",") continue
-          argTexts.push(child.text.trim())
+          const argsNode = callNode.childForFieldName?.("arguments")
+          if (!argsNode) continue
+          const argTexts: string[] = []
+          for (let i = 0; i < argsNode.childCount; i++) {
+            const child = argsNode.child(i)
+            if (!child || child.type === "(" || child.type === ")" || child.type === ",") continue
+            argTexts.push(child.text.trim())
+          }
+
+          const formatStr = argTexts[macroDef.formatArgIndex]
+          const template = formatStr
+            ? formatStr
+                .replace(/^"(.*)"$/, "$1")
+                .replace(/^'(.*)'$/, "$1")
+                .slice(0, 200)
+            : calleeName
+
+          const callLine = callNode.startPosition?.row ?? 0
+          let enclosingFn = "(file-scope)"
+          for (const fn of fnRanges) {
+            if (callLine >= fn.startLine && callLine <= fn.endLine) {
+              enclosingFn = fn.name
+              break
+            }
+          }
+
+          let subsystem = macroDef.subsystem ?? null
+          if (!subsystem && template) {
+            const m = template.match(/^([A-Z][A-Z0-9_]{1,8})\s*:/)
+            if (m) subsystem = m[1]
+          }
+
+          edges.push({
+            enclosingFn,
+            calleeName,
+            callLine,
+            level: macroDef.level,
+            template,
+            subsystem,
+            macro: calleeName,
+            file,
+          })
         }
-
-        const formatStr = argTexts[macroDef.formatArgIndex]
-        const template = formatStr
-          ? formatStr.replace(/^"(.*)"$/, "$1").replace(/^'(.*)'$/, "$1").slice(0, 200)
-          : calleeName
-
-        const callLine = callNode.startPosition?.row ?? 0
-        let enclosingFn = "(file-scope)"
-        for (const fn of fnRanges) {
-          if (callLine >= fn.startLine && callLine <= fn.endLine) { enclosingFn = fn.name; break }
-        }
-
-        let subsystem = macroDef.subsystem ?? null
-        if (!subsystem && template) {
-          const m = template.match(/^([A-Z][A-Z0-9_]{1,8})\s*:/)
-          if (m) subsystem = m[1]
-        }
-
-        edges.push({ enclosingFn, calleeName, callLine, level: macroDef.level, template, subsystem, macro: calleeName, file })
-      }
-      return edges
-    }) ?? []
+        return edges
+      }) ?? []
 
     for (const e of logEdges) {
       yield ctx.edge({

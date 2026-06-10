@@ -123,12 +123,7 @@ export class Logger implements ILogger {
     })
   }
 
-  private log(
-    level: LogLevel,
-    message: string,
-    context?: Record<string, unknown>,
-    error?: Error,
-  ): void {
+  private log(level: LogLevel, message: string, context?: Record<string, unknown>, error?: Error): void {
     if (!shouldLog(level, this._levelBox.value)) {
       return
     }

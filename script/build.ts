@@ -248,9 +248,7 @@ ${Object.entries(agentPromptsMap)
 
 const agentPromptsGenPath = path.join(dir, "src", "agent", "agent-prompts.gen.ts")
 await Bun.file(agentPromptsGenPath).write(agentPromptsGenContent)
-console.log(
-  `✓ generated agent prompts map → ${agentPromptsGenPath} (${Object.keys(agentPromptsMap).length} files)`,
-)
+console.log(`✓ generated agent prompts map → ${agentPromptsGenPath} (${Object.keys(agentPromptsMap).length} files)`)
 
 // ── 6. compile ───────────────────────────────────────────────────────────────
 const plugin = createSolidTransformPlugin()

@@ -2153,46 +2153,45 @@ export function Session() {
                       const totalWidth = 40
                       const totalHeight = 4
                       const totalBlocks = totalWidth * totalHeight
-                      const limit = context.inputLimit || context.hardLimit || context.used || context.estimatedTotal || 1
-                      const used = context.used
+                      const limit =
+                        context.inputLimit || context.hardLimit || context.used || context.estimatedTotal || 1
+                      const used = Math.min(Math.max(0, context.used), Math.max(1, limit))
 
                       // Distribute blocks among different components proportionally.
-                      const rawDistribution = context.components.map((c) => ({
+                      const source = context.components.filter((c) => c.tokens > 0)
+                      const componentTotal = source.reduce((sum, c) => sum + c.tokens, 0)
+                      const scale = componentTotal > used && componentTotal > 0 ? used / componentTotal : 1
+
+                      const rawDistribution = source.map((c) => ({
                         name: c.name,
                         detail: c.detail,
-                        tokens: c.tokens,
-                        fraction: c.tokens / limit,
+                        tokens: Math.max(0, Math.round(c.tokens * scale)),
                       }))
 
-                      // Add a "free space" component.
-                      const freeTokens = Math.max(0, limit - used)
-                      rawDistribution.push({
-                        name: "free",
-                        detail: "available",
-                        tokens: freeTokens,
-                        fraction: freeTokens / limit,
-                      })
-
-                      // Calculate exact block counts ensuring total adds up to totalBlocks.
-                      let allocated = 0
-                      const distribution = rawDistribution.map((item, idx) => {
-                        const target = Math.round(item.fraction * totalBlocks)
-                        allocated += target
-                        return { ...item, target, index: idx }
-                      })
-
-                      // Distribute rounding adjustments to the largest parts.
-                      let diff = totalBlocks - allocated
-                      if (diff !== 0) {
-                        const sorted = [...distribution].sort((a, b) => b.tokens - a.tokens)
-                        for (let i = 0; i < Math.abs(diff); i++) {
-                          const item = sorted[i % sorted.length]
-                          const orig = distribution.find((x) => x.index === item.index)
-                          if (orig) {
-                            orig.target += diff > 0 ? 1 : -1
-                          }
-                        }
+                      const represented = rawDistribution.reduce((sum, c) => sum + c.tokens, 0)
+                      const unattributed = Math.max(0, used - represented)
+                      if (unattributed > 0) {
+                        rawDistribution.push({
+                          name: "unattributed used",
+                          detail: "model-reported prompt tokens",
+                          tokens: unattributed,
+                        })
                       }
+
+                      const freeTokens = Math.max(0, limit - used)
+                      if (freeTokens > 0) {
+                        rawDistribution.push({
+                          name: "free",
+                          detail: "available",
+                          tokens: freeTokens,
+                        })
+                      }
+
+                      const segments = rawDistribution.filter((c) => c.tokens > 0)
+
+                      // Build the 2D cells map
+                      const cells: Array<{ char: string; fg: RGBA }> = []
+                      const safeLimit = Math.max(1, limit)
 
                       // Component styles
                       const colors = [
@@ -2204,36 +2203,38 @@ export function Session() {
                         theme.textMuted, // other
                       ]
                       const getStyle = (name: string, index: number) => {
-                        if (name === "free") return { char: "░", fg: theme.backgroundElement }
+                        if (name === "free" || name.includes("free space"))
+                          return { char: "░", fg: theme.backgroundElement }
                         if (name.includes("system")) return { char: "▓", fg: theme.warning }
                         if (name.includes("user")) return { char: "█", fg: theme.success }
                         if (name.includes("tool")) return { char: "█", fg: theme.accent }
-                        if (name.includes("text") || name.includes("reasoning"))
+                        if (name.includes("text") || name.includes("reasoning") || name.includes("assistant"))
                           return { char: "▒", fg: theme.secondary }
                         if (name.includes("file") || name.includes("patch") || name.includes("snapshot"))
                           return { char: "█", fg: theme.border }
                         return { char: "█", fg: colors[index % colors.length] }
                       }
 
-                      // Build the 2D characters map
-                      const lines: Array<Array<{ char: string; fg: RGBA }>> = []
-                      let currentLine: Array<{ char: string; fg: RGBA }> = []
-
-                      for (const comp of distribution) {
-                        const style = getStyle(comp.name, comp.index)
-                        for (let i = 0; i < comp.target; i++) {
-                          currentLine.push({ char: style.char, fg: style.fg })
-                          if (currentLine.length === totalWidth) {
-                            lines.push(currentLine)
-                            currentLine = []
+                      for (let index = 0; index < totalBlocks; index++) {
+                        const cursor = ((index + 0.5) / totalBlocks) * safeLimit
+                        let end = 0
+                        let matchedSegment = segments[segments.length - 1] ?? { name: "free", tokens: safeLimit }
+                        for (const segment of segments) {
+                          end += segment.tokens
+                          if (cursor <= end) {
+                            matchedSegment = segment
+                            break
                           }
                         }
+                        const segmentIndex = segments.indexOf(matchedSegment)
+                        const style = getStyle(matchedSegment.name, segmentIndex)
+                        cells.push({ char: style.char, fg: style.fg })
                       }
-                      if (currentLine.length > 0) {
-                        while (currentLine.length < totalWidth) {
-                          currentLine.push({ char: "░", fg: theme.backgroundElement })
-                        }
-                        lines.push(currentLine)
+
+                      // Split into lines of totalWidth
+                      const lines: Array<Array<{ char: string; fg: RGBA }>> = []
+                      for (let i = 0; i < totalHeight; i++) {
+                        lines.push(cells.slice(i * totalWidth, (i + 1) * totalWidth))
                       }
 
                       return (

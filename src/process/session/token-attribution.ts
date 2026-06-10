@@ -153,7 +153,15 @@ export namespace TokenAttribution {
     const top = options.topN ? breakdown.tools.slice(0, options.topN) : breakdown.tools
     const colName = Math.max(8, ...top.map((t) => t.name.length))
     const header =
-      pad("tool", colName) + " " + pad("calls", 7) + " " + pad("in_tok", 9) + " " + pad("out_tok", 9) + " " + pad("total", 9)
+      pad("tool", colName) +
+      " " +
+      pad("calls", 7) +
+      " " +
+      pad("in_tok", 9) +
+      " " +
+      pad("out_tok", 9) +
+      " " +
+      pad("total", 9)
     const lines: string[] = [header]
     for (const t of top) {
       lines.push(

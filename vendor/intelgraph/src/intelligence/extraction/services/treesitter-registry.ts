@@ -91,10 +91,10 @@ function resolveProjectRoot(): string {
   // as the fix in tools/pattern-detector/c-parser.ts for the WASM path.
   const moduleDir = dirname(fileURLToPath(import.meta.url))
   const candidates = [
-    join(moduleDir, ".."),                 // dist/index.js → one level up
-    join(moduleDir, "..", "..", "..", ".."),// source: 4 levels up
-    join(moduleDir, "..", ".."),           // intermediate bundle depth
-    process.cwd(),                         // last resort: working directory
+    join(moduleDir, ".."), // dist/index.js → one level up
+    join(moduleDir, "..", "..", "..", ".."), // source: 4 levels up
+    join(moduleDir, "..", ".."), // intermediate bundle depth
+    process.cwd(), // last resort: working directory
   ]
   for (const root of candidates) {
     if (existsSync(join(root, "node_modules", "web-tree-sitter"))) return root
@@ -160,10 +160,7 @@ async function initWebTreeSitter(): Promise<{
     const Language = mod.Language
     const initWork = Parser.init({ wasmBinary: readFileSync(wasmPath) })
     const timeout = new Promise<never>((_, reject) =>
-      setTimeout(
-        () => reject(new Error("web-tree-sitter init timed out")),
-        PARSER_INIT_TIMEOUT_MS,
-      ),
+      setTimeout(() => reject(new Error("web-tree-sitter init timed out")), PARSER_INIT_TIMEOUT_MS),
     )
     await Promise.race([initWork, timeout])
     return { Parser, Language }
@@ -219,10 +216,7 @@ export async function getParser(lang: SupportedLanguage): Promise<unknown | null
  * Parse a source string for a given language. Returns null if the
  * grammar isn't loadable or if parsing throws.
  */
-export async function parseSource(
-  lang: SupportedLanguage,
-  source: string,
-): Promise<TsTree | null> {
+export async function parseSource(lang: SupportedLanguage, source: string): Promise<TsTree | null> {
   const parser = (await getParser(lang)) as { parse(s: string): TsTree } | null
   if (!parser) return null
   try {
@@ -237,10 +231,7 @@ export async function parseSource(
  * failure. The language is inferred from the extension if not provided
  * explicitly.
  */
-export async function parseFile(
-  filePath: string,
-  lang?: SupportedLanguage,
-): Promise<TsTree | null> {
+export async function parseFile(filePath: string, lang?: SupportedLanguage): Promise<TsTree | null> {
   let source: string
   try {
     source = readFileSync(filePath, "utf8")
@@ -292,10 +283,7 @@ export function* walkTree(node: TsNode): Generator<TsNode> {
  * Find the first descendant of `node` whose `type` matches the predicate.
  * Returns null if none found.
  */
-export function findDescendant(
-  node: TsNode,
-  predicate: (n: TsNode) => boolean,
-): TsNode | null {
+export function findDescendant(node: TsNode, predicate: (n: TsNode) => boolean): TsNode | null {
   for (const candidate of walkTree(node)) {
     if (predicate(candidate)) return candidate
   }

@@ -95,18 +95,20 @@ export class FakeDaemonManager implements IDaemonManager {
     const existing = this.states.get(root)
     const httpPort = this.behavior.httpPort!
     const httpPid = this.behavior.httpPid!
-    const state: DaemonState = existing ? { ...existing, httpPort, httpPid } : {
-      version: 1,
-      bridgePid: 0,
-      serverPid: 0,
-      port: 0,
-      root,
-      serverBin: opts.serverBin,
-      serverArgs: [...opts.serverArgs],
-      startedAt: new Date().toISOString(),
-      httpPort,
-      httpPid,
-    }
+    const state: DaemonState = existing
+      ? { ...existing, httpPort, httpPid }
+      : {
+          version: 1,
+          bridgePid: 0,
+          serverPid: 0,
+          port: 0,
+          root,
+          serverBin: opts.serverBin,
+          serverArgs: [...opts.serverArgs],
+          startedAt: new Date().toISOString(),
+          httpPort,
+          httpPid,
+        }
     this.states.set(root, state)
     this.events.push({ kind: "spawnHttpDaemon", root })
     return { httpPort, httpPid }

@@ -60,30 +60,35 @@ function pick(obj: Record<string, unknown>, keys: string[]): Record<string, unkn
 
 export function classifyRuntimeInvocationType(edgeKind: string): string {
   switch (edgeKind) {
-    case "calls": return RuntimeInvocationType.RUNTIME_DIRECT_CALL
-    case "registers_callback": return RuntimeInvocationType.RUNTIME_CALLBACK_REGISTRATION_CALL
-    case "runtime_calls": return RuntimeInvocationType.RUNTIME_FUNCTION_POINTER_CALL
-    case "dispatches_to": return RuntimeInvocationType.RUNTIME_DISPATCH_TABLE_CALL
-    default: return RuntimeInvocationType.RUNTIME_UNKNOWN_CALL_PATH
+    case "calls":
+      return RuntimeInvocationType.RUNTIME_DIRECT_CALL
+    case "registers_callback":
+      return RuntimeInvocationType.RUNTIME_CALLBACK_REGISTRATION_CALL
+    case "runtime_calls":
+      return RuntimeInvocationType.RUNTIME_FUNCTION_POINTER_CALL
+    case "dispatches_to":
+      return RuntimeInvocationType.RUNTIME_DISPATCH_TABLE_CALL
+    default:
+      return RuntimeInvocationType.RUNTIME_UNKNOWN_CALL_PATH
   }
 }
 
-export function expandRuntimeCallerRows(
-  rows: Array<Record<string, unknown>>,
-): Array<Record<string, unknown>> {
-  const runtimeOnlyRows = rows.map((r) => pick(r, [
-    "kind",
-    "canonical_name",
-    "caller",
-    "callee",
-    "edge_kind",
-    "confidence",
-    "derivation",
-    "file_path",
-    "line_number",
-    "filePath",
-    "lineNumber",
-  ]))
+export function expandRuntimeCallerRows(rows: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+  const runtimeOnlyRows = rows.map((r) =>
+    pick(r, [
+      "kind",
+      "canonical_name",
+      "caller",
+      "callee",
+      "edge_kind",
+      "confidence",
+      "derivation",
+      "file_path",
+      "line_number",
+      "filePath",
+      "lineNumber",
+    ]),
+  )
   return runtimeOnlyRows.map((row) => ({
     kind: row.kind,
     canonical_name: row.canonical_name ?? row.caller,
@@ -102,25 +107,25 @@ export function expandRuntimeCallerRows(
   }))
 }
 
-export function expandRuntimeObservationRows(
-  rows: Array<Record<string, unknown>>,
-): Array<Record<string, unknown>> {
-  const runtimeObservationRows = rows.map((r) => pick(r, [
-    "kind",
-    "canonical_name",
-    "target_api",
-    "runtime_trigger",
-    "dispatch_chain",
-    "immediate_invoker",
-    "dispatch_site",
-    "edge_kind",
-    "derivation",
-    "confidence",
-    "file_path",
-    "line_number",
-    "filePath",
-    "lineNumber",
-  ]))
+export function expandRuntimeObservationRows(rows: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+  const runtimeObservationRows = rows.map((r) =>
+    pick(r, [
+      "kind",
+      "canonical_name",
+      "target_api",
+      "runtime_trigger",
+      "dispatch_chain",
+      "immediate_invoker",
+      "dispatch_site",
+      "edge_kind",
+      "derivation",
+      "confidence",
+      "file_path",
+      "line_number",
+      "filePath",
+      "lineNumber",
+    ]),
+  )
   return runtimeObservationRows.map((row) => ({
     kind: row.kind,
     canonical_name: row.canonical_name ?? row.immediate_invoker ?? row.target_api,
@@ -140,9 +145,7 @@ export function expandRuntimeObservationRows(
   }))
 }
 
-export function expandTimerTriggerRows(
-  rows: Array<Record<string, unknown>>,
-): Array<Record<string, unknown>> {
+export function expandTimerTriggerRows(rows: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
   return rows.map((row) => ({
     kind: row.kind ?? "timer",
     canonical_name: row.canonical_name ?? row.timer_identifier_name ?? row.caller,

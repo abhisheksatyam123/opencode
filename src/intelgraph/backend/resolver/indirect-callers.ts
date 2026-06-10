@@ -6,7 +6,12 @@ import {
   type IntelGraphRelationRequest,
 } from "../../contract"
 import { isIntelGraphPrimarySourcePath } from "../source-path-policy"
-import type { IntelGraphLspIncomingCall, IntelGraphLspIndirectCaller, IntelGraphLspLike, IntelGraphLspLocation } from "./dynamic-resolver"
+import type {
+  IntelGraphLspIncomingCall,
+  IntelGraphLspIndirectCaller,
+  IntelGraphLspLike,
+  IntelGraphLspLocation,
+} from "./dynamic-resolver"
 
 const INDIRECT_PROVIDER_TIMEOUT_MS = 2000
 
@@ -148,9 +153,15 @@ async function resolveWithIndirectProvider(
       INDIRECT_PROVIDER_TIMEOUT_MS,
       `indirect_registered_callers timed out for "${symbol}"`,
     )
-    const runtimeEntries = entries.filter((entry) => entry.callerRole === "runtime_caller" && isIntelGraphPrimarySourcePath(entry.file))
-    const registrarCount = entries.filter((entry) => entry.callerRole === "registrar" && isIntelGraphPrimarySourcePath(entry.file)).length
-    const nodes = runtimeEntries.slice(0, limit).map((entry, index) => nodeFromIndirectCaller(entry, defaultLanguage, index))
+    const runtimeEntries = entries.filter(
+      (entry) => entry.callerRole === "runtime_caller" && isIntelGraphPrimarySourcePath(entry.file),
+    )
+    const registrarCount = entries.filter(
+      (entry) => entry.callerRole === "registrar" && isIntelGraphPrimarySourcePath(entry.file),
+    ).length
+    const nodes = runtimeEntries
+      .slice(0, limit)
+      .map((entry, index) => nodeFromIndirectCaller(entry, defaultLanguage, index))
     const diagnostics: IntelGraphDiagnostic[] = [
       {
         code: "indirect_callers_runtime_resolver",

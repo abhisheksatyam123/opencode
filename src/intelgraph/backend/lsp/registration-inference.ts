@@ -543,7 +543,12 @@ const SKIPPED_REFERENCE_DIRS = new Set([".git", ".cache", "node_modules", "out",
 const MAX_TEXT_REFERENCE_FILES = 8000
 const MAX_TEXT_REFERENCES = 200
 
-export function textReferenceLocations(root: string, symbol: string, targetFile: string, maxReferences = MAX_TEXT_REFERENCES): IntelGraphLspLocation[] {
+export function textReferenceLocations(
+  root: string,
+  symbol: string,
+  targetFile: string,
+  maxReferences = MAX_TEXT_REFERENCES,
+): IntelGraphLspLocation[] {
   const locations: IntelGraphLspLocation[] = []
   const pattern = new RegExp(`\\b${escapeRegex(symbol)}\\b`, "g")
   let scanned = 0
@@ -605,7 +610,12 @@ function dedupeLocations(locations: IntelGraphLspLocation[]): IntelGraphLspLocat
   })
 }
 
-function addTextReferences(file: string, pattern: RegExp, locations: IntelGraphLspLocation[], maxReferences = MAX_TEXT_REFERENCES) {
+function addTextReferences(
+  file: string,
+  pattern: RegExp,
+  locations: IntelGraphLspLocation[],
+  maxReferences = MAX_TEXT_REFERENCES,
+) {
   let info
   try {
     info = statSync(file)

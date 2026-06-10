@@ -41,13 +41,12 @@ export type AgentInfo = z.infer<typeof AgentInfoSchema>
 // ── Port interface ────────────────────────────────────────────────────────────
 
 export interface AgentPort {
-   
   readonly get: (agent: string) => any
-   
+
   readonly list: () => any
-   
+
   readonly defaultAgent: () => any
-   
+
   readonly generate: (input: any) => any
 }
 
@@ -70,19 +69,18 @@ export const SessionPromptPortSchema = z.object({
 export type SessionPromptPortSchema = z.infer<typeof SessionPromptPortSchema>
 
 export interface SessionPromptPort {
-   
   readonly assertNotBusy: (sessionID: any) => any
-   
+
   readonly cancel: (sessionID: any) => any
-   
+
   readonly prompt: (input: any) => any
-   
+
   readonly loop: (input: any) => any
-   
+
   readonly shell: (input: any) => any
-   
+
   readonly command: (input: any) => any
-   
+
   readonly resolvePromptParts: (template: string) => any
 }
 

@@ -14,7 +14,11 @@ import { z } from "zod"
 import { loggerPort } from "../logging/logger.js"
 import { computeWorkspaceId } from "../daemon/index.js"
 import {
-  getDaemonBridgePid, getDaemonPort, getHttpDaemonPid, getHttpDaemonPort, getPreflightResult,
+  getDaemonBridgePid,
+  getDaemonPort,
+  getHttpDaemonPid,
+  getHttpDaemonPort,
+  getPreflightResult,
 } from "../daemon/state.js"
 import { configLoader } from "../config/config.js"
 import { prepareReasonQuery } from "./reason-engine/reason-query.js"
@@ -31,17 +35,32 @@ import { resolveCallers } from "./get-callers.js"
 
 import { positionSchema, fileOnlySchema, incomingCallSchema } from "./schemas.js"
 import {
-  formatHover, formatDefinition, formatReferences, formatDocumentSymbol,
-  formatWorkspaceSymbol, formatIncomingCalls, formatOutgoingCalls,
-  formatTypeHierarchy, formatDiagnostics, formatCodeAction,
-  formatDocumentHighlight, formatFoldingRange, formatSignatureHelp,
-  formatRename, formatFormat, formatInlayHints, formatReasonChain,
+  formatHover,
+  formatDefinition,
+  formatReferences,
+  formatDocumentSymbol,
+  formatWorkspaceSymbol,
+  formatIncomingCalls,
+  formatOutgoingCalls,
+  formatTypeHierarchy,
+  formatDiagnostics,
+  formatCodeAction,
+  formatDocumentHighlight,
+  formatFoldingRange,
+  formatSignatureHelp,
+  formatRename,
+  formatFormat,
+  formatInlayHints,
+  formatReasonChain,
   formatIntelligenceResponse,
 } from "./formatters.js"
 import {
   ToolDef,
-  INFLIGHT_INDIRECT_CALLERS, INDIRECT_CALLER_TELEMETRY,
-  unifiedBackendOrThrow, inflightIndirectCallerKey, withFile,
+  INFLIGHT_INDIRECT_CALLERS,
+  INDIRECT_CALLER_TELEMETRY,
+  unifiedBackendOrThrow,
+  inflightIndirectCallerKey,
+  withFile,
   getIntelligenceDeps,
 } from "./dispatch.js"
 
@@ -64,11 +83,23 @@ import { getDbFoundation } from "../intelligence/public-api.js"
 
 // Re-export formatters for backward compatibility (tests import from tools/index)
 export {
-  formatHover, formatDefinition, formatReferences, formatDocumentSymbol,
-  formatWorkspaceSymbol, formatIncomingCalls, formatOutgoingCalls,
-  formatTypeHierarchy, formatDiagnostics, formatCodeAction,
-  formatDocumentHighlight, formatFoldingRange, formatSignatureHelp,
-  formatRename, formatFormat, formatInlayHints, formatReasonChain,
+  formatHover,
+  formatDefinition,
+  formatReferences,
+  formatDocumentSymbol,
+  formatWorkspaceSymbol,
+  formatIncomingCalls,
+  formatOutgoingCalls,
+  formatTypeHierarchy,
+  formatDiagnostics,
+  formatCodeAction,
+  formatDocumentHighlight,
+  formatFoldingRange,
+  formatSignatureHelp,
+  formatRename,
+  formatFormat,
+  formatInlayHints,
+  formatReasonChain,
   formatIntelligenceResponse,
 } from "./formatters.js"
 
@@ -110,8 +141,7 @@ export const TOOLS: ToolDef[] = [
   // ── lsp_hover ──────────────────────────────────────────────────────────────
   {
     name: "lsp_hover",
-    description:
-      "Get type information, documentation, and signature for the symbol at the given position.",
+    description: "Get type information, documentation, and signature for the symbol at the given position.",
     inputSchema: positionSchema,
     execute: async (args, client, tracker) =>
       withFile(client, args.file, async () => {
@@ -277,10 +307,21 @@ export const TOOLS: ToolDef[] = [
       "Returns the enclosing functions at all reference sites. " +
       "For the full invocation reason (WHY it is called), use lsp_reason_chain instead.",
     inputSchema: positionSchema.extend({
-      maxNodes: z.number().int().min(1).max(500).default(50).optional()
-                .describe("Maximum reference sites to return (default: 50)"),
-      resolve: z.boolean().default(false).optional()
-               .describe("If true, resolve full registration→store→dispatch→trigger chain using clangd (slower, more precise)"),
+      maxNodes: z
+        .number()
+        .int()
+        .min(1)
+        .max(500)
+        .default(50)
+        .optional()
+        .describe("Maximum reference sites to return (default: 50)"),
+      resolve: z
+        .boolean()
+        .default(false)
+        .optional()
+        .describe(
+          "If true, resolve full registration→store→dispatch→trigger chain using clangd (slower, more precise)",
+        ),
     }),
     execute: async (args, client, tracker) =>
       withFile(client, args.file, async () => {
@@ -291,8 +332,11 @@ export const TOOLS: ToolDef[] = [
         if (cached) {
           INDIRECT_CALLER_TELEMETRY.cacheHits += 1
           const graph = cached.result
-          return backend.patterns.formatIndirectCallerTree(graph, client.root) + tracker.statusSuffix() +
+          return (
+            backend.patterns.formatIndirectCallerTree(graph, client.root) +
+            tracker.statusSuffix() +
             `\n\n[cache: hit — cached at ${cached.cachedAt}]`
+          )
         }
 
         const inflightKey = inflightIndirectCallerKey(client.root, cacheKey)
@@ -300,8 +344,11 @@ export const TOOLS: ToolDef[] = [
         if (existingInflight) {
           INDIRECT_CALLER_TELEMETRY.inflightDedupReuses += 1
           const graph = await existingInflight
-          return backend.patterns.formatIndirectCallerTree(graph, client.root) + tracker.statusSuffix() +
+          return (
+            backend.patterns.formatIndirectCallerTree(graph, client.root) +
+            tracker.statusSuffix() +
             `\n\n[dedup: shared in-flight result]`
+          )
         }
 
         // Cache miss — compute fresh
@@ -314,7 +361,9 @@ export const TOOLS: ToolDef[] = [
           // Store in cache (best-effort, don't fail the tool if cache write fails)
           try {
             backend.indirectCallerCache.write(client.root, cacheKey, graph, [args.file])
-          } catch { /* ignore cache write errors */ }
+          } catch {
+            /* ignore cache write errors */
+          }
 
           return backend.patterns.formatIndirectCallerTree(graph, client.root) + tracker.statusSuffix()
         } finally {
@@ -434,8 +483,7 @@ export const TOOLS: ToolDef[] = [
   {
     name: "lsp_supertypes",
     description:
-      "Find the base types / parent classes of the type at the given position. " +
-      "Navigates up the type hierarchy.",
+      "Find the base types / parent classes of the type at the given position. " + "Navigates up the type hierarchy.",
     inputSchema: positionSchema,
     execute: async (args, client, tracker) =>
       withFile(client, args.file, async () => {
@@ -486,18 +534,24 @@ export const TOOLS: ToolDef[] = [
       "Returns the list of text edits needed — does NOT modify the file. " +
       "Apply the edits yourself after reviewing them.",
     inputSchema: fileOnlySchema.extend({
-      startLine: z.number().int().min(1).optional().describe("Start line for range formatting (1-based, omit for whole file)"),
-      endLine:   z.number().int().min(1).optional().describe("End line for range formatting (1-based, omit for whole file)"),
+      startLine: z
+        .number()
+        .int()
+        .min(1)
+        .optional()
+        .describe("Start line for range formatting (1-based, omit for whole file)"),
+      endLine: z
+        .number()
+        .int()
+        .min(1)
+        .optional()
+        .describe("End line for range formatting (1-based, omit for whole file)"),
     }),
     execute: async (args, client, tracker) =>
       withFile(client, args.file, async () => {
         let edits: any[]
         if (args.startLine != null && args.endLine != null) {
-          edits = await client.rangeFormatting(
-            args.file,
-            args.startLine - 1, 0,
-            args.endLine - 1, 9999,
-          )
+          edits = await client.rangeFormatting(args.file, args.startLine - 1, 0, args.endLine - 1, 9999)
         } else {
           edits = await client.formatting(args.file)
         }
@@ -514,7 +568,7 @@ export const TOOLS: ToolDef[] = [
       "Extremely useful for understanding macro-heavy or template-heavy code.",
     inputSchema: fileOnlySchema.extend({
       startLine: z.number().int().min(1).describe("First line of the range (1-based)"),
-      endLine:   z.number().int().min(1).describe("Last line of the range (1-based)"),
+      endLine: z.number().int().min(1).describe("Last line of the range (1-based)"),
     }),
     execute: async (args, client, tracker) =>
       withFile(client, args.file, async () => {
@@ -599,7 +653,7 @@ export const TOOLS: ToolDef[] = [
     inputSchema: z.object({}),
     execute: async (_args, client, tracker) => {
       const state = tracker.state
-      const info  = await client.serverInfo()
+      const info = await client.serverInfo()
       const lines = [
         `Index ready:  ${state.isReady}`,
         `Progress:     ${state.percentage}%`,
@@ -622,8 +676,8 @@ export const TOOLS: ToolDef[] = [
         if (bg) {
           lines.push("", "Background index stats:")
           lines.push(`  Completed: ${bg.completed ?? "?"}`)
-          lines.push(`  Total:     ${bg.total     ?? "?"}`)
-           lines.push(`  Queue:     ${bg.queue_size ?? bg.queued ?? "?"}`)
+          lines.push(`  Total:     ${bg.total ?? "?"}`)
+          lines.push(`  Queue:     ${bg.queue_size ?? bg.queued ?? "?"}`)
         }
         const mem = info.memory_usage
         if (mem) {
@@ -654,11 +708,24 @@ export const TOOLS: ToolDef[] = [
       "alias variants (_foo, __foo, foo___RAM, _foo___RAM) so renamed symbols are found.\n\n" +
       "Response: JSON with targetApi, callers[], source (which step succeeded), and provenance.",
     inputSchema: positionSchema.extend({
-      snapshotId: z.number().int().positive().optional()
+      snapshotId: z
+        .number()
+        .int()
+        .positive()
+        .optional()
         .describe("Intelligence snapshot ID (enables DB-backed caller lookup)"),
-      maxNodes: z.number().int().min(1).max(500).default(50).optional()
+      maxNodes: z
+        .number()
+        .int()
+        .min(1)
+        .max(500)
+        .default(50)
+        .optional()
         .describe("Maximum callers to return (default: 50)"),
-      resolve: z.boolean().default(true).optional()
+      resolve: z
+        .boolean()
+        .default(true)
+        .optional()
         .describe("If true (default), resolve full dispatch chain via lsp_indirect_callers for indirect callers"),
     }),
     execute: async (args, client, tracker) =>
@@ -701,32 +768,76 @@ export const TOOLS: ToolDef[] = [
       "    generate_action_plan         ← cross-layer ranked fix list (P1 dead code → P4 hotspots)\n" +
       "    compare_snapshots            ← diff health metrics; set depth=<prevSnapshotId>\n\n" +
       "Uses a DB-first approach: returns cached snapshot data instantly. " +
-      "All supported intents: " + QUERY_INTENTS.join(", "),
+      "All supported intents: " +
+      QUERY_INTENTS.join(", "),
     inputSchema: z.object({
       intent: z.enum(QUERY_INTENTS).describe("Query intent"),
-      snapshotId: z.number().int().nonnegative().optional().describe("Snapshot ID to query against (0 or omitted = latest ready snapshot)"),
+      snapshotId: z
+        .number()
+        .int()
+        .nonnegative()
+        .optional()
+        .describe("Snapshot ID to query against (0 or omitted = latest ready snapshot)"),
       apiName: z.string().optional().describe("API/function name (required for caller/callee/dispatch/log intents)"),
       structName: z.string().optional().describe("Struct name (required for struct ownership intents)"),
       fieldName: z.string().optional().describe("Field name (required for find_field_access_path)"),
       traceId: z.string().optional().describe("Trace ID (required for show_runtime_flow_for_trace)"),
-      pattern: z.string().optional().describe("Log pattern (required for find_api_by_log_pattern, find_symbols_by_name, find_symbols_by_kind, find_symbols_by_doc)"),
-      logLevel: z.enum(["ERROR", "WARN", "INFO", "DEBUG", "VERBOSE", "TRACE", "UNKNOWN"]).optional()
-        .describe("Log level filter (required for find_api_logs_by_level; one of ERROR, WARN, INFO, DEBUG, VERBOSE, TRACE, UNKNOWN)"),
-      srcApi: z.string().optional().describe("Source API or type (required for show_cross_module_path, find_call_chain, find_module_interactions, find_data_path)"),
-      dstApi: z.string().optional().describe("Destination API or type (required for show_cross_module_path, find_call_chain, find_module_interactions, find_data_path)"),
-      depth: z.number().int().positive().optional().describe("Traversal depth limit (find_call_chain, find_data_path, find_transitive_dependencies, find_long_functions, find_import_cycles_deep). Also used as previous snapshot ID for compare_snapshots."),
+      pattern: z
+        .string()
+        .optional()
+        .describe(
+          "Log pattern (required for find_api_by_log_pattern, find_symbols_by_name, find_symbols_by_kind, find_symbols_by_doc)",
+        ),
+      logLevel: z
+        .enum(["ERROR", "WARN", "INFO", "DEBUG", "VERBOSE", "TRACE", "UNKNOWN"])
+        .optional()
+        .describe(
+          "Log level filter (required for find_api_logs_by_level; one of ERROR, WARN, INFO, DEBUG, VERBOSE, TRACE, UNKNOWN)",
+        ),
+      srcApi: z
+        .string()
+        .optional()
+        .describe(
+          "Source API or type (required for show_cross_module_path, find_call_chain, find_module_interactions, find_data_path)",
+        ),
+      dstApi: z
+        .string()
+        .optional()
+        .describe(
+          "Destination API or type (required for show_cross_module_path, find_call_chain, find_module_interactions, find_data_path)",
+        ),
+      depth: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe(
+          "Traversal depth limit (find_call_chain, find_data_path, find_transitive_dependencies, find_long_functions, find_import_cycles_deep). Also used as previous snapshot ID for compare_snapshots.",
+        ),
       limit: z.number().int().positive().optional().describe("Result row limit"),
-      filePath: z.string().optional().describe("Workspace-relative file path (required for find_symbol_at_location, find_symbols_in_file)"),
-      lineNumber: z.number().int().positive().optional().describe("1-based line number (required for find_symbol_at_location)"),
+      filePath: z
+        .string()
+        .optional()
+        .describe("Workspace-relative file path (required for find_symbol_at_location, find_symbols_in_file)"),
+      lineNumber: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe("1-based line number (required for find_symbol_at_location)"),
     }),
     execute: async (args, _client, _tracker) => {
       const INTELLIGENCE_DEPS = getIntelligenceDeps()
       if (!INTELLIGENCE_DEPS) {
-        return JSON.stringify(queryNodeAdapter.toLegacyFlatResponse(queryNodeAdapter.toNodeErrorResponse({
-          intent: args.intent,
-          snapshotId: typeof args.snapshotId === "number" ? args.snapshotId : undefined,
-          errors: ["intelligence_query: intelligence backend not initialized."],
-        })))
+        return JSON.stringify(
+          queryNodeAdapter.toLegacyFlatResponse(
+            queryNodeAdapter.toNodeErrorResponse({
+              intent: args.intent,
+              snapshotId: typeof args.snapshotId === "number" ? args.snapshotId : undefined,
+              errors: ["intelligence_query: intelligence backend not initialized."],
+            }),
+          ),
+        )
       }
       // Auto-resolve snapshotId to latest ready snapshot when 0 or absent.
       // This lets the TUI skip snapshot initialization and query directly.
@@ -739,16 +850,22 @@ export const TOOLS: ToolDef[] = [
             if (latest?.snapshotId) {
               resolvedArgs = { ...args, snapshotId: latest.snapshotId }
             }
-          } catch { /* use args as-is */ }
+          } catch {
+            /* use args as-is */
+          }
         }
       }
       const validated = validateQueryRequest(resolvedArgs)
       if (!validated.ok) {
-        return JSON.stringify(queryNodeAdapter.toLegacyFlatResponse(queryNodeAdapter.toNodeErrorResponse({
-          intent: args.intent,
-          snapshotId: typeof args.snapshotId === "number" ? args.snapshotId : undefined,
-          errors: validated.errors,
-        })))
+        return JSON.stringify(
+          queryNodeAdapter.toLegacyFlatResponse(
+            queryNodeAdapter.toNodeErrorResponse({
+              intent: args.intent,
+              snapshotId: typeof args.snapshotId === "number" ? args.snapshotId : undefined,
+              errors: validated.errors,
+            }),
+          ),
+        )
       }
       try {
         const res = await executeOrchestratedQuery(validated.value, INTELLIGENCE_DEPS)
@@ -758,11 +875,15 @@ export const TOOLS: ToolDef[] = [
         const out = queryNodeAdapter.toLegacyFlatResponse(nodeProto)
         return JSON.stringify(out)
       } catch (err) {
-        return JSON.stringify(queryNodeAdapter.toLegacyFlatResponse(queryNodeAdapter.toNodeErrorResponse({
-          intent: args.intent,
-          snapshotId: typeof args.snapshotId === "number" ? args.snapshotId : undefined,
-          errors: [err instanceof Error ? err.message : String(err)],
-        })))
+        return JSON.stringify(
+          queryNodeAdapter.toLegacyFlatResponse(
+            queryNodeAdapter.toNodeErrorResponse({
+              intent: args.intent,
+              snapshotId: typeof args.snapshotId === "number" ? args.snapshotId : undefined,
+              errors: [err instanceof Error ? err.message : String(err)],
+            }),
+          ),
+        )
       }
     },
   },
@@ -785,18 +906,37 @@ export const TOOLS: ToolDef[] = [
     inputSchema: z.object({
       snapshotId: z.number().int().positive().describe("Snapshot ID to read from"),
       workspaceRoot: z.string().describe("Workspace root path (echoed back in the response.workspace field)"),
-      edgeKinds: z.array(z.string()).optional()
+      edgeKinds: z
+        .array(z.string())
+        .optional()
         .describe("Keep only edges whose edge_kind is in this list (e.g. ['imports','calls']). Omit for all edges."),
-      symbolKinds: z.array(z.string()).optional()
-        .describe("Keep only nodes whose kind is in this list (e.g. ['module','class']) AND edges where both endpoints survive. Omit for all nodes."),
-      centerOf: z.string().optional()
-        .describe("Scope the graph to nodes within `centerHops` hops of a center symbol. Resolved exact / suffix-after-# / substring (e.g. 'Greeter.greet'). Applied AFTER kind filters."),
-      centerHops: z.number().int().positive().optional()
-        .describe("Hop budget for centerOf (default 2)."),
-      centerDirection: z.enum(["in", "out", "both"]).optional()
-        .describe("Direction the centerOf BFS walks. 'both' (default) = undirected, 'out' = what X reaches, 'in' = what reaches X."),
-      maxNodes: z.number().int().positive().optional()
-        .describe("Cap the result to the top-N nodes by total degree. Applied LAST in the filter pipeline. Useful for big workspaces where the unfiltered graph would be too dense."),
+      symbolKinds: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "Keep only nodes whose kind is in this list (e.g. ['module','class']) AND edges where both endpoints survive. Omit for all nodes.",
+        ),
+      centerOf: z
+        .string()
+        .optional()
+        .describe(
+          "Scope the graph to nodes within `centerHops` hops of a center symbol. Resolved exact / suffix-after-# / substring (e.g. 'Greeter.greet'). Applied AFTER kind filters.",
+        ),
+      centerHops: z.number().int().positive().optional().describe("Hop budget for centerOf (default 2)."),
+      centerDirection: z
+        .enum(["in", "out", "both"])
+        .optional()
+        .describe(
+          "Direction the centerOf BFS walks. 'both' (default) = undirected, 'out' = what X reaches, 'in' = what reaches X.",
+        ),
+      maxNodes: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe(
+          "Cap the result to the top-N nodes by total degree. Applied LAST in the filter pipeline. Useful for big workspaces where the unfiltered graph would be too dense.",
+        ),
     }),
     execute: async (args, _client, _tracker) => {
       const INTELLIGENCE_DEPS = getIntelligenceDeps()
@@ -810,9 +950,7 @@ export const TOOLS: ToolDef[] = [
       if (typeof lookup.loadGraphJson !== "function") {
         return JSON.stringify({
           status: "error",
-          errors: [
-            "intelligence_graph: configured backend does not support graph reads (no loadGraphJson)",
-          ],
+          errors: ["intelligence_graph: configured backend does not support graph reads (no loadGraphJson)"],
         })
       }
       try {
@@ -862,22 +1000,28 @@ export const TOOLS: ToolDef[] = [
     inputSchema: z.object({
       snapshotId: z.number().int().positive().describe("Snapshot ID to read from"),
       workspaceRoot: z.string().describe("Workspace root path"),
-      filtersA: z.object({
-        edgeKinds: z.array(z.string()).optional(),
-        symbolKinds: z.array(z.string()).optional(),
-        centerOf: z.string().optional(),
-        centerHops: z.number().int().positive().optional(),
-        centerDirection: z.enum(["in", "out", "both"]).optional(),
-        maxNodes: z.number().int().positive().optional(),
-      }).optional().describe("First filter spec (defaults to unfiltered)"),
-      filtersB: z.object({
-        edgeKinds: z.array(z.string()).optional(),
-        symbolKinds: z.array(z.string()).optional(),
-        centerOf: z.string().optional(),
-        centerHops: z.number().int().positive().optional(),
-        centerDirection: z.enum(["in", "out", "both"]).optional(),
-        maxNodes: z.number().int().positive().optional(),
-      }).optional().describe("Second filter spec (defaults to unfiltered)"),
+      filtersA: z
+        .object({
+          edgeKinds: z.array(z.string()).optional(),
+          symbolKinds: z.array(z.string()).optional(),
+          centerOf: z.string().optional(),
+          centerHops: z.number().int().positive().optional(),
+          centerDirection: z.enum(["in", "out", "both"]).optional(),
+          maxNodes: z.number().int().positive().optional(),
+        })
+        .optional()
+        .describe("First filter spec (defaults to unfiltered)"),
+      filtersB: z
+        .object({
+          edgeKinds: z.array(z.string()).optional(),
+          symbolKinds: z.array(z.string()).optional(),
+          centerOf: z.string().optional(),
+          centerHops: z.number().int().positive().optional(),
+          centerDirection: z.enum(["in", "out", "both"]).optional(),
+          maxNodes: z.number().int().positive().optional(),
+        })
+        .optional()
+        .describe("Second filter spec (defaults to unfiltered)"),
     }),
     execute: async (args, _client, _tracker) => {
       const INTELLIGENCE_DEPS = getIntelligenceDeps()
@@ -891,9 +1035,7 @@ export const TOOLS: ToolDef[] = [
       if (typeof lookup.loadGraphJson !== "function") {
         return JSON.stringify({
           status: "error",
-          errors: [
-            "intelligence_graph_diff: configured backend does not support graph reads (no loadGraphJson)",
-          ],
+          errors: ["intelligence_graph_diff: configured backend does not support graph reads (no loadGraphJson)"],
         })
       }
       try {
@@ -915,26 +1057,16 @@ export const TOOLS: ToolDef[] = [
             maxNodes?: number
           } = {}
           if (!input) return f
-          if (input.edgeKinds && input.edgeKinds.length > 0)
-            f.edgeKinds = new Set(input.edgeKinds)
-          if (input.symbolKinds && input.symbolKinds.length > 0)
-            f.symbolKinds = new Set(input.symbolKinds)
+          if (input.edgeKinds && input.edgeKinds.length > 0) f.edgeKinds = new Set(input.edgeKinds)
+          if (input.symbolKinds && input.symbolKinds.length > 0) f.symbolKinds = new Set(input.symbolKinds)
           if (input.centerOf) f.centerOf = input.centerOf
           if (input.centerHops) f.centerHops = input.centerHops
           if (input.centerDirection) f.centerDirection = input.centerDirection
           if (input.maxNodes) f.maxNodes = input.maxNodes
           return f
         }
-        const graphA = lookup.loadGraphJson(
-          args.snapshotId,
-          args.workspaceRoot,
-          buildFilters(args.filtersA),
-        )
-        const graphB = lookup.loadGraphJson(
-          args.snapshotId,
-          args.workspaceRoot,
-          buildFilters(args.filtersB),
-        )
+        const graphA = lookup.loadGraphJson(args.snapshotId, args.workspaceRoot, buildFilters(args.filtersA))
+        const graphB = lookup.loadGraphJson(args.snapshotId, args.workspaceRoot, buildFilters(args.filtersB))
         const diff = diffGraphJson(graphA, graphB)
         return JSON.stringify(diff)
       } catch (err) {

@@ -46,19 +46,19 @@ export interface PermissionPort {
    * Ask for permission to perform a tool call.
    * Returns void on approval; throws on denial/rejection.
    */
-   
+
   readonly ask: (input: any) => Effect.Effect<void, any>
 
   /**
    * Reply to a pending permission request.
    */
-   
+
   readonly reply: (input: any) => Effect.Effect<void>
 
   /**
    * List all pending permission requests.
    */
-   
+
   readonly list: () => Effect.Effect<any[]>
 }
 

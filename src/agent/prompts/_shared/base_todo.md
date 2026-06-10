@@ -6,7 +6,7 @@ tags: []
 description: Shared base operating prompt for agents invoked from todo.md through the Neovim todo workflow.
 ---
 
-# _shared/base_todo
+# \_shared/base_todo
 
 ## System prompt
 

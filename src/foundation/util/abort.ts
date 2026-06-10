@@ -62,7 +62,7 @@ export function createAbortController(maxListeners: number = DEFAULT_ABORT_MAX_L
   // of util/abort.ts (e.g. browser-style targets that don't have
   // events available). require() falls through cleanly when
   // setMaxListeners isn't available.
-   
+
   const events = require("events") as typeof import("events")
   const controller = new AbortController()
   if (typeof events.setMaxListeners === "function") {
@@ -144,10 +144,7 @@ function removeAbortHandlerFromParent(
  * @param maxListeners Maximum listeners on the child signal (default 50)
  * @returns A child AbortController
  */
-export function createChildAbortController(
-  parent: AbortController,
-  maxListeners?: number,
-): AbortController {
+export function createChildAbortController(parent: AbortController, maxListeners?: number): AbortController {
   const child = createAbortController(maxListeners)
 
   // Fast path: parent already aborted → propagate immediately, no listener.
@@ -170,11 +167,9 @@ export function createChildAbortController(
   // (from any source). Both parent and handler are weakly held — if
   // either has been GC'd or the parent already aborted ({once: true}
   // already removed it), the cleanup is a harmless no-op.
-  child.signal.addEventListener(
-    "abort",
-    removeAbortHandlerFromParent.bind(weakParent, new WeakRef(handler)),
-    { once: true },
-  )
+  child.signal.addEventListener("abort", removeAbortHandlerFromParent.bind(weakParent, new WeakRef(handler)), {
+    once: true,
+  })
 
   return child
 }

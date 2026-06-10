@@ -1,10 +1,6 @@
 import z from "zod"
 
-export const SessionContractEventTypeSchema = z.enum([
-  "session.requested",
-  "session.updated",
-  "session.failed",
-])
+export const SessionContractEventTypeSchema = z.enum(["session.requested", "session.updated", "session.failed"])
 
 export type SessionContractEventType = z.infer<typeof SessionContractEventTypeSchema>
 

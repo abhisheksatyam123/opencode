@@ -51,11 +51,7 @@ export class SqliteGraphStore implements GraphWriteSink, SymbolFinder {
       .select({ nodeId: graphNodes.nodeId })
       .from(graphNodes)
       .where(
-        and(
-          eq(graphNodes.snapshotId, snapshotId),
-          eq(graphNodes.canonicalName, name),
-          eq(graphNodes.kind, "function"),
-        ),
+        and(eq(graphNodes.snapshotId, snapshotId), eq(graphNodes.canonicalName, name), eq(graphNodes.kind, "function")),
       )
       .limit(1)
       .all()
@@ -78,10 +74,7 @@ export class SqliteGraphStore implements GraphWriteSink, SymbolFinder {
   // Per-table writers
   // -------------------------------------------------------------------------
 
-  private writeNodes(
-    tx: SqliteDb,
-    rows: GraphNodeRow[],
-  ): void {
+  private writeNodes(tx: SqliteDb, rows: GraphNodeRow[]): void {
     if (rows.length === 0) return
     tx.insert(graphNodes)
       .values(
@@ -106,10 +99,7 @@ export class SqliteGraphStore implements GraphWriteSink, SymbolFinder {
       .run()
   }
 
-  private writeEdges(
-    tx: SqliteDb,
-    rows: GraphEdgeRow[],
-  ): void {
+  private writeEdges(tx: SqliteDb, rows: GraphEdgeRow[]): void {
     if (rows.length === 0) return
     tx.insert(graphEdges)
       .values(
@@ -143,11 +133,7 @@ export class SqliteGraphStore implements GraphWriteSink, SymbolFinder {
   // JOIN-based queries in db-lookup still return rows. Ghost nodes carry
   // kind="function" and no location; if the real symbol is later written,
   // the ON CONFLICT DO UPDATE upgrades the row in place.
-  private writeGhostNodes(
-    tx: SqliteDb,
-    writtenNodes: GraphNodeRow[],
-    edges: GraphEdgeRow[],
-  ): void {
+  private writeGhostNodes(tx: SqliteDb, writtenNodes: GraphNodeRow[], edges: GraphEdgeRow[]): void {
     const writtenIds = new Set(writtenNodes.map((n) => `${n.snapshot_id}:${n.node_id}`))
     const ghosts = new Map<string, { snapshotId: number; nodeId: string; canonicalName: string }>()
 
@@ -186,10 +172,7 @@ export class SqliteGraphStore implements GraphWriteSink, SymbolFinder {
       .run()
   }
 
-  private writeEvidence(
-    tx: SqliteDb,
-    rows: GraphEvidenceRow[],
-  ): void {
+  private writeEvidence(tx: SqliteDb, rows: GraphEvidenceRow[]): void {
     if (rows.length === 0) return
     tx.insert(graphEvidence)
       .values(
@@ -269,32 +252,17 @@ export class SqliteGraphStore implements GraphWriteSink, SymbolFinder {
       // Delete evidence and observations for these nodes
       for (const nodeId of nodeIds) {
         tx.delete(graphEvidence)
-          .where(
-            and(
-              eq(graphEvidence.snapshotId, snapshotId),
-              eq(graphEvidence.nodeId, nodeId),
-            ),
-          )
+          .where(and(eq(graphEvidence.snapshotId, snapshotId), eq(graphEvidence.nodeId, nodeId)))
           .run()
         tx.delete(graphObservations)
-          .where(
-            and(
-              eq(graphObservations.snapshotId, snapshotId),
-              eq(graphObservations.nodeId, nodeId),
-            ),
-          )
+          .where(and(eq(graphObservations.snapshotId, snapshotId), eq(graphObservations.nodeId, nodeId)))
           .run()
       }
 
       // Delete the nodes themselves
       for (const nodeId of nodeIds) {
         tx.delete(graphNodes)
-          .where(
-            and(
-              eq(graphNodes.snapshotId, snapshotId),
-              eq(graphNodes.nodeId, nodeId),
-            ),
-          )
+          .where(and(eq(graphNodes.snapshotId, snapshotId), eq(graphNodes.nodeId, nodeId)))
           .run()
       }
       nodes = nodeIds.length
@@ -303,10 +271,7 @@ export class SqliteGraphStore implements GraphWriteSink, SymbolFinder {
     return { nodes, edges }
   }
 
-  private writeObservations(
-    tx: SqliteDb,
-    rows: GraphObservationRow[],
-  ): void {
+  private writeObservations(tx: SqliteDb, rows: GraphObservationRow[]): void {
     if (rows.length === 0) return
     tx.insert(graphObservations)
       .values(

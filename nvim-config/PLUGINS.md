@@ -107,27 +107,27 @@ This document explains the purpose and key features of the currently active plug
 
 ## ⚙️ Core Options (init.lua)
 
-| Option | Value |
-|---|---|
-| `mapleader` | `\` |
-| `clipboard` | `unnamedplus` |
-| `number` + `relativenumber` | true |
-| `tabstop` / `shiftwidth` | 4 |
-| `expandtab` | true |
-| `swapfile` | false |
-| `conceallevel` | 0 (crash workaround) |
-| `winborder` | `double` |
-| `timeoutlen` | 1000ms |
+| Option                      | Value                |
+| --------------------------- | -------------------- |
+| `mapleader`                 | `\`                  |
+| `clipboard`                 | `unnamedplus`        |
+| `number` + `relativenumber` | true                 |
+| `tabstop` / `shiftwidth`    | 4                    |
+| `expandtab`                 | true                 |
+| `swapfile`                  | false                |
+| `conceallevel`              | 0 (crash workaround) |
+| `winborder`                 | `double`             |
+| `timeoutlen`                | 1000ms               |
 
 **Tab keymaps** (`<leader>tt*`): `c` create, `x` close, `n` next, `p` prev, `1-9` jump
 **Window keymaps** (`<leader>tw*`): `x` close, `%` hsplit, `"` vsplit, `h/j/k/l` move, `1-9` jump
 
 ## 🔧 Local Projects
 
-| Plugin | Path |
-|---|---|
-| obsidian.nvim (fork) | `/local/mnt/workspace/qprojects/obsidian.nvim_abhi` |
-| tui-relation-window | `/local/mnt/workspace/qprojects/tui-relation-window` |
-| markdown-oxide | `/local/mnt/workspace/qprojects/markdown-oxide/target/release/markdown-oxide` |
-| bun | `/local/mnt/workspace/qprojects/opencode_pack/bun` |
-| bun-dap-adapter | `~/.local/share/nvim/bun-dap-adapter/server.cjs` |
+| Plugin               | Path                                                                          |
+| -------------------- | ----------------------------------------------------------------------------- |
+| obsidian.nvim (fork) | `/local/mnt/workspace/qprojects/obsidian.nvim_abhi`                           |
+| tui-relation-window  | `/local/mnt/workspace/qprojects/tui-relation-window`                          |
+| markdown-oxide       | `/local/mnt/workspace/qprojects/markdown-oxide/target/release/markdown-oxide` |
+| bun                  | `/local/mnt/workspace/qprojects/opencode_pack/bun`                            |
+| bun-dap-adapter      | `~/.local/share/nvim/bun-dap-adapter/server.cjs`                              |

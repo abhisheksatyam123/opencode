@@ -54,7 +54,13 @@ export function SurfaceLogsTab(props: { deps?: SurfaceLogsTabDeps } = {}) {
   const sdk = props.deps?.baseUrl ? undefined : useGlobalSDK()
   const platform = props.deps?.fetch ? undefined : usePlatform()
   const fetcher = props.deps?.fetch ?? platform?.fetch ?? fetch
-  const [state, setState] = createStore({ refresh: 0, source: "all" as LogSource, limit: 200, autoRefresh: true, copied: false })
+  const [state, setState] = createStore({
+    refresh: 0,
+    source: "all" as LogSource,
+    limit: 200,
+    autoRefresh: true,
+    copied: false,
+  })
 
   const endpoint = createMemo(() => {
     const url = new URL("/log", props.deps?.baseUrl ?? sdk!.url)
@@ -126,15 +132,27 @@ export function SurfaceLogsTab(props: { deps?: SurfaceLogsTabDeps } = {}) {
             max={1000}
             value={state.limit}
             class="w-20 rounded border border-border-weaker-base bg-surface-base px-2 py-1 text-11-mono text-text-base"
-            onInput={(event) => setState("limit", Math.max(1, Math.min(1000, Number(event.currentTarget.value) || 200)))}
+            onInput={(event) =>
+              setState("limit", Math.max(1, Math.min(1000, Number(event.currentTarget.value) || 200)))
+            }
           />
-          <button class="rounded border border-border-weaker-base px-2 py-1 text-12-medium text-text-base" onClick={() => setState("refresh", (x) => x + 1)}>
+          <button
+            class="rounded border border-border-weaker-base px-2 py-1 text-12-medium text-text-base"
+            onClick={() => setState("refresh", (x) => x + 1)}
+          >
             Refresh
           </button>
-          <button class="rounded border border-border-weaker-base px-2 py-1 text-12-medium text-text-base" onClick={() => setState("autoRefresh", (x) => !x)}>
+          <button
+            class="rounded border border-border-weaker-base px-2 py-1 text-12-medium text-text-base"
+            onClick={() => setState("autoRefresh", (x) => !x)}
+          >
             Auto {state.autoRefresh ? "on" : "off"}
           </button>
-          <button class="rounded border border-border-weaker-base px-2 py-1 text-12-medium text-text-base" onClick={copy} disabled={!text()}>
+          <button
+            class="rounded border border-border-weaker-base px-2 py-1 text-12-medium text-text-base"
+            onClick={copy}
+            disabled={!text()}
+          >
             {state.copied ? "Copied" : "Copy"}
           </button>
         </div>
@@ -144,10 +162,16 @@ export function SurfaceLogsTab(props: { deps?: SurfaceLogsTabDeps } = {}) {
           <div class="text-12-regular text-text-weak">Loading logs…</div>
         </Match>
         <Match when={logs.error}>
-          <div class="rounded border border-danger/30 bg-danger/10 p-3 text-12-regular text-danger">{String(logs.error)}</div>
+          <div class="rounded border border-danger/30 bg-danger/10 p-3 text-12-regular text-danger">
+            {String(logs.error)}
+          </div>
         </Match>
         <Match when={text()} keyed>
-          {(value) => <pre class="min-h-[60vh] overflow-auto whitespace-pre-wrap rounded border border-border-weaker-base bg-background-stronger p-3 text-11-mono leading-5 text-text-base">{value}</pre>}
+          {(value) => (
+            <pre class="min-h-[60vh] overflow-auto whitespace-pre-wrap rounded border border-border-weaker-base bg-background-stronger p-3 text-11-mono leading-5 text-text-base">
+              {value}
+            </pre>
+          )}
         </Match>
         <Match when={!text()}>
           <EmptyState title="No logs" description="No log lines returned for the selected source." />

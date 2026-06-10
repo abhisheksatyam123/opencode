@@ -2,7 +2,13 @@ import z from "zod"
 
 const StorageEventKeySchema = z.array(z.string().min(1)).min(1)
 
-export const StorageEventTypeSchema = z.enum(["storage.read", "storage.write", "storage.update", "storage.remove", "storage.list"])
+export const StorageEventTypeSchema = z.enum([
+  "storage.read",
+  "storage.write",
+  "storage.update",
+  "storage.remove",
+  "storage.list",
+])
 export type StorageEventType = z.infer<typeof StorageEventTypeSchema>
 
 export const StorageEventSchema = z.object({

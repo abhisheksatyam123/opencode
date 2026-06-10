@@ -26,11 +26,7 @@
 
 import { existsSync } from "node:fs"
 import { createSqliteStore } from "../intelligence/db/sqlite/factory.js"
-import {
-  loadGraphJsonFromDb,
-  type GraphJson,
-  type GraphJsonFilters,
-} from "../intelligence/db/sqlite/graph-export.js"
+import { loadGraphJsonFromDb, type GraphJson, type GraphJsonFilters } from "../intelligence/db/sqlite/graph-export.js"
 import { ExtractorRunner } from "../intelligence/extraction/runner.js"
 import { BUILT_IN_EXTRACTORS } from "../plugins/index.js"
 import type { ILanguageClient } from "../lsp/ports.js"
@@ -100,13 +96,22 @@ function parseArgs(): CliOptions {
           "or import { graphJsonToHtml } from that module directly.",
       )
       process.exit(2)
-    }
-    else if (arg.startsWith("--filter-edge-kind=")) {
+    } else if (arg.startsWith("--filter-edge-kind=")) {
       const value = arg.replace("--filter-edge-kind=", "")
-      edgeKinds = new Set(value.split(",").map((s) => s.trim()).filter(Boolean))
+      edgeKinds = new Set(
+        value
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      )
     } else if (arg.startsWith("--filter-symbol-kind=")) {
       const value = arg.replace("--filter-symbol-kind=", "")
-      symbolKinds = new Set(value.split(",").map((s) => s.trim()).filter(Boolean))
+      symbolKinds = new Set(
+        value
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      )
     } else if (arg.startsWith("--center=")) {
       centerOf = arg.replace("--center=", "")
     } else if (arg.startsWith("--center-hops=")) {
@@ -204,10 +209,42 @@ export interface Dashboard {
   total_nodes: number
   total_edges: number
   multi_layer_highlights: {
-    module?: { name: string; line_count: number | null; symbol_count: number; exported_count: number; outgoing_imports: number; incoming_imports: number }
-    class?: { name: string; method_count: number; field_count: number; extends_count: number; implements_count: number; type_dependency_count: number; aggregate_count: number }
-    type?: { name: string; field_count: number; aggregate_count: number; aggregator_count: number; consumer_count: number; field_reference_count: number; field_touch_count: number }
-    api?: { name: string; outgoing_calls: number; incoming_calls: number; type_dependency_count: number; field_read_count: number; field_write_count: number; log_count: number; owner_symbol?: string }
+    module?: {
+      name: string
+      line_count: number | null
+      symbol_count: number
+      exported_count: number
+      outgoing_imports: number
+      incoming_imports: number
+    }
+    class?: {
+      name: string
+      method_count: number
+      field_count: number
+      extends_count: number
+      implements_count: number
+      type_dependency_count: number
+      aggregate_count: number
+    }
+    type?: {
+      name: string
+      field_count: number
+      aggregate_count: number
+      aggregator_count: number
+      consumer_count: number
+      field_reference_count: number
+      field_touch_count: number
+    }
+    api?: {
+      name: string
+      outgoing_calls: number
+      incoming_calls: number
+      type_dependency_count: number
+      field_read_count: number
+      field_write_count: number
+      log_count: number
+      owner_symbol?: string
+    }
   }
   edge_kinds: Array<{ edge_kind: string; n: number }>
   resolution_kinds: Array<{ kind: string; n: number }>
@@ -315,14 +352,10 @@ export async function buildDashboard(workspace: string): Promise<Dashboard> {
 
     // Total counts
     const totalNodes = (
-      client.raw
-        .prepare("SELECT COUNT(*) AS n FROM graph_nodes WHERE snapshot_id = ?")
-        .get(snapshotId) as { n: number }
+      client.raw.prepare("SELECT COUNT(*) AS n FROM graph_nodes WHERE snapshot_id = ?").get(snapshotId) as { n: number }
     ).n
     const totalEdges = (
-      client.raw
-        .prepare("SELECT COUNT(*) AS n FROM graph_edges WHERE snapshot_id = ?")
-        .get(snapshotId) as { n: number }
+      client.raw.prepare("SELECT COUNT(*) AS n FROM graph_edges WHERE snapshot_id = ?").get(snapshotId) as { n: number }
     ).n
 
     // Edge kind histogram
@@ -381,16 +414,16 @@ export async function buildDashboard(workspace: string): Promise<Dashboard> {
       .get(snapshotId) as { name: string } | undefined
 
     const moduleSummary = moduleSeed
-      ? await lookup.lookup({ intent: 'find_module_summary', snapshotId, apiName: moduleSeed.name, limit: 1 })
+      ? await lookup.lookup({ intent: "find_module_summary", snapshotId, apiName: moduleSeed.name, limit: 1 })
       : { rows: [] }
     const classSummary = classSeed
-      ? await lookup.lookup({ intent: 'find_class_summary', snapshotId, apiName: classSeed.name, limit: 1 })
+      ? await lookup.lookup({ intent: "find_class_summary", snapshotId, apiName: classSeed.name, limit: 1 })
       : { rows: [] }
     const typeSummary = classSeed
-      ? await lookup.lookup({ intent: 'find_type_summary', snapshotId, apiName: classSeed.name, limit: 1 })
+      ? await lookup.lookup({ intent: "find_type_summary", snapshotId, apiName: classSeed.name, limit: 1 })
       : { rows: [] }
     const apiSummary = apiSeed
-      ? await lookup.lookup({ intent: 'find_api_summary', snapshotId, apiName: apiSeed.name, limit: 1 })
+      ? await lookup.lookup({ intent: "find_api_summary", snapshotId, apiName: apiSeed.name, limit: 1 })
       : { rows: [] }
     const topCalled = await lookup.lookup({
       intent: "find_top_called_functions",
@@ -526,7 +559,7 @@ export async function buildDashboard(workspace: string): Promise<Dashboard> {
         module: moduleSummary.rows[0]
           ? {
               name: String(moduleSummary.rows[0].canonical_name),
-              line_count: ((moduleSummary.rows[0] as { line_count?: number | null }).line_count ?? null),
+              line_count: (moduleSummary.rows[0] as { line_count?: number | null }).line_count ?? null,
               symbol_count: Number((moduleSummary.rows[0] as { symbol_count?: number }).symbol_count ?? 0),
               exported_count: Number((moduleSummary.rows[0] as { exported_count?: number }).exported_count ?? 0),
               outgoing_imports: Number((moduleSummary.rows[0] as { outgoing_imports?: number }).outgoing_imports ?? 0),
@@ -540,7 +573,9 @@ export async function buildDashboard(workspace: string): Promise<Dashboard> {
               field_count: Number((classSummary.rows[0] as { field_count?: number }).field_count ?? 0),
               extends_count: Number((classSummary.rows[0] as { extends_count?: number }).extends_count ?? 0),
               implements_count: Number((classSummary.rows[0] as { implements_count?: number }).implements_count ?? 0),
-              type_dependency_count: Number((classSummary.rows[0] as { type_dependency_count?: number }).type_dependency_count ?? 0),
+              type_dependency_count: Number(
+                (classSummary.rows[0] as { type_dependency_count?: number }).type_dependency_count ?? 0,
+              ),
               aggregate_count: Number((classSummary.rows[0] as { aggregate_count?: number }).aggregate_count ?? 0),
             }
           : undefined,
@@ -551,7 +586,9 @@ export async function buildDashboard(workspace: string): Promise<Dashboard> {
               aggregate_count: Number((typeSummary.rows[0] as { aggregate_count?: number }).aggregate_count ?? 0),
               aggregator_count: Number((typeSummary.rows[0] as { aggregator_count?: number }).aggregator_count ?? 0),
               consumer_count: Number((typeSummary.rows[0] as { consumer_count?: number }).consumer_count ?? 0),
-              field_reference_count: Number((typeSummary.rows[0] as { field_reference_count?: number }).field_reference_count ?? 0),
+              field_reference_count: Number(
+                (typeSummary.rows[0] as { field_reference_count?: number }).field_reference_count ?? 0,
+              ),
               field_touch_count: Number((typeSummary.rows[0] as { field_touch_count?: number }).field_touch_count ?? 0),
             }
           : undefined,
@@ -560,7 +597,9 @@ export async function buildDashboard(workspace: string): Promise<Dashboard> {
               name: String(apiSummary.rows[0].canonical_name),
               outgoing_calls: Number((apiSummary.rows[0] as { outgoing_calls?: number }).outgoing_calls ?? 0),
               incoming_calls: Number((apiSummary.rows[0] as { incoming_calls?: number }).incoming_calls ?? 0),
-              type_dependency_count: Number((apiSummary.rows[0] as { type_dependency_count?: number }).type_dependency_count ?? 0),
+              type_dependency_count: Number(
+                (apiSummary.rows[0] as { type_dependency_count?: number }).type_dependency_count ?? 0,
+              ),
               field_read_count: Number((apiSummary.rows[0] as { field_read_count?: number }).field_read_count ?? 0),
               field_write_count: Number((apiSummary.rows[0] as { field_write_count?: number }).field_write_count ?? 0),
               log_count: Number((apiSummary.rows[0] as { log_count?: number }).log_count ?? 0),
@@ -676,10 +715,7 @@ export async function buildDashboard(workspace: string): Promise<Dashboard> {
  * `intelligence_graph` transport tool can reuse it against an existing
  * snapshot without re-extracting.
  */
-export async function buildGraphJson(
-  workspace: string,
-  filters: GraphJsonFilters = {},
-): Promise<GraphJson> {
+export async function buildGraphJson(workspace: string, filters: GraphJsonFilters = {}): Promise<GraphJson> {
   const { client, foundation, sink: store } = createSqliteStore({ path: ":memory:" })
   try {
     await foundation.initSchema()
@@ -745,22 +781,30 @@ function printDashboard(d: Dashboard): void {
   if (d.multi_layer_highlights.module) {
     const m = d.multi_layer_highlights.module
     console.log(`  Module: ${m.name}`)
-    console.log(`    lines=${m.line_count ?? 0} symbols=${m.symbol_count} exported=${m.exported_count} imports(out=${m.outgoing_imports}, in=${m.incoming_imports})`)
+    console.log(
+      `    lines=${m.line_count ?? 0} symbols=${m.symbol_count} exported=${m.exported_count} imports(out=${m.outgoing_imports}, in=${m.incoming_imports})`,
+    )
   }
   if (d.multi_layer_highlights.class) {
     const c = d.multi_layer_highlights.class
     console.log(`  Class:  ${c.name}`)
-    console.log(`    methods=${c.method_count} fields=${c.field_count} extends=${c.extends_count} implements=${c.implements_count} typeDeps=${c.type_dependency_count} aggregates=${c.aggregate_count}`)
+    console.log(
+      `    methods=${c.method_count} fields=${c.field_count} extends=${c.extends_count} implements=${c.implements_count} typeDeps=${c.type_dependency_count} aggregates=${c.aggregate_count}`,
+    )
   }
   if (d.multi_layer_highlights.type) {
     const t = d.multi_layer_highlights.type
     console.log(`  Type:   ${t.name}`)
-    console.log(`    fields=${t.field_count} aggregates=${t.aggregate_count} aggregators=${t.aggregator_count} consumers=${t.consumer_count} fieldRefs=${t.field_reference_count} fieldTouches=${t.field_touch_count}`)
+    console.log(
+      `    fields=${t.field_count} aggregates=${t.aggregate_count} aggregators=${t.aggregator_count} consumers=${t.consumer_count} fieldRefs=${t.field_reference_count} fieldTouches=${t.field_touch_count}`,
+    )
   }
   if (d.multi_layer_highlights.api) {
     const a = d.multi_layer_highlights.api
     console.log(`  API:    ${a.name}`)
-    console.log(`    calls(out=${a.outgoing_calls}, in=${a.incoming_calls}) typeDeps=${a.type_dependency_count} fieldReads=${a.field_read_count} fieldWrites=${a.field_write_count} logs=${a.log_count}${a.owner_symbol ? ` owner=${a.owner_symbol}` : ''}`)
+    console.log(
+      `    calls(out=${a.outgoing_calls}, in=${a.incoming_calls}) typeDeps=${a.type_dependency_count} fieldReads=${a.field_read_count} fieldWrites=${a.field_write_count} logs=${a.log_count}${a.owner_symbol ? ` owner=${a.owner_symbol}` : ""}`,
+    )
   }
   console.log()
   if (d.top_imported_modules.length > 0) {
@@ -849,9 +893,7 @@ function printDashboard(d: Dashboard): void {
   if (d.field_clumps.length > 0) {
     console.log("Data clumps (field pairs touched together):")
     for (const cp of d.field_clumps) {
-      console.log(
-        `  ${cp.co_occurrence.toString().padStart(3)}× ${cp.field_a} ↔ ${cp.field_b}`,
-      )
+      console.log(`  ${cp.co_occurrence.toString().padStart(3)}× ${cp.field_a} ↔ ${cp.field_b}`)
     }
     console.log()
   }
@@ -1036,9 +1078,7 @@ export function dashboardToMarkdown(d: Dashboard): string {
     lines.push("| APIs | reads | writes | field |")
     lines.push("|---:|---:|---:|---|")
     for (const f of d.top_hot_fields) {
-      lines.push(
-        `| ${f.toucher_count} | ${f.read_count} | ${f.write_count} | \`${f.name}\` |`,
-      )
+      lines.push(`| ${f.toucher_count} | ${f.read_count} | ${f.write_count} | \`${f.name}\` |`)
     }
     lines.push("")
   }

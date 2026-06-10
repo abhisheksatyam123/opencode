@@ -64,7 +64,10 @@ export interface RunSecondaryToolOutput {
 
 function availableToolsList(tools: CustomScript[]) {
   if (tools.length === 0) return "(none)"
-  return tools.map((item) => item.name).sort().join(", ")
+  return tools
+    .map((item) => item.name)
+    .sort()
+    .join(", ")
 }
 
 export async function runSecondaryTool(input: RunSecondaryToolInput): Promise<RunSecondaryToolOutput> {
@@ -76,7 +79,8 @@ export async function runSecondaryTool(input: RunSecondaryToolInput): Promise<Ru
     )
   }
 
-  const command = tool.runner === "bun" ? ["bun", "run", tool.path, ...(input.args ?? [])] : [tool.path, ...(input.args ?? [])]
+  const command =
+    tool.runner === "bun" ? ["bun", "run", tool.path, ...(input.args ?? [])] : [tool.path, ...(input.args ?? [])]
 
   if (input.stdio === "inherit") {
     const child = Process.spawn(command, {

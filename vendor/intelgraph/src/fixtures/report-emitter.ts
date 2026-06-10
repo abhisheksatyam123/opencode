@@ -99,7 +99,9 @@ export function formatMarkdownSummary(report: ComparatorReport): string {
         for (const d of r.diffs) {
           const expected = JSON.stringify(d.expected) ?? ""
           const actual = JSON.stringify(d.actual) ?? ""
-          lines.push(`| \`${d.field}\` | ${expected} | ${actual} | ${d.mismatch_type} | ${d.severity} | \`${d.rule_id}\` |`)
+          lines.push(
+            `| \`${d.field}\` | ${expected} | ${actual} | ${d.mismatch_type} | ${d.severity} | \`${d.rule_id}\` |`,
+          )
         }
 
         lines.push(``)

@@ -414,7 +414,7 @@ export namespace ModelRouter {
       errorCode?: string
       inputTokens?: number
       taskType?: string
-    }
+    },
   ): Promise<void> {
     await ModelRouterState.append({
       model,

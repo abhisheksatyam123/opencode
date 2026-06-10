@@ -80,12 +80,7 @@ export function deriveRunId(entityNames: string[]): string {
  * Classify a single diff using the taxonomy rules.
  * Determines mismatch_type from field name heuristics, then delegates to classifyDiffRow.
  */
-function classifyField(
-  field: string,
-  expected: unknown,
-  actual: unknown,
-  isFirst: boolean,
-): DiffRow {
+function classifyField(field: string, expected: unknown, actual: unknown, isFirst: boolean): DiffRow {
   const mismatch_type =
     isFirst && field === "status"
       ? "consistency"
@@ -168,9 +163,7 @@ export function compareEntityToBackend(
   const fixtureRelations: Relation[] = (fixture.relations as unknown as Record<string, Relation[]>)[bucket] ?? []
 
   // Build a set of fixture relation keys for presence checking
-  const fixtureKeys = new Set(
-    fixtureRelations.map((r) => relationKey(r)),
-  )
+  const fixtureKeys = new Set(fixtureRelations.map((r) => relationKey(r)))
 
   // Collect all backend relations from this bucket across all items
   const backendRelations: unknown[] = []
@@ -205,14 +198,7 @@ export function compareEntityToBackend(
         return sum + (item.rel?.[bucket]?.length ?? 0)
       }, 0)
       if (totalCount < minCount) {
-        diffs.push(
-          classifyField(
-            `rel.${bucket} (minimum_count)`,
-            `>=${minCount}`,
-            totalCount,
-            diffs.length === 0,
-          ),
-        )
+        diffs.push(classifyField(`rel.${bucket} (minimum_count)`, `>=${minCount}`, totalCount, diffs.length === 0))
       }
     }
   }
@@ -257,8 +243,7 @@ export function buildComparatorReport(results: ComparisonResult[]): ComparatorRe
   const warn_entities = [...entityOutcomes.values()].filter((o) => o === "warn").length
   const pass_entities = [...entityOutcomes.values()].filter((o) => o === "pass").length
 
-  const ci_outcome: CiOutcome =
-    fail_entities > 0 ? "fail" : warn_entities > 0 ? "warn" : "pass"
+  const ci_outcome: CiOutcome = fail_entities > 0 ? "fail" : warn_entities > 0 ? "warn" : "pass"
 
   return {
     run_id,

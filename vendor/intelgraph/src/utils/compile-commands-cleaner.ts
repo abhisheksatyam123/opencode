@@ -67,11 +67,11 @@ interface CompileCommand {
  * Calculate a simple hash of compile_commands.json to detect changes.
  */
 function hashCompileCommands(entries: CompileCommand[]): string {
-  const str = JSON.stringify(entries.map(e => e.file).sort())
+  const str = JSON.stringify(entries.map((e) => e.file).sort())
   let hash = 0
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
+    hash = (hash << 5) - hash + char
     hash = hash & hash // Convert to 32bit integer
   }
   return hash.toString(36)
@@ -105,8 +105,7 @@ function findRomSourceFile(patchFile: string, workspaceRoot: string): string | n
   // - <component>/v1rom/patch/..., <component>/v2rom/patch/...
   // - <component>/ramv1/..., <component>/ramv2/...
   const match =
-    patchFile.match(/(.+)\/(rom\/[^/]+|v[0-9]+rom)\/(patch|orig)\/(.+)/) ??
-    patchFile.match(/(.+)\/(ramv[0-9]+)\/(.+)/)
+    patchFile.match(/(.+)\/(rom\/[^/]+|v[0-9]+rom)\/(patch|orig)\/(.+)/) ?? patchFile.match(/(.+)\/(ramv[0-9]+)\/(.+)/)
 
   if (!match) {
     return null
@@ -198,7 +197,7 @@ function createRomEntry(patchEntry: CompileCommand, romFile: string): CompileCom
   romEntry.directory = path.dirname(romFile)
 
   if (romEntry.arguments) {
-    romEntry.arguments = romEntry.arguments.map(arg => {
+    romEntry.arguments = romEntry.arguments.map((arg) => {
       if (arg.includes("_patch.c") || arg.includes("_patch.h") || arg.includes("patch.c") || arg.includes("patch.h")) {
         return romFile
       }
@@ -229,17 +228,34 @@ function createRomEntry(patchEntry: CompileCommand, romFile: string): CompileCom
 function isTestFile(filePath: string): boolean {
   const lower = filePath.toLowerCase()
   const patterns = [
-    "/test/", "/tests/", "/testing/",
-    "_test.c", "_test.cpp", "_test.h",
-    "test_", "test.c", "test.cpp",
-    "/unit_test/", "/unittest/", "/qtf_test/",
-    "_unit_test.c", "_unittest.c",
-    "/mock/", "/mocks/", "_mock.c", "_mock.cpp",
-    "/stub/", "/stubs/", "_stub.c", "_stub.cpp",
-    "/simulation_test/", "/sim_test/",
-    "/qtf_stubs/", "/qtf_common/",
+    "/test/",
+    "/tests/",
+    "/testing/",
+    "_test.c",
+    "_test.cpp",
+    "_test.h",
+    "test_",
+    "test.c",
+    "test.cpp",
+    "/unit_test/",
+    "/unittest/",
+    "/qtf_test/",
+    "_unit_test.c",
+    "_unittest.c",
+    "/mock/",
+    "/mocks/",
+    "_mock.c",
+    "_mock.cpp",
+    "/stub/",
+    "/stubs/",
+    "_stub.c",
+    "_stub.cpp",
+    "/simulation_test/",
+    "/sim_test/",
+    "/qtf_stubs/",
+    "/qtf_common/",
   ]
-  return patterns.some(p => lower.includes(p))
+  return patterns.some((p) => lower.includes(p))
 }
 
 /**
@@ -249,7 +265,7 @@ function cleanFlags(entry: CompileCommand): CompileCommand {
   const problematicFlags = new Set(["-mduplex", "-Werror"])
 
   if (entry.arguments) {
-    entry.arguments = entry.arguments.filter(arg => !problematicFlags.has(arg))
+    entry.arguments = entry.arguments.filter((arg) => !problematicFlags.has(arg))
   }
 
   if (entry.command) {
@@ -321,7 +337,7 @@ function emptyStats(policy: "reject" | "fix" | "remap" = "remap"): CleanStats {
 
 export async function cleanCompileCommands(
   workspaceRoot: string,
-  config: CleaningConfig
+  config: CleaningConfig,
 ): Promise<{ cleaned: boolean; stats: CleanStats; preflightOk: boolean }> {
   const compileCommandsPath = path.join(workspaceRoot, "compile_commands.json")
 
@@ -456,7 +472,7 @@ export async function cleanCompileCommands(
   // 2. Remove test files (optional)
   if (config.removeTests) {
     const beforeCount = entries.length
-    entries = entries.filter(e => !isTestFile(e.file))
+    entries = entries.filter((e) => !isTestFile(e.file))
     stats.testFilesRemoved = beforeCount - entries.length
   }
 

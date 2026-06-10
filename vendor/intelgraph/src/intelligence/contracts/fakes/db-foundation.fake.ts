@@ -1,13 +1,5 @@
-import type {
-  IDbFoundation,
-  ISnapshotIngestWriter,
-  SnapshotIngestBatch,
-} from "../db-foundation.js"
-import type {
-  IngestReport,
-  SnapshotMeta,
-  SnapshotRef,
-} from "../common.js"
+import type { IDbFoundation, ISnapshotIngestWriter, SnapshotIngestBatch } from "../db-foundation.js"
+import type { IngestReport, SnapshotMeta, SnapshotRef } from "../common.js"
 
 interface SnapshotRecord {
   snapshotId: number
@@ -129,10 +121,7 @@ export class FakeDbFoundation implements IDbFoundation {
 export class FakeSnapshotIngestWriter implements ISnapshotIngestWriter {
   readonly batches: Array<{ snapshotId: number; batch: SnapshotIngestBatch }> = []
 
-  async writeSnapshotBatch(
-    snapshotId: number,
-    batch: SnapshotIngestBatch,
-  ): Promise<IngestReport> {
+  async writeSnapshotBatch(snapshotId: number, batch: SnapshotIngestBatch): Promise<IngestReport> {
     this.batches.push({ snapshotId, batch })
     return {
       snapshotId,

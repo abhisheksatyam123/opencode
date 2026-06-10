@@ -136,7 +136,6 @@ export function parseArgs(argv: string[]): {
   return { root, port, httpDaemon, httpPort, serverPath, serverArgs, clangdPath: serverPath, clangdArgs: serverArgs }
 }
 
-
 export function printHelp(): void {
   process.stderr.write(`
 intelgraph — plugin-based code intelligence graph (clangd + tree-sitter) over HTTP JSON API

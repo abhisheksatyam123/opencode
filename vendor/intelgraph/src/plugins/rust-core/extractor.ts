@@ -32,15 +32,10 @@
 import { existsSync, readdirSync, statSync } from "node:fs"
 import { join, relative, dirname } from "node:path"
 import { defineExtractor } from "../../intelligence/extraction/contract.js"
-import type {
-  Capability,
-  WorkspaceProbe,
-} from "../../intelligence/extraction/contract.js"
+import type { Capability, WorkspaceProbe } from "../../intelligence/extraction/contract.js"
 import type { ExtractionContext } from "../../intelligence/extraction/context.js"
 import type { Fact } from "../../intelligence/extraction/facts.js"
-import type {
-  TsNode,
-} from "../../intelligence/extraction/services/treesitter-service.js"
+import type { TsNode } from "../../intelligence/extraction/services/treesitter-service.js"
 import type { SymbolRow } from "../../intelligence/contracts/common.js"
 
 const CAPABILITIES: Capability[] = ["symbols", "types", "direct-calls"]
@@ -48,15 +43,7 @@ const CAPABILITIES: Capability[] = ["symbols", "types", "direct-calls"]
 const RUST_EXTENSIONS = [".rs"] as const
 
 // Skip these directories during file walk
-const SKIP_DIRS = new Set([
-  "target",
-  ".git",
-  "node_modules",
-  "vendor",
-  ".cargo",
-  ".cache",
-  "tmp",
-])
+const SKIP_DIRS = new Set(["target", ".git", "node_modules", "vendor", ".cargo", ".cache", "tmp"])
 
 const rustCoreExtractor = defineExtractor({
   metadata: {
@@ -67,10 +54,7 @@ const rustCoreExtractor = defineExtractor({
     capabilities: CAPABILITIES,
     appliesTo: (probe: WorkspaceProbe) => {
       const root = probe.workspaceRoot
-      if (
-        existsSync(join(root, "Cargo.toml")) ||
-        existsSync(join(root, "Cargo.lock"))
-      ) {
+      if (existsSync(join(root, "Cargo.toml")) || existsSync(join(root, "Cargo.lock"))) {
         return true
       }
       // Fallback: shallow scan
@@ -201,8 +185,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
     switch (node.type) {
       case "function_item":
       case "function_signature_item": {
-        const id = node.childForFieldName("name")
-          ?? firstNamedChildOfType(node, "identifier")
+        const id = node.childForFieldName("name") ?? firstNamedChildOfType(node, "identifier")
         if (id) {
           // Decide if this function lives inside an impl block (→ method)
           const parentKind = implStack.length > 0 ? "method" : "function"
@@ -218,12 +201,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
   async function* visit(node: TsNode): AsyncGenerator<Fact> {
     // Use declarations → imports edges + populate the resolver
     if (node.type === "use_declaration") {
-      for (const importEdge of extractUseImports(
-        node,
-        moduleNodeName,
-        file,
-        workspaceRoot,
-      )) {
+      for (const importEdge of extractUseImports(node, moduleNodeName, file, workspaceRoot)) {
         yield ctx.edge({ payload: importEdge })
         // Populate the resolver from each named import
         populateResolverFromUse(node, resolver, file, workspaceRoot)
@@ -233,21 +211,16 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
     // Symbol declarations — map AST kind to SymbolRow.kind
     const declared = extractDeclaration(node)
     if (declared) {
-      const enclosingType = implStack.length > 0
-        ? implStack[implStack.length - 1]
-        : null
+      const enclosingType = implStack.length > 0 ? implStack[implStack.length - 1] : null
       // extractDeclaration returns "function" for function_item; the
       // visit() function upgrades to "method" when we're inside an
       // impl block. This matches ts-core's class-method qualification.
-      const isMember =
-        declared.kind === "function" && enclosingType !== null
+      const isMember = declared.kind === "function" && enclosingType !== null
       const kind: SymbolRow["kind"] = isMember ? "method" : declared.kind
       const name = declared.name
       const localName = isMember ? `${enclosingType}.${name}` : name
       const canonicalName = `${moduleNodeName}#${localName}`
-      const containsSrc = isMember
-        ? `${moduleNodeName}#${enclosingType}`
-        : moduleNodeName
+      const containsSrc = isMember ? `${moduleNodeName}#${enclosingType}` : moduleNodeName
 
       if (!isMember) {
         resolver.localSymbols.add(name)
@@ -296,13 +269,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
 
         // function/method type references on signature
         if (kind === "function" || kind === "method") {
-          for (const ref of extractFunctionTypeReferences(
-            node,
-            canonicalName,
-            resolver,
-            moduleNodeName,
-            file,
-          )) {
+          for (const ref of extractFunctionTypeReferences(node, canonicalName, resolver, moduleNodeName, file)) {
             yield ctx.edge({ payload: ref })
           }
         }
@@ -310,13 +277,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
         // struct/enum/trait field type references (existing
         // class-level rollup, kept for back-compat).
         if (kind === "struct" || kind === "enum" || kind === "interface") {
-          for (const ref of extractFieldTypeReferences(
-            node,
-            canonicalName,
-            resolver,
-            moduleNodeName,
-            file,
-          )) {
+          for (const ref of extractFieldTypeReferences(node, canonicalName, resolver, moduleNodeName, file)) {
             yield ctx.edge({ payload: ref })
           }
         }
@@ -327,11 +288,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
         // (phase 3d) in a separate block below.
         if (kind === "struct") {
           const aggregatedTargets = new Set<string>()
-          for (const fieldDecl of extractRustFieldDeclarations(
-            node,
-            name,
-            moduleNodeName,
-          )) {
+          for (const fieldDecl of extractRustFieldDeclarations(node, name, moduleNodeName)) {
             if (seenSymbols.has(fieldDecl.canonicalName)) continue
             seenSymbols.add(fieldDecl.canonicalName)
             yield ctx.symbol({
@@ -344,9 +301,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
                   localName: fieldDecl.localName,
                   owningClass: name,
                   declaredOn: "struct",
-                  ...(fieldDecl.tupleIndex !== undefined
-                    ? { tupleIndex: fieldDecl.tupleIndex }
-                    : {}),
+                  ...(fieldDecl.tupleIndex !== undefined ? { tupleIndex: fieldDecl.tupleIndex } : {}),
                 },
               },
             })
@@ -401,11 +356,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
         // to each payload type, and the enum aggregates the union.
         if (kind === "enum") {
           const enumAggregatedTargets = new Set<string>()
-          for (const variant of extractRustEnumVariants(
-            node,
-            name,
-            moduleNodeName,
-          )) {
+          for (const variant of extractRustEnumVariants(node, name, moduleNodeName)) {
             if (seenSymbols.has(variant.canonicalName)) continue
             seenSymbols.add(variant.canonicalName)
             yield ctx.symbol({
@@ -496,9 +447,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
 
     // Emit implements edge if this is a `impl Trait for Type` block
     if (implementsEdge && implTraitName && implTypeName) {
-      const traitFq =
-        resolveTypeName(implTraitName, resolver, moduleNodeName)?.name ??
-        implTraitName
+      const traitFq = resolveTypeName(implTraitName, resolver, moduleNodeName)?.name ?? implTraitName
       yield ctx.edge({
         payload: {
           edgeKind: "implements",
@@ -511,9 +460,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
             sourceLineNumber: implementsEdge.startPosition.row + 1,
           },
           metadata: {
-            resolved:
-              resolveTypeName(implTraitName, resolver, moduleNodeName) !==
-              null,
+            resolved: resolveTypeName(implTraitName, resolver, moduleNodeName) !== null,
             targetName: implTraitName,
           },
         },
@@ -523,17 +470,10 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
     // Function-scope tracking for call attribution
     const enter = maybeEnterScope(node)
     if (enter) {
-      const enclosingType =
-        enter.kind === "method" && implStack.length > 0
-          ? implStack[implStack.length - 1]
-          : null
+      const enclosingType = enter.kind === "method" && implStack.length > 0 ? implStack[implStack.length - 1] : null
       const enclosingTrait =
-        enter.kind === "method" && traitImplStack.length > 0
-          ? traitImplStack[traitImplStack.length - 1]
-          : null
-      const localName = enclosingType
-        ? `${enclosingType}.${enter.name}`
-        : enter.name
+        enter.kind === "method" && traitImplStack.length > 0 ? traitImplStack[traitImplStack.length - 1] : null
+      const localName = enclosingType ? `${enclosingType}.${enter.name}` : enter.name
       const fqName = `${moduleNodeName}#${localName}`
       // For methods inside `impl Trait for Type` blocks, also record
       // a trait-qualified alias `impl_{Trait}.{method}`. Every call
@@ -547,10 +487,7 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
       // trait, not the struct, because multiple types could
       // implement the same trait and the trait is what anchors the
       // contract.
-      const aliasName =
-        enclosingTrait !== null
-          ? `${moduleNodeName}#impl_${enclosingTrait}.${enter.name}`
-          : undefined
+      const aliasName = enclosingTrait !== null ? `${moduleNodeName}#impl_${enclosingTrait}.${enter.name}` : undefined
       scopeStack.push({ name: fqName, aliasName, node })
     }
 
@@ -597,15 +534,9 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
 
     // Call expressions inside the current scope
     if (node.type === "call_expression") {
-      const callee = extractCallee(
-        node,
-        resolver,
-        moduleNodeName,
-        workspaceRoot,
-      )
+      const callee = extractCallee(node, resolver, moduleNodeName, workspaceRoot)
       if (callee) {
-        const scope =
-          scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : null
+        const scope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : null
         const callerName = scope ? scope.name : moduleNodeName
         const aliasName = scope?.aliasName
         const baseEdge = {
@@ -672,15 +603,11 @@ async function* extractFromTree(args: WalkArgs): AsyncGenerator<Fact> {
  * 'method' here; the visit() function decides whether to qualify with
  * the enclosing type via the implStack.
  */
-function extractDeclaration(
-  node: TsNode,
-): { name: string; kind: SymbolRow["kind"] } | null {
+function extractDeclaration(node: TsNode): { name: string; kind: SymbolRow["kind"] } | null {
   switch (node.type) {
     case "function_item":
     case "function_signature_item": {
-      const id =
-        node.childForFieldName("name") ??
-        firstNamedChildOfType(node, "identifier")
+      const id = node.childForFieldName("name") ?? firstNamedChildOfType(node, "identifier")
       if (!id) return null
       // The visit() function decides function vs method based on
       // implStack — we just return "function" here and the caller
@@ -688,35 +615,29 @@ function extractDeclaration(
       return { name: id.text, kind: "function" }
     }
     case "struct_item": {
-      const id = node.childForFieldName("name") ??
-        firstNamedChildOfType(node, "type_identifier")
+      const id = node.childForFieldName("name") ?? firstNamedChildOfType(node, "type_identifier")
       return id ? { name: id.text, kind: "struct" } : null
     }
     case "enum_item": {
-      const id = node.childForFieldName("name") ??
-        firstNamedChildOfType(node, "type_identifier")
+      const id = node.childForFieldName("name") ?? firstNamedChildOfType(node, "type_identifier")
       return id ? { name: id.text, kind: "enum" } : null
     }
     case "trait_item": {
-      const id = node.childForFieldName("name") ??
-        firstNamedChildOfType(node, "type_identifier")
+      const id = node.childForFieldName("name") ?? firstNamedChildOfType(node, "type_identifier")
       // Rust traits map to "interface" in our schema
       return id ? { name: id.text, kind: "interface" } : null
     }
     case "type_item": {
-      const id = node.childForFieldName("name") ??
-        firstNamedChildOfType(node, "type_identifier")
+      const id = node.childForFieldName("name") ?? firstNamedChildOfType(node, "type_identifier")
       return id ? { name: id.text, kind: "typedef" } : null
     }
     case "mod_item": {
-      const id = node.childForFieldName("name") ??
-        firstNamedChildOfType(node, "identifier")
+      const id = node.childForFieldName("name") ?? firstNamedChildOfType(node, "identifier")
       return id ? { name: id.text, kind: "namespace" } : null
     }
     case "const_item":
     case "static_item": {
-      const id = node.childForFieldName("name") ??
-        firstNamedChildOfType(node, "identifier")
+      const id = node.childForFieldName("name") ?? firstNamedChildOfType(node, "identifier")
       return id ? { name: id.text, kind: "global_var" } : null
     }
     default:
@@ -838,12 +759,7 @@ function expandUsePath(path: string): Array<{
  * Populate the FileResolver's namedImports from a use_declaration so
  * subsequent call sites can resolve bare identifiers to FQ names.
  */
-function populateResolverFromUse(
-  useNode: TsNode,
-  resolver: FileResolver,
-  _file: string,
-  workspaceRoot: string,
-): void {
+function populateResolverFromUse(useNode: TsNode, resolver: FileResolver, _file: string, workspaceRoot: string): void {
   const path = useNode.text.replace(/^use\s+/, "").replace(/;\s*$/, "")
   const cleanPath = path.split(" as ")[0].trim()
   const items = expandUsePath(cleanPath)
@@ -860,13 +776,8 @@ function populateResolverFromUse(
     // call like `goto_definition(...)` inside handlers.rs would
     // resolve to `module:crate::gotodef#goto_definition` rather
     // than the extractor-produced `module:src/gotodef.rs#goto_definition`.
-    const fileModulePath = cratePathToFileModulePath(
-      item.modulePath,
-      workspaceRoot,
-    )
-    const dst = fileModulePath
-      ? `module:${fileModulePath}#${item.name}`
-      : `module:${item.modulePath}#${item.name}`
+    const fileModulePath = cratePathToFileModulePath(item.modulePath, workspaceRoot)
+    const dst = fileModulePath ? `module:${fileModulePath}#${item.name}` : `module:${item.modulePath}#${item.name}`
     resolver.namedImports.set(item.name, dst)
   }
 }
@@ -882,17 +793,11 @@ function populateResolverFromUse(
  * resolver rather than the call-site resolver. Keeps the two paths
  * separate so each can evolve independently.
  */
-function cratePathToFileModulePath(
-  modulePath: string,
-  workspaceRoot: string,
-): string | null {
+function cratePathToFileModulePath(modulePath: string, workspaceRoot: string): string | null {
   if (!modulePath.startsWith("crate::")) return null
   const segments = modulePath.slice("crate::".length).split("::")
   if (segments.length === 0 || segments[0] === "") return null
-  const candidates = [
-    "src/" + segments.join("/") + ".rs",
-    "src/" + segments.join("/") + "/mod.rs",
-  ]
+  const candidates = ["src/" + segments.join("/") + ".rs", "src/" + segments.join("/") + "/mod.rs"]
   if (segments.length >= 2) {
     candidates.push("src/" + segments.slice(0, -1).join("/") + ".rs")
   }
@@ -964,10 +869,7 @@ function extractRustFieldDeclarations(
   }
 
   // Tuple struct: ordered_field_declaration_list with positional fields
-  const tupleList = firstNamedChildOfType(
-    structItemNode,
-    "ordered_field_declaration_list",
-  )
+  const tupleList = firstNamedChildOfType(structItemNode, "ordered_field_declaration_list")
   if (tupleList) {
     let idx = 0
     for (let i = 0; i < tupleList.namedChildCount; i++) {
@@ -976,9 +878,7 @@ function extractRustFieldDeclarations(
       // Each tuple field is an unnamed type expression. The first
       // type-bearing child IS the type. We support both the
       // direct-type form and the wrapped form.
-      const typeNode =
-        member.childForFieldName("type") ??
-        (member.type !== "visibility_modifier" ? member : null)
+      const typeNode = member.childForFieldName("type") ?? (member.type !== "visibility_modifier" ? member : null)
       if (!typeNode) continue
       // The tupleList may include visibility_modifier nodes; skip them.
       if (typeNode.type === "visibility_modifier") continue
@@ -1148,10 +1048,7 @@ function extractRustEnumVariants(
     let shape: "unit" | "tuple" | "struct" = "unit"
     const payloadTypeNodes: TsNode[] = []
 
-    const tupleList = firstNamedChildOfType(
-      variant,
-      "ordered_field_declaration_list",
-    )
+    const tupleList = firstNamedChildOfType(variant, "ordered_field_declaration_list")
     const namedList = firstNamedChildOfType(variant, "field_declaration_list")
     if (tupleList) {
       shape = "tuple"
@@ -1606,10 +1503,7 @@ function extractCallee(
       if (segments[0] === "crate" && segments.length >= 3) {
         const fnName = segments[segments.length - 1]
         const modulePathSegments = segments.slice(1, segments.length - 1)
-        const resolvedCrate = resolveCrateModulePath(
-          modulePathSegments,
-          workspaceRoot,
-        )
+        const resolvedCrate = resolveCrateModulePath(modulePathSegments, workspaceRoot)
         if (resolvedCrate) {
           return {
             name: `module:${resolvedCrate}#${fnName}`,
@@ -1662,10 +1556,7 @@ function extractCallee(
  * common shape (`src/<...>.rs`) so unresolved dsts still use a
  * plausible canonical.
  */
-function resolveCrateModulePath(
-  segments: string[],
-  workspaceRoot: string | undefined,
-): string | null {
+function resolveCrateModulePath(segments: string[], workspaceRoot: string | undefined): string | null {
   if (segments.length === 0) return null
 
   const candidates: string[] = []
@@ -1708,18 +1599,12 @@ function resolveCrateModulePath(
  *     ├─ type_identifier (Type)             ← second
  *     └─ declaration_list
  */
-function parseImplHeader(
-  implNode: TsNode,
-): { typeName: string; traitName: string | null } | null {
+function parseImplHeader(implNode: TsNode): { typeName: string; traitName: string | null } | null {
   const types: string[] = []
   for (let i = 0; i < implNode.namedChildCount; i++) {
     const child = implNode.namedChild(i)
     if (!child) continue
-    if (
-      child.type === "type_identifier" ||
-      child.type === "scoped_type_identifier" ||
-      child.type === "generic_type"
-    ) {
+    if (child.type === "type_identifier" || child.type === "scoped_type_identifier" || child.type === "generic_type") {
       // For generic_type / scoped_type_identifier, take the leftmost
       // type_identifier descendant as the name
       const id = firstNamedChildOfType(child, "type_identifier") ?? child
@@ -1757,10 +1642,7 @@ function resolveTypeName(
  * references work even when a function is declared before the type
  * it references later in the file.
  */
-function prepopulateLocalSymbols(
-  rootNode: TsNode,
-  resolver: FileResolver,
-): void {
+function prepopulateLocalSymbols(rootNode: TsNode, resolver: FileResolver): void {
   for (let i = 0; i < rootNode.namedChildCount; i++) {
     const child = rootNode.namedChild(i)
     if (!child) continue
@@ -1804,11 +1686,7 @@ function hasRustFilesShallow(dir: string): boolean {
   }
   for (const entry of entries) {
     if (entry.isFile() && entry.name.endsWith(".rs")) return true
-    if (
-      entry.isDirectory() &&
-      !entry.name.startsWith(".") &&
-      !SKIP_DIRS.has(entry.name)
-    ) {
+    if (entry.isDirectory() && !entry.name.startsWith(".") && !SKIP_DIRS.has(entry.name)) {
       try {
         const subEntries = readdirSync(join(dir, entry.name), {
           withFileTypes: true,
@@ -1829,10 +1707,7 @@ function workspaceRelativePath(workspaceRoot: string, file: string): string {
   return rel.replace(/\\/g, "/").replace(/^\.\//, "")
 }
 
-function locationOf(
-  file: string,
-  node: TsNode,
-): { filePath: string; line: number; column: number } {
+function locationOf(file: string, node: TsNode): { filePath: string; line: number; column: number } {
   return {
     filePath: file,
     line: node.startPosition.row + 1,

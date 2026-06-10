@@ -55,12 +55,28 @@ export function renderHelp(spec: SubcmdSpec): string {
   parts.push(section("Required", renderFlags(spec.required)))
   parts.push(section("Optional", renderFlags(spec.optional)))
   if (spec.examples.length > 0) {
-    parts.push(section("Examples", spec.examples.map((e) => (e.startsWith("opencode ") ? e : `opencode ${e}`))))
+    parts.push(
+      section(
+        "Examples",
+        spec.examples.map((e) => (e.startsWith("opencode ") ? e : `opencode ${e}`)),
+      ),
+    )
   }
   if (spec.seeAlso && spec.seeAlso.length > 0) {
-    parts.push(section("See also", spec.seeAlso.map((s) => `opencode ${s}`)))
+    parts.push(
+      section(
+        "See also",
+        spec.seeAlso.map((s) => `opencode ${s}`),
+      ),
+    )
   }
-  return parts.filter(Boolean).join("\n").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n"
+  return (
+    parts
+      .filter(Boolean)
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trimEnd() + "\n"
+  )
 }
 
 /** Shorthand: signature line the model should copy when hinted. */

@@ -44,20 +44,7 @@ export type CodeEditorProps = {
   ariaLabel?: string
 }
 
-const cppExtensions = new Set([
-  "c",
-  "cc",
-  "cpp",
-  "cxx",
-  "h",
-  "hh",
-  "hpp",
-  "hxx",
-  "inl",
-  "ipp",
-  "ixx",
-  "tpp",
-])
+const cppExtensions = new Set(["c", "cc", "cpp", "cxx", "h", "hh", "hpp", "hxx", "inl", "ipp", "ixx", "tpp"])
 
 function extensionForPath(filePath?: string | null) {
   if (!filePath) return ""
@@ -186,7 +173,8 @@ export function CodeEditor(props: CodeEditorProps) {
       typeof props.selectedCharacter === "number" && Number.isFinite(props.selectedCharacter)
         ? Math.max(0, Math.trunc(props.selectedCharacter))
         : null
-    const anchor = selectedCharacter === null ? startLine.from : Math.min(startLine.to, startLine.from + selectedCharacter)
+    const anchor =
+      selectedCharacter === null ? startLine.from : Math.min(startLine.to, startLine.from + selectedCharacter)
     const head = selectedCharacter === null ? endLine.to : anchor
     const revealLocationKey = [props.filePath ?? "", startLineNumber, endLineNumber].join(":")
     const revealKey = [revealLocationKey, selectedCharacter ?? ""].join(":")

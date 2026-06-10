@@ -17,13 +17,15 @@ export function getDbFoundation(): IDbFoundation | null {
 }
 
 export const snapshotInputSchema = z.object({
-  action: z.enum(["begin", "check", "commit", "fail"]).describe(
-    "Snapshot lifecycle action: " +
-    "begin=create new snapshot, " +
-    "check=find latest ready snapshot for workspaceRoot, " +
-    "commit=mark snapshot ready, " +
-    "fail=mark snapshot failed",
-  ),
+  action: z
+    .enum(["begin", "check", "commit", "fail"])
+    .describe(
+      "Snapshot lifecycle action: " +
+        "begin=create new snapshot, " +
+        "check=find latest ready snapshot for workspaceRoot, " +
+        "commit=mark snapshot ready, " +
+        "fail=mark snapshot failed",
+    ),
   workspaceRoot: z.string().optional().describe("Workspace root path (required for begin and check)"),
   compileDbHash: z.string().optional().describe("Hash of compile_commands.json (required for begin)"),
   parserVersion: z.string().optional().describe("Parser version string (required for begin)"),

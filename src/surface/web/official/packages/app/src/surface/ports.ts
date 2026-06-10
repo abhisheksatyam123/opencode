@@ -97,7 +97,6 @@ export type SurfaceSessionTokenTimeline = {
   createdAt: number
 }
 
-
 export type SurfaceLLMCallStats = {
   messageID: string
   turnIndex: number

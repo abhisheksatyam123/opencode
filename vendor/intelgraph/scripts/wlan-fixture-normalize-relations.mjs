@@ -143,11 +143,9 @@ function buildPredictedAudit(report, mapObject) {
   }
 
   predictedDeltas.caller_symbol_missing_occurrences =
-    afterOccurrenceCounts.caller_symbol_missing_occurrences -
-    beforeOccurrenceCounts.caller_symbol_missing_occurrences
+    afterOccurrenceCounts.caller_symbol_missing_occurrences - beforeOccurrenceCounts.caller_symbol_missing_occurrences
   predictedDeltas.callee_symbol_missing_occurrences =
-    afterOccurrenceCounts.callee_symbol_missing_occurrences -
-    beforeOccurrenceCounts.callee_symbol_missing_occurrences
+    afterOccurrenceCounts.callee_symbol_missing_occurrences - beforeOccurrenceCounts.callee_symbol_missing_occurrences
   predictedDeltas.registrar_symbol_missing_occurrences =
     afterOccurrenceCounts.registrar_symbol_missing_occurrences -
     beforeOccurrenceCounts.registrar_symbol_missing_occurrences

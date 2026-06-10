@@ -20,7 +20,7 @@ import type { ILanguageClient } from "../lsp/ports.js"
 import type { IndexTracker } from "../tracking/index.js"
 import type { UnifiedBackend } from "../backend/unified-backend.js"
 import type { OrchestratorRunnerDeps } from "../intelligence/contracts/orchestrator-runner-deps.js"
-type ExecuteOrchestratedQuery = typeof import("../intelligence/public-api.js")["executeOrchestratedQuery"]
+type ExecuteOrchestratedQuery = (typeof import("../intelligence/public-api.js"))["executeOrchestratedQuery"]
 import { buildRuntimeFlowPayload } from "./reason-engine/runtime-flow-output.js"
 import { readReasoningConfig } from "./reason-engine/reason-config.js"
 import { prepareReasonQuery } from "./reason-engine/reason-query.js"
@@ -28,8 +28,9 @@ import type { ILogger } from "../logging/ports.js"
 import { loggerPort } from "../logging/logger.js"
 import { fileURLToPath } from "url"
 
-
-async function executeIntelligenceQuery(...args: Parameters<ExecuteOrchestratedQuery>): ReturnType<ExecuteOrchestratedQuery> {
+async function executeIntelligenceQuery(
+  ...args: Parameters<ExecuteOrchestratedQuery>
+): ReturnType<ExecuteOrchestratedQuery> {
   const { executeOrchestratedQuery } = await import("../intelligence/public-api.js")
   return executeOrchestratedQuery(...args) as ReturnType<ExecuteOrchestratedQuery>
 }
@@ -56,7 +57,7 @@ export type CallerInvocationType =
   | "runtime_dispatch_table_call"
   | "runtime_callback_registration_call"
   | "runtime_function_pointer_call"
-  | "interface_registration"   // registrar — NOT a runtime caller
+  | "interface_registration" // registrar — NOT a runtime caller
   | "direct_call"
   | "unknown"
 
@@ -232,12 +233,12 @@ export async function resolveCallers(
   if (!targetApi) {
     try {
       const hover = await client.hover(args.file, args.line - 1, args.character - 1)
-      const hoverText = typeof hover?.contents === "string"
-        ? hover.contents
-        : hover?.contents?.value ?? ""
+      const hoverText = typeof hover?.contents === "string" ? hover.contents : (hover?.contents?.value ?? "")
       const match = hoverText.match(/(?:function|method|void|int|bool|static)\s+(\w+)/i)
       if (match) targetApi = canonicalizeSymbol(match[1]!)
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   if (!targetApi) targetApi = `symbol@${args.file}:${args.line}`
@@ -249,7 +250,16 @@ export async function resolveCallers(
       if (results?.length) {
         const callers = incomingCallsToCallers(results, "lsp_incoming_calls")
         log.info("get_callers: lsp_incoming_calls direct mode succeeded", { targetApi, callerCount: callers.length })
-        return buildResponse(targetApi, targetFile, targetLine, callers, "lsp_incoming_calls", stepsAttempted, false, [])
+        return buildResponse(
+          targetApi,
+          targetFile,
+          targetLine,
+          callers,
+          "lsp_incoming_calls",
+          stepsAttempted,
+          false,
+          [],
+        )
       }
     } catch (err) {
       log.debug("get_callers: lsp_incoming_calls direct mode failed", { error: String(err) })
@@ -282,7 +292,16 @@ export async function resolveCallers(
         const callers = dbRuntimeNodesToCallers(res.data.nodes, "intelligence_query_runtime")
         if (callers.length > 0) {
           log.info("get_callers: intelligence_query_runtime succeeded", { targetApi, callerCount: callers.length })
-          return buildResponse(targetApi, targetFile, targetLine, callers, "intelligence_query_runtime", stepsAttempted, true, aliasVariantsTried)
+          return buildResponse(
+            targetApi,
+            targetFile,
+            targetLine,
+            callers,
+            "intelligence_query_runtime",
+            stepsAttempted,
+            true,
+            aliasVariantsTried,
+          )
         }
       }
     } catch (err) {
@@ -304,10 +323,24 @@ export async function resolveCallers(
       )
       dbStaticStatus = res.status
       if ((res.status === "hit" || res.status === "enriched") && res.data.nodes.length > 0) {
-        const callers = dbStaticNodesToCallers(res.data.nodes, res.data.edges ?? [], targetApi, "intelligence_query_static")
+        const callers = dbStaticNodesToCallers(
+          res.data.nodes,
+          res.data.edges ?? [],
+          targetApi,
+          "intelligence_query_static",
+        )
         if (callers.length > 0) {
           log.info("get_callers: intelligence_query_static succeeded", { targetApi, callerCount: callers.length })
-          return buildResponse(targetApi, targetFile, targetLine, callers, "intelligence_query_static", stepsAttempted, true, aliasVariantsTried)
+          return buildResponse(
+            targetApi,
+            targetFile,
+            targetLine,
+            callers,
+            "intelligence_query_static",
+            stepsAttempted,
+            true,
+            aliasVariantsTried,
+          )
         }
       }
     } catch (err) {
@@ -376,12 +409,21 @@ export async function resolveCallers(
         const allEntries = indirectGraphToCallers(graph, "lsp_indirect_callers")
         // Only return early if there are actual runtime/direct callers, not just registrars.
         // If only registrars are present, fall through to step 5 (direct incomingCalls).
-        const actualCallers = allEntries.filter(e =>
-          e.callerRole === "runtime_caller" || e.callerRole === "direct_caller"
+        const actualCallers = allEntries.filter(
+          (e) => e.callerRole === "runtime_caller" || e.callerRole === "direct_caller",
         )
         if (actualCallers.length > 0) {
           log.info("get_callers: lsp_indirect_callers succeeded", { targetApi, callerCount: actualCallers.length })
-          return buildResponse(targetApi, targetFile, targetLine, allEntries, "lsp_indirect_callers", stepsAttempted, false, [])
+          return buildResponse(
+            targetApi,
+            targetFile,
+            targetLine,
+            allEntries,
+            "lsp_indirect_callers",
+            stepsAttempted,
+            false,
+            [],
+          )
         }
       }
     } catch (err) {
@@ -403,7 +445,13 @@ export async function resolveCallers(
   }
 
   // All steps failed or returned empty
-  if (intelligenceDeps && args.snapshotId && args.snapshotId > 0 && dbRuntimeStatus === "not_found" && dbStaticStatus === "not_found") {
+  if (
+    intelligenceDeps &&
+    args.snapshotId &&
+    args.snapshotId > 0 &&
+    dbRuntimeStatus === "not_found" &&
+    dbStaticStatus === "not_found"
+  ) {
     const diag = await detectEmptyReadySnapshotDiagnostic(intelligenceDeps, args.snapshotId)
     if (diag) {
       log.warn("get_callers: empty-ready-snapshot suspected", {
@@ -411,11 +459,30 @@ export async function resolveCallers(
         snapshotId: args.snapshotId,
         diagnosticCode: diag.code,
       })
-      return buildResponse(targetApi, targetFile, targetLine, [], "none", stepsAttempted, aliasVariantsTried.length > 0, aliasVariantsTried, diag)
+      return buildResponse(
+        targetApi,
+        targetFile,
+        targetLine,
+        [],
+        "none",
+        stepsAttempted,
+        aliasVariantsTried.length > 0,
+        aliasVariantsTried,
+        diag,
+      )
     }
   }
   log.warn("get_callers: all steps returned empty", { targetApi, stepsAttempted })
-  return buildResponse(targetApi, targetFile, targetLine, [], "none", stepsAttempted, aliasVariantsTried.length > 0, aliasVariantsTried)
+  return buildResponse(
+    targetApi,
+    targetFile,
+    targetLine,
+    [],
+    "none",
+    stepsAttempted,
+    aliasVariantsTried.length > 0,
+    aliasVariantsTried,
+  )
 }
 
 async function detectEmptyReadySnapshotDiagnostic(
@@ -437,7 +504,8 @@ async function detectEmptyReadySnapshotDiagnostic(
       code: "empty_ready_snapshot_suspected",
       path: "ingest_remediation_required",
       message: "Snapshot is queryable but has zero graph coverage for runtime/static callers.",
-      remediation: "Re-run intelligence ingest for this workspace and commit a fresh snapshot before calling get_callers.",
+      remediation:
+        "Re-run intelligence ingest for this workspace and commit a fresh snapshot before calling get_callers.",
       snapshotId,
     }
   } catch {
@@ -508,9 +576,7 @@ async function resolveImmediateInvokerName(
   // immediately before it.
   if (dispatchChain && dispatchChain.length >= 2) {
     // Find the chain entry that matches the dispatch expression (contains -> or [...])
-    const dispatchIdx = dispatchChain.findIndex(
-      (e) => (e.includes("->") || e.includes("[")) && e.includes("(")
-    )
+    const dispatchIdx = dispatchChain.findIndex((e) => (e.includes("->") || e.includes("[")) && e.includes("("))
     if (dispatchIdx > 0) {
       // The entry immediately before the dispatch is the containing function
       const prevEntry = (dispatchChain[dispatchIdx - 1] ?? "").trim()
@@ -555,7 +621,7 @@ async function runtimeFlowToCallers(
     if (!flow) continue
     const rawInvoker = flow.immediateInvoker ?? ""
     const name = canonicalizeSymbol(
-      await resolveImmediateInvokerName(rawInvoker, flow.dispatchChain ?? [], flow.dispatchSite, client)
+      await resolveImmediateInvokerName(rawInvoker, flow.dispatchChain ?? [], flow.dispatchSite, client),
     )
     if (!name || isUnknownPlaceholderName(name)) continue
     const key = `${name}|runtime_direct_call`
@@ -574,10 +640,7 @@ async function runtimeFlowToCallers(
   return out
 }
 
-function dbRuntimeNodesToCallers(
-  nodes: Record<string, unknown>[],
-  source: WaterfallStep,
-): CallerEntry[] {
+function dbRuntimeNodesToCallers(nodes: Record<string, unknown>[], source: WaterfallStep): CallerEntry[] {
   const out: CallerEntry[] = []
   const seen = new Set<string>()
   for (const n of nodes) {
@@ -587,12 +650,7 @@ function dbRuntimeNodesToCallers(
     // Read invocation type from the projected classification field (most specific),
     // then fall back to edge_kind, then the legacy call_kind field.
     // Bug fix: the field was previously read as "call_kind" (always undefined on flat rows).
-    const rawType = String(
-      n["runtime_caller_invocation_type_classification"] ??
-      n["edge_kind"] ??
-      n["call_kind"] ??
-      "",
-    )
+    const rawType = String(n["runtime_caller_invocation_type_classification"] ?? n["edge_kind"] ?? n["call_kind"] ?? "")
     // Map raw edge kind strings to CallerInvocationType
     const invocationType = dbInvocationTypeToCallerType(rawType)
     const key = `${name}|${invocationType}`
@@ -613,7 +671,7 @@ function dbRuntimeNodesToCallers(
 
 function dbStaticNodesToCallers(
   nodes: Record<string, unknown>[],
-  _edges: Record<string, unknown>[],  // unused: flat projected rows encode caller directly
+  _edges: Record<string, unknown>[], // unused: flat projected rows encode caller directly
   targetApiName: string,
   source: WaterfallStep,
 ): CallerEntry[] {
@@ -636,8 +694,11 @@ function dbStaticNodesToCallers(
     const name = canonicalizeSymbol(String(n["canonical_name"] ?? n["caller"] ?? n["symbol"] ?? n["name"] ?? ""))
     if (!name) continue
     // Skip the target API row itself (kind='api' or name matches target)
-    if (canonicalizeSymbol(String(n["callee"] ?? "")) === canonical &&
-        canonicalizeSymbol(String(n["caller"] ?? "")) === canonical) continue
+    if (
+      canonicalizeSymbol(String(n["callee"] ?? "")) === canonical &&
+      canonicalizeSymbol(String(n["caller"] ?? "")) === canonical
+    )
+      continue
     // Also skip if name === target (row is the target node, not a caller)
     if (name === canonical) continue
 
@@ -714,10 +775,7 @@ function indirectGraphToCallers(
   return out
 }
 
-function incomingCallsToCallers(
-  results: any[],
-  source: WaterfallStep,
-): CallerEntry[] {
+function incomingCallsToCallers(results: any[], source: WaterfallStep): CallerEntry[] {
   const out: CallerEntry[] = []
   const seen = new Set<string>()
 
@@ -750,19 +808,27 @@ function incomingCallsToCallers(
 function dbInvocationTypeToCallerType(raw: string): CallerInvocationType {
   switch (raw) {
     // Projected classification values (most specific — from orchestrator-runner projection)
-    case "runtime_direct_call":                return "runtime_direct_call"
-    case "runtime_callback_registration_call": return "runtime_callback_registration_call"
-    case "runtime_function_pointer_call":      return "runtime_function_pointer_call"
-    case "runtime_dispatch_table_call":        return "runtime_dispatch_table_call"
+    case "runtime_direct_call":
+      return "runtime_direct_call"
+    case "runtime_callback_registration_call":
+      return "runtime_callback_registration_call"
+    case "runtime_function_pointer_call":
+      return "runtime_function_pointer_call"
+    case "runtime_dispatch_table_call":
+      return "runtime_dispatch_table_call"
     // Raw edge_kind values that db-lookup emits on runtime caller rows
     case "runtime_calls":
-    case "indirect_calls":                     return "runtime_function_pointer_call"
+    case "indirect_calls":
+      return "runtime_function_pointer_call"
     case "registers_callback":
-    case "dispatches_to":                      return "interface_registration"
+    case "dispatches_to":
+      return "interface_registration"
     case "calls":
     case "api_call":
-    case "direct_call":                        return "direct_call"
-    default:                                   return "unknown"
+    case "direct_call":
+      return "direct_call"
+    default:
+      return "unknown"
   }
 }
 
@@ -770,35 +836,49 @@ function staticEdgeKindToCallerType(edgeKind: string): CallerInvocationType {
   switch (edgeKind) {
     case "calls":
     case "api_call":
-    case "direct_call":          return "direct_call"
+    case "direct_call":
+      return "direct_call"
     // runtime_calls is a confirmed runtime relationship — emit as runtime caller, not registrar.
     case "runtime_calls":
-    case "indirect_calls":       return "runtime_function_pointer_call"
+    case "indirect_calls":
+      return "runtime_function_pointer_call"
     // Registration/dispatch edges → registrar
     case "registers_callback":
     case "dispatches_to":
-    case "interface_registration": return "interface_registration"
-    default:                       return "unknown"
+    case "interface_registration":
+      return "interface_registration"
+    default:
+      return "unknown"
   }
 }
 
 function classificationToCallerType(connectionKind?: string): CallerInvocationType {
   switch (connectionKind) {
-    case "api_call":               return "direct_call"
-    case "interface_registration": return "interface_registration"
-    case "hw_interrupt":           return "runtime_function_pointer_call"
-    case "ring_signal":            return "runtime_function_pointer_call"
-    case "timer_callback":         return "runtime_callback_registration_call"
-    default:                       return "interface_registration"
+    case "api_call":
+      return "direct_call"
+    case "interface_registration":
+      return "interface_registration"
+    case "hw_interrupt":
+      return "runtime_function_pointer_call"
+    case "ring_signal":
+      return "runtime_function_pointer_call"
+    case "timer_callback":
+      return "runtime_callback_registration_call"
+    default:
+      return "interface_registration"
   }
 }
 
 function confidenceLevelToScore(level?: string): number {
   switch (level) {
-    case "high":   return 0.9
-    case "medium": return 0.7
-    case "low":    return 0.4
-    default:       return 0.5
+    case "high":
+      return 0.9
+    case "medium":
+      return 0.7
+    case "low":
+      return 0.4
+    default:
+      return 0.5
   }
 }
 

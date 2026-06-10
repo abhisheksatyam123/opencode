@@ -35,10 +35,7 @@ export interface UnifiedBackend {
   }
 }
 
-export function createUnifiedBackend(
-  getClient: () => Promise<ILanguageClient>,
-  tracker: IndexTracker,
-): UnifiedBackend {
+export function createUnifiedBackend(getClient: () => Promise<ILanguageClient>, tracker: IndexTracker): UnifiedBackend {
   return {
     getClient,
     tracker,

@@ -40,15 +40,19 @@ function jsonResponse(res: ServerResponse, status: number, body: unknown): void 
 async function readJsonBody(req: IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
     let data = ""
-    req.on("data", (chunk) => { data += chunk })
+    req.on("data", (chunk) => {
+      data += chunk
+    })
     req.on("end", () => {
-      try { resolve(JSON.parse(data)) }
-      catch (e) { reject(new Error("Invalid JSON body")) }
+      try {
+        resolve(JSON.parse(data))
+      } catch (e) {
+        reject(new Error("Invalid JSON body"))
+      }
     })
     req.on("error", reject)
   })
 }
-
 
 // ── JSON API route: /api/health ─────────────────────────────────────────────────
 
@@ -83,12 +87,7 @@ async function handleQuery(
 
 // ── JSON API route: /api/graph ──────────────────────────────────────────────────
 
-async function handleGraph(
-  req: IncomingMessage,
-  res: ServerResponse,
-  url: URL,
-  workspaceRoot: string,
-): Promise<void> {
+async function handleGraph(req: IncomingMessage, res: ServerResponse, url: URL, workspaceRoot: string): Promise<void> {
   // Lazy import to avoid circular deps at module load time
   const { getIntelligenceDeps } = await import("../tools/dispatch.js")
   const { getDbFoundation } = await import("../intelligence/public-api.js")
@@ -217,11 +216,7 @@ async function handleGraphDiff(
 
 // ── JSON API route: /api/file ───────────────────────────────────────────────────
 
-async function handleFile(
-  res: ServerResponse,
-  url: URL,
-  workspaceRoot: string,
-): Promise<void> {
+async function handleFile(res: ServerResponse, url: URL, workspaceRoot: string): Promise<void> {
   const pathParam = url.searchParams.get("path")
   if (!pathParam || pathParam.trim() === "") {
     jsonResponse(res, 400, { error: "missing_path" })
@@ -230,9 +225,7 @@ async function handleFile(
 
   // Resolve: if relative, resolve against workspaceRoot; if absolute, use as-is
   const rawPath = pathParam.trim()
-  const resolved = rawPath.startsWith("/")
-    ? normalize(rawPath)
-    : resolve(workspaceRoot, rawPath)
+  const resolved = rawPath.startsWith("/") ? normalize(rawPath) : resolve(workspaceRoot, rawPath)
 
   // Workspace confinement check (before realpath — catches obvious traversal)
   const wsNorm = normalize(workspaceRoot)
@@ -309,10 +302,7 @@ async function handleFile(
 // How long the HTTP server stays alive with no requests before auto-exiting.
 const HTTP_IDLE_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes
 
-export async function startHttp(
-  deps: BackendDeps,
-  port: number,
-): Promise<void> {
+export async function startHttp(deps: BackendDeps, port: number): Promise<void> {
   log.info("Starting HTTP API server", { port, pid: process.pid })
   setUnifiedBackend(deps.backend)
 
@@ -327,7 +317,7 @@ export async function startHttp(
     workspaceRoot,
     onShutdown: deps.onGracefulShutdown,
     intelligenceDeps: null, // populated lazily via getIntelligenceDeps()
-    dbFoundation: null,     // populated lazily via getDbFoundation()
+    dbFoundation: null, // populated lazily via getDbFoundation()
   }
 
   // ── Idle auto-exit ──────────────────────────────────────────────────────
@@ -337,7 +327,8 @@ export async function startHttp(
   // Graceful shutdown: run injected teardown before exiting.
   const gracefulExit = async (reason: string): Promise<void> => {
     log.info(`HTTP server ${reason} — running graceful shutdown hook`, {
-      port, pid: process.pid,
+      port,
+      pid: process.pid,
     })
     if (deps.onGracefulShutdown) {
       try {
@@ -370,7 +361,10 @@ export async function startHttp(
 
   const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
     activeRequests++
-    if (idleTimer) { clearTimeout(idleTimer); idleTimer = null }
+    if (idleTimer) {
+      clearTimeout(idleTimer)
+      idleTimer = null
+    }
 
     res.on("finish", () => {
       activeRequests--

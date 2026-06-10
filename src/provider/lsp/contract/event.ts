@@ -1,10 +1,6 @@
 import z from "zod"
 
-export const LspContractEventTypeSchema = z.enum([
-  "lsp.initialized",
-  "lsp.status.changed",
-  "lsp.diagnostics.updated",
-])
+export const LspContractEventTypeSchema = z.enum(["lsp.initialized", "lsp.status.changed", "lsp.diagnostics.updated"])
 
 export type LspContractEventType = z.infer<typeof LspContractEventTypeSchema>
 

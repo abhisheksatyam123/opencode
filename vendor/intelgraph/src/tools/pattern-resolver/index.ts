@@ -35,7 +35,10 @@ const DISPATCH_LINE_HINTS: Record<string, number> = {
   wlan_thread_register_signal_wrapper: 244,
 }
 
-function applyDispatchLineHint(dispatch: ResolvedChain["dispatch"], registrationApi: string): ResolvedChain["dispatch"] {
+function applyDispatchLineHint(
+  dispatch: ResolvedChain["dispatch"],
+  registrationApi: string,
+): ResolvedChain["dispatch"] {
   let hinted = DISPATCH_LINE_HINTS[registrationApi]
   if (registrationApi === "offldmgr_register_data_offload") {
     if (dispatch.dispatchFunction === "_offldmgr_wow_notify_event") hinted = 523
@@ -304,9 +307,30 @@ export async function resolveChain(
       line: registrationLine,
       sourceText: registrationSourceText,
     },
-    store: { containerType: null, containerFile: null, containerLine: null, confidence: "low", evidence: null, storeFieldName: null },
-    dispatch: { dispatchFunction: null, dispatchFile: null, dispatchLine: null, invocationPattern: null, confidence: "low", evidence: null },
-    trigger: { triggerKind: null, triggerKey: null, triggerFile: null, triggerLine: null, confidence: "low", evidence: null },
+    store: {
+      containerType: null,
+      containerFile: null,
+      containerLine: null,
+      confidence: "low",
+      evidence: null,
+      storeFieldName: null,
+    },
+    dispatch: {
+      dispatchFunction: null,
+      dispatchFile: null,
+      dispatchLine: null,
+      invocationPattern: null,
+      confidence: "low",
+      evidence: null,
+    },
+    trigger: {
+      triggerKind: null,
+      triggerKey: null,
+      triggerFile: null,
+      triggerLine: null,
+      confidence: "low",
+      evidence: null,
+    },
     confidenceLevel: "registration_detected",
     confidenceScore: 1.0,
   }
@@ -346,9 +370,11 @@ export async function resolveChain(
   // P3: Short-circuit for thread message queue handlers registered via
   // wlan_thread_msg_handler_register_var_len_buf / WLAN_THREAD_COMM_FUNC_* dispatch.
   // These use a message-ID-based dispatch, not a fn-ptr field stored in a struct.
-  if (registrationApi === "wlan_thread_msg_handler_register_var_len_buf" ||
-      registrationApi === "cmnos_thread_msg_handler_register" ||
-      (dispatchKey !== null && dispatchKey.startsWith("WLAN_THREAD_COMM_FUNC_"))) {
+  if (
+    registrationApi === "wlan_thread_msg_handler_register_var_len_buf" ||
+    registrationApi === "cmnos_thread_msg_handler_register" ||
+    (dispatchKey !== null && dispatchKey.startsWith("WLAN_THREAD_COMM_FUNC_"))
+  ) {
     baseChain.store = {
       containerType: "THREAD_MSG_HANDLER_TABLE",
       containerFile: registrationFile,
@@ -411,7 +437,11 @@ export async function resolveChain(
           deps,
         )
         if (dispatchResult) {
-          const dispatchWithFnHints = applyDispatchFunctionCanonicalHint(dispatchResult, registrationApi, callbackParamName)
+          const dispatchWithFnHints = applyDispatchFunctionCanonicalHint(
+            dispatchResult,
+            registrationApi,
+            callbackParamName,
+          )
           const dispatchWithHints = applyDispatchLineHint(dispatchWithFnHints, registrationApi)
           baseChain.dispatch = dispatchWithHints
           baseChain.confidenceLevel = "dispatch_site_found"
@@ -431,24 +461,24 @@ export async function resolveChain(
               baseChain.confidenceLevel = "runtime_trigger_found"
               baseChain.confidenceScore = 5.0
             } else {
-            const triggerResult = await findTriggerSite(
-              dispatchWithHints.dispatchFile,
-              dispatchWithHints.dispatchLine,
-              dispatchWithHints.dispatchFunction,
-              dispatchKey,
-              deps,
-            )
-            if (triggerResult) {
-              baseChain.trigger = triggerResult
-              if (triggerResult.confidence !== "low") {
-                baseChain.confidenceLevel = "runtime_trigger_found"
-                baseChain.confidenceScore = 5.0
-              } else {
-                // Fallback trigger points at dispatch site — stay at L4
-                baseChain.confidenceScore = Math.max(baseChain.confidenceScore, 4.0)
-                baseChain.confidenceLevel = "dispatch_site_found"
+              const triggerResult = await findTriggerSite(
+                dispatchWithHints.dispatchFile,
+                dispatchWithHints.dispatchLine,
+                dispatchWithHints.dispatchFunction,
+                dispatchKey,
+                deps,
+              )
+              if (triggerResult) {
+                baseChain.trigger = triggerResult
+                if (triggerResult.confidence !== "low") {
+                  baseChain.confidenceLevel = "runtime_trigger_found"
+                  baseChain.confidenceScore = 5.0
+                } else {
+                  // Fallback trigger points at dispatch site — stay at L4
+                  baseChain.confidenceScore = Math.max(baseChain.confidenceScore, 4.0)
+                  baseChain.confidenceLevel = "dispatch_site_found"
+                }
               }
-            }
             }
           }
         }
@@ -592,23 +622,23 @@ export async function resolveChain(
             baseChain.confidenceLevel = "runtime_trigger_found"
             baseChain.confidenceScore = 5.0
           } else {
-          const triggerResult = await findTriggerSite(
-            dispatchWithHints.dispatchFile,
-            dispatchWithHints.dispatchLine,
-            dispatchWithHints.dispatchFunction,
-            dispatchKey,
-            deps,
-          )
-          if (triggerResult) {
-            logDebug(deps, "resolveChain:trigger-stage", {
-              triggerKind: triggerResult.triggerKind,
-              triggerFile: triggerResult.triggerFile,
-              triggerLine: triggerResult.triggerLine,
-            })
-            baseChain.trigger = triggerResult
-            baseChain.confidenceLevel = "runtime_trigger_found"
-            baseChain.confidenceScore = 5.0
-          }
+            const triggerResult = await findTriggerSite(
+              dispatchWithHints.dispatchFile,
+              dispatchWithHints.dispatchLine,
+              dispatchWithHints.dispatchFunction,
+              dispatchKey,
+              deps,
+            )
+            if (triggerResult) {
+              logDebug(deps, "resolveChain:trigger-stage", {
+                triggerKind: triggerResult.triggerKind,
+                triggerFile: triggerResult.triggerFile,
+                triggerLine: triggerResult.triggerLine,
+              })
+              baseChain.trigger = triggerResult
+              baseChain.confidenceLevel = "runtime_trigger_found"
+              baseChain.confidenceScore = 5.0
+            }
           }
         }
       }
@@ -930,7 +960,7 @@ function collectCandidateSourceFiles(root: string): string[] {
   const out: string[] = []
 
   const walk = (dir: string, depth: number): void => {
-    if (depth > 20) return  // prevent symlink loops
+    if (depth > 20) return // prevent symlink loops
     let entries: string[] = []
     try {
       entries = readdirSync(dir)
@@ -989,7 +1019,13 @@ function isMemberCallSiteForField(lineText: string, fieldName: string): boolean 
 function scoreDispatchCandidate(filePath: string, lineText: string): number {
   let score = 0
   const normalized = filePath.toLowerCase()
-  if (normalized.includes("offload_mgr") || normalized.includes("wmi") || normalized.includes("thread") || normalized.includes("vdev")) score += 4
+  if (
+    normalized.includes("offload_mgr") ||
+    normalized.includes("wmi") ||
+    normalized.includes("thread") ||
+    normalized.includes("vdev")
+  )
+    score += 4
   if (/\b(return|status\s*=|dispatch|deliver|notify)\b/i.test(lineText)) score += 3
   if (/\bif\s*\(/.test(lineText)) score -= 2
   if (/unit_test|test/i.test(normalized)) score -= 3
@@ -1085,8 +1121,8 @@ function inferFunctionByBraceBalance(lines: string[], lineNo: number): string | 
     const line = lines[i] ?? ""
     for (let j = line.length - 1; j >= 0; j--) {
       const ch = line[j]
-      if (ch === '}') depth += 1
-      else if (ch === '{') {
+      if (ch === "}") depth += 1
+      else if (ch === "{") {
         if (depth === 0) {
           return inferEnclosingFunctionName(lines, i)
         }
@@ -1120,14 +1156,11 @@ async function findDispatchSiteByHeuristicScan(
   const fnHint = functionNameHint(storeFieldName)
   const regHint = registrationHint(registrationApi)
   const contextHints = contextHintsFromBodyFile(bodyFile)
-  const prioritizedFiles = files.filter((f) =>
-    f === bodyFile
-    || hints.file.some((rx) => rx.test(f))
-    || contextHints.some((rx) => rx.test(f)),
+  const prioritizedFiles = files.filter(
+    (f) => f === bodyFile || hints.file.some((rx) => rx.test(f)) || contextHints.some((rx) => rx.test(f)),
   )
-  const constrainedPrioritizedFiles = storeFieldName === "pCmdHandler"
-    ? prioritizedFiles.filter((f) => /wmi_svc\.c$|wmi/i.test(f))
-    : prioritizedFiles
+  const constrainedPrioritizedFiles =
+    storeFieldName === "pCmdHandler" ? prioritizedFiles.filter((f) => /wmi_svc\.c$|wmi/i.test(f)) : prioritizedFiles
 
   type Candidate = {
     file: string
@@ -1141,65 +1174,74 @@ async function findDispatchSiteByHeuristicScan(
 
   for (const passFiles of passes) {
     for (const file of passFiles) {
-    const src = deps.readFile(file)
-    if (!src || !src.includes(storeFieldName)) continue
-    const lines = src.split(/\r?\n/)
-    for (let lineNo = 0; lineNo < lines.length; lineNo++) {
-      const line = lines[lineNo]
-      if (!isCallSiteForField(line, storeFieldName)) continue
-      if (storeFieldName !== "pCmdHandler" && !isMemberCallSiteForField(line, storeFieldName)) continue
+      const src = deps.readFile(file)
+      if (!src || !src.includes(storeFieldName)) continue
+      const lines = src.split(/\r?\n/)
+      for (let lineNo = 0; lineNo < lines.length; lineNo++) {
+        const line = lines[lineNo]
+        if (!isCallSiteForField(line, storeFieldName)) continue
+        if (storeFieldName !== "pCmdHandler" && !isMemberCallSiteForField(line, storeFieldName)) continue
 
-      if (storeFieldName === "pCmdHandler" && !isPcmdHandlerDispatchSignature(line)) {
-        continue
-      }
-      const char = Math.max(0, line.indexOf(storeFieldName))
-
-      let dispatchFnName: string | null = null
-      const hier = await timedPrepareCallHierarchy(deps, file, lineNo, char, "dispatch-heuristic")
-      dispatchFnName = hier?.[0]?.name ?? null
-      if (!dispatchFnName) {
-        dispatchFnName = inferEnclosingFunctionName(lines, lineNo)
-      }
-      if (storeFieldName === "pCmdHandler") {
-        const byBrace = inferFunctionByBraceBalance(lines, lineNo)
-        if (byBrace) dispatchFnName = byBrace
-        if (isCanonicalWmiDispatchCall(line) && /wmi_svc\.c$/i.test(file)) {
-          dispatchFnName = "WMI_DispatchCmd"
+        if (storeFieldName === "pCmdHandler" && !isPcmdHandlerDispatchSignature(line)) {
+          continue
         }
-      }
+        const char = Math.max(0, line.indexOf(storeFieldName))
 
-      if (storeFieldName === "data_handler" && /offload_mgr_ext\.c$/i.test(file) && /data_handler\s*\(/.test(line)) {
-        dispatchFnName = "_offldmgr_enhanced_data_handler"
-      }
-      if (storeFieldName === "non_data_handler" && /offload_mgr_ext\.c$/i.test(file) && /non_data_handler\s*\(/.test(line)) {
-        dispatchFnName = "_offldmgr_non_data_handler"
-      }
-      if (storeFieldName === "handler" && /wlan_vdev\.c$/i.test(file) && /handler\s*\(/.test(line)) {
-        dispatchFnName = "wlan_vdev_deliver_notif"
-      }
-      if (storeFieldName === "sig_handler" && /(cmnos_thread|platform_thread)\.c$/i.test(file) && /sig_handler\s*\(/.test(line)) {
-        dispatchFnName = "wlan_thread_dsr_wrapper_common"
-      }
+        let dispatchFnName: string | null = null
+        const hier = await timedPrepareCallHierarchy(deps, file, lineNo, char, "dispatch-heuristic")
+        dispatchFnName = hier?.[0]?.name ?? null
+        if (!dispatchFnName) {
+          dispatchFnName = inferEnclosingFunctionName(lines, lineNo)
+        }
+        if (storeFieldName === "pCmdHandler") {
+          const byBrace = inferFunctionByBraceBalance(lines, lineNo)
+          if (byBrace) dispatchFnName = byBrace
+          if (isCanonicalWmiDispatchCall(line) && /wmi_svc\.c$/i.test(file)) {
+            dispatchFnName = "WMI_DispatchCmd"
+          }
+        }
 
-      if (!dispatchFnName) continue
+        if (storeFieldName === "data_handler" && /offload_mgr_ext\.c$/i.test(file) && /data_handler\s*\(/.test(line)) {
+          dispatchFnName = "_offldmgr_enhanced_data_handler"
+        }
+        if (
+          storeFieldName === "non_data_handler" &&
+          /offload_mgr_ext\.c$/i.test(file) &&
+          /non_data_handler\s*\(/.test(line)
+        ) {
+          dispatchFnName = "_offldmgr_non_data_handler"
+        }
+        if (storeFieldName === "handler" && /wlan_vdev\.c$/i.test(file) && /handler\s*\(/.test(line)) {
+          dispatchFnName = "wlan_vdev_deliver_notif"
+        }
+        if (
+          storeFieldName === "sig_handler" &&
+          /(cmnos_thread|platform_thread)\.c$/i.test(file) &&
+          /sig_handler\s*\(/.test(line)
+        ) {
+          dispatchFnName = "wlan_thread_dsr_wrapper_common"
+        }
 
-      candidates.push({
-        file,
-        lineNo,
-        line,
-        fnName: dispatchFnName,
-        score: scoreDispatchCandidate(file, line)
-          + (hints.file.some((rx) => rx.test(file)) ? 6 : 0)
-          + (hints.line.some((rx) => rx.test(line)) ? 4 : 0)
-          + (contextHints.some((rx) => rx.test(file)) ? 5 : 0)
-          + (fnHint && dispatchFnName && fnHint.test(dispatchFnName) ? 10 : 0)
-          + (regHint && dispatchFnName && regHint.test(dispatchFnName) ? 12 : 0)
-          + (/dispatch|deliver|irq|thread|wmi/i.test(dispatchFnName ?? "") ? 3 : 0)
-          - (/unit_test|deprecated|sensor_report/i.test(dispatchFnName ?? "") ? 6 : 0)
-          + (dispatchKey && line.includes(dispatchKey) ? 4 : 0),
-      })
+        if (!dispatchFnName) continue
+
+        candidates.push({
+          file,
+          lineNo,
+          line,
+          fnName: dispatchFnName,
+          score:
+            scoreDispatchCandidate(file, line) +
+            (hints.file.some((rx) => rx.test(file)) ? 6 : 0) +
+            (hints.line.some((rx) => rx.test(line)) ? 4 : 0) +
+            (contextHints.some((rx) => rx.test(file)) ? 5 : 0) +
+            (fnHint && dispatchFnName && fnHint.test(dispatchFnName) ? 10 : 0) +
+            (regHint && dispatchFnName && regHint.test(dispatchFnName) ? 12 : 0) +
+            (/dispatch|deliver|irq|thread|wmi/i.test(dispatchFnName ?? "") ? 3 : 0) -
+            (/unit_test|deprecated|sensor_report/i.test(dispatchFnName ?? "") ? 6 : 0) +
+            (dispatchKey && line.includes(dispatchKey) ? 4 : 0),
+        })
+      }
     }
-  }
 
     if (candidates.length > 0) break
   }
@@ -1260,25 +1302,28 @@ async function findTriggerSite(
         const m = new RegExp(`(?<![a-zA-Z0-9_])${escaped}(?![a-zA-Z0-9_])`).exec(lineText)
         dispatchChar = m ? m.index : Math.max(0, lineText.indexOf(dispatchFunction))
       }
-    } catch { /* keep 0 as fallback */ }
+    } catch {
+      /* keep 0 as fallback */
+    }
 
     const incomingPromise = timedIncomingCalls(deps, dispatchFile, dispatchLine, dispatchChar)
     const timeoutMs = Number(process.env.CHAIN_TRIGGER_TIMEOUT_MS || "0")
-    const callers = timeoutMs > 0
-      ? await Promise.race<any[]>([
-        incomingPromise,
-        new Promise<any[]>((resolve) => {
-          setTimeout(() => {
-            logDebug(deps, "resolveChain:trigger-timeout", {
-              dispatchFile,
-              dispatchLine,
-              timeoutMs,
-            })
-            resolve([])
-          }, timeoutMs)
-        }),
-      ])
-      : await incomingPromise
+    const callers =
+      timeoutMs > 0
+        ? await Promise.race<any[]>([
+            incomingPromise,
+            new Promise<any[]>((resolve) => {
+              setTimeout(() => {
+                logDebug(deps, "resolveChain:trigger-timeout", {
+                  dispatchFile,
+                  dispatchLine,
+                  timeoutMs,
+                })
+                resolve([])
+              }, timeoutMs)
+            }),
+          ])
+        : await incomingPromise
     if (!callers?.length) {
       logDebug(deps, "resolveChain:trigger-fallback", {
         reason: "no-incoming-callers",
@@ -1303,10 +1348,11 @@ async function findTriggerSite(
         const file: string = c.from?.uri?.startsWith("file://")
           ? fileURLToPath(c.from.uri)
           : (c.from?.uri ?? c.caller?.uri ?? dispatchFile)
-        const line: number = c.from?.selectionRange?.start?.line
-          ?? c.from?.range?.start?.line
-          ?? c.caller?.selectionRange?.start?.line
-          ?? 0
+        const line: number =
+          c.from?.selectionRange?.start?.line ??
+          c.from?.range?.start?.line ??
+          c.caller?.selectionRange?.start?.line ??
+          0
         return { name, file, line, score: triggerScore(name) }
       })
       .sort((a: any, b: any) => b.score - a.score)
@@ -1368,24 +1414,24 @@ function classifyFallbackTriggerKind(dispatchFunction: string | null, dispatchKe
 
 /** Score a caller name by how likely it is to be a runtime trigger entry point. */
 function triggerScore(name: string): number {
-  if (/irq|interrupt/i.test(name))          return 5
+  if (/irq|interrupt/i.test(name)) return 5
   if (/rx|data_ind|pkt|packet/i.test(name)) return 4
-  if (/timer|timeout|expiry/i.test(name))   return 4
-  if (/wmi|cmd|event/i.test(name))          return 3
-  if (/thread|signal|msg/i.test(name))      return 2
+  if (/timer|timeout|expiry/i.test(name)) return 4
+  if (/wmi|cmd|event/i.test(name)) return 3
+  if (/thread|signal|msg/i.test(name)) return 2
   if (/dispatch|deliver|notify/i.test(name)) return 1
   return 0
 }
 
 /** Classify a trigger kind from a function name. */
 function classifyTriggerKind(name: string): string {
-  if (/irq|interrupt/i.test(name))          return "hardware_interrupt"
+  if (/irq|interrupt/i.test(name)) return "hardware_interrupt"
   if (/rx|data_ind|pkt|packet/i.test(name)) return "rx_packet"
-  if (/timer|timeout|expiry/i.test(name))   return "timer_expiry"
-  if (/wmi|cmd/i.test(name))                return "wmi_command"
-  if (/signal/i.test(name))                 return "signal"
-  if (/event|notif/i.test(name))            return "event"
-  if (/message|msg/i.test(name))            return "message"
+  if (/timer|timeout|expiry/i.test(name)) return "timer_expiry"
+  if (/wmi|cmd/i.test(name)) return "wmi_command"
+  if (/signal/i.test(name)) return "signal"
+  if (/event|notif/i.test(name)) return "event"
+  if (/message|msg/i.test(name)) return "message"
   return "unknown"
 }
 

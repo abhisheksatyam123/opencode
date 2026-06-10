@@ -14,16 +14,8 @@ import type { GraphWriteSink } from "./db/graph-rows.js"
 
 export interface LspClientForExtraction {
   documentSymbol: (filePath: string) => Promise<Record<string, unknown>[]>
-  incomingCalls: (
-    filePath: string,
-    line: number,
-    char: number,
-  ) => Promise<Record<string, unknown>[]>
-  outgoingCalls: (
-    filePath: string,
-    line: number,
-    char: number,
-  ) => Promise<Record<string, unknown>[]>
+  incomingCalls: (filePath: string, line: number, char: number) => Promise<Record<string, unknown>[]>
+  outgoingCalls: (filePath: string, line: number, char: number) => Promise<Record<string, unknown>[]>
 }
 
 export interface IntelligenceBackend {

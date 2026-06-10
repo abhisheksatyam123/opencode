@@ -38,10 +38,7 @@ import type { FunctionCall } from "./c-parser.js"
  * Uses LSP references() to find all sites where the callback is referenced,
  * then uses the C parser to find the enclosing call and classify it.
  */
-export async function detectIndirectCallers(
-  input: DetectorInput,
-  deps: DetectorDeps,
-): Promise<PatternDetectionResult> {
+export async function detectIndirectCallers(input: DetectorInput, deps: DetectorDeps): Promise<PatternDetectionResult> {
   const { file, line, character, maxNodes = 50 } = input
   const { lspClient, readFile } = deps
 
@@ -50,9 +47,7 @@ export async function detectIndirectCallers(
   const seed = seedItems?.[0] ?? null
 
   const seedName = seed?.name ?? "(unknown)"
-  const seedFile = seed?.uri?.startsWith("file://")
-    ? fileURLToPath(seed.uri)
-    : (seed?.uri ?? file)
+  const seedFile = seed?.uri?.startsWith("file://") ? fileURLToPath(seed.uri) : (seed?.uri ?? file)
 
   // Step 2: find all reference sites via LSP references()
   const refs = await lspClient.references(file, line - 1, character - 1)
@@ -134,14 +129,7 @@ async function classifyReferenceSite(
 
     // Auto-classifier slow-path (only when deps.autoClassifier is provided)
     if (deps.autoClassifier) {
-      const autoResult = await autoClassifyCall(
-        call,
-        callbackName,
-        filePath,
-        refLine0,
-        refChar0,
-        deps.autoClassifier,
-      )
+      const autoResult = await autoClassifyCall(call, callbackName, filePath, refLine0, refChar0, deps.autoClassifier)
       if (autoResult) return autoResult
     }
 
@@ -252,9 +240,7 @@ function classifyInitializer(
     if (init.args.length > pattern.markerArgIndex) {
       const markerArg = init.args[pattern.markerArgIndex].trim()
       if (pattern.markerRegex.test(markerArg)) {
-        const dispatchKey = init.args.length > pattern.keyArgIndex
-          ? init.args[pattern.keyArgIndex].trim()
-          : null
+        const dispatchKey = init.args.length > pattern.keyArgIndex ? init.args[pattern.keyArgIndex].trim() : null
         return {
           callbackName,
           filePath,
@@ -272,13 +258,7 @@ function classifyInitializer(
   }
 
   // ── Pass 2: generic struct-field-callback fallback (zero hardcoding) ───
-  const genericMatch = classifyGenericStructFieldCallback(
-    init,
-    callbackName,
-    filePath,
-    refLine0,
-    refChar0,
-  )
+  const genericMatch = classifyGenericStructFieldCallback(init, callbackName, filePath, refLine0, refChar0)
   if (genericMatch) return genericMatch
 
   // ── No match ───────────────────────────────────────────────────────────
@@ -400,7 +380,7 @@ export function classifyGenericStructFieldCallback(
       const lhs = fullText.split("=")[0] ?? fullText
       const idents = lhs.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) ?? []
       const nonAttr = idents.filter((id) => !id.startsWith("__"))
-      containerVar = (nonAttr[nonAttr.length - 1] ?? idents[idents.length - 1]) ?? null
+      containerVar = nonAttr[nonAttr.length - 1] ?? idents[idents.length - 1] ?? null
     }
     if (parent.type === "declaration") {
       const typeNode = parent.childForFieldName?.("type")
@@ -450,10 +430,10 @@ export function classifyGenericStructFieldCallback(
 function deriveConnectionKindFromStructType(typeSpelling: string): PatternConnectionKind {
   const t = typeSpelling.toLowerCase()
   if (/irq_chip|irq_domain_ops|interrupt_controller/.test(t)) return "hw_interrupt"
-  if (/work_struct|workqueue|tasklet|delayed_work/.test(t))   return "event"
-  if (/timer_list|hrtimer|posix_clock/.test(t))               return "event"
-  if (/notifier_block|atomic_notifier|raw_notifier/.test(t))  return "event"
-  if (/_ops\b|_operations\b/.test(t))                         return "interface_registration"
+  if (/work_struct|workqueue|tasklet|delayed_work/.test(t)) return "event"
+  if (/timer_list|hrtimer|posix_clock/.test(t)) return "event"
+  if (/notifier_block|atomic_notifier|raw_notifier/.test(t)) return "event"
+  if (/_ops\b|_operations\b/.test(t)) return "interface_registration"
   return "interface_registration"
 }
 

@@ -173,7 +173,12 @@ const linuxHWEntities: readonly HWEntityDef[] = [
     name: "AGP Bridge",
     kind: "hw_block",
     description: "AGP Accelerated Graphics Port bridge driver subsystem",
-    matchesChainSteps: ["agp_backend_initialize", "agp_backend_cleanup", "agp_generic_mask_memory", "agp_generic_alloc_page"],
+    matchesChainSteps: [
+      "agp_backend_initialize",
+      "agp_backend_cleanup",
+      "agp_generic_mask_memory",
+      "agp_generic_alloc_page",
+    ],
   },
 
   // ── Intel GTT ───────────────────────────────────────────────────────────
@@ -181,7 +186,12 @@ const linuxHWEntities: readonly HWEntityDef[] = [
     name: "Intel GTT",
     kind: "hw_block",
     description: "Intel Graphics Translation Table — page table management for GPU memory",
-    matchesChainSteps: ["intel_gtt_init", "intel_gtt_cleanup", "intel_gtt_insert_sg_entries", "intel_gtt_chipset_flush"],
+    matchesChainSteps: [
+      "intel_gtt_init",
+      "intel_gtt_cleanup",
+      "intel_gtt_insert_sg_entries",
+      "intel_gtt_chipset_flush",
+    ],
   },
 
   // ── Network stack ───────────────────────────────────────────────────────
@@ -203,7 +213,13 @@ const linuxHWEntities: readonly HWEntityDef[] = [
     name: "RCU",
     kind: "thread",
     description: "Read-Copy-Update grace period mechanism — deferred callback invocation",
-    matchesChainSteps: ["rcu_grace_period", "rcu_do_batch", "rcu_cblist_invoke", "srcu_grace_period", "srcu_invoke_callbacks"],
+    matchesChainSteps: [
+      "rcu_grace_period",
+      "rcu_do_batch",
+      "rcu_cblist_invoke",
+      "srcu_grace_period",
+      "srcu_invoke_callbacks",
+    ],
   },
 
   // ── IPI subsystem ───────────────────────────────────────────────────────
@@ -211,7 +227,12 @@ const linuxHWEntities: readonly HWEntityDef[] = [
     name: "IPI (Inter-Processor Interrupt)",
     kind: "interrupt",
     description: "Cross-CPU function invocation via inter-processor interrupts",
-    matchesChainSteps: ["IPI_interrupt", "generic_smp_call_function", "generic_smp_call_function_single", "generic_smp_call_function_many"],
+    matchesChainSteps: [
+      "IPI_interrupt",
+      "generic_smp_call_function",
+      "generic_smp_call_function_single",
+      "generic_smp_call_function_many",
+    ],
   },
 
   // ── CPU hotplug ─────────────────────────────────────────────────────────
@@ -323,7 +344,16 @@ const linuxHWEntities: readonly HWEntityDef[] = [
     name: "Socket Layer",
     kind: "hw_block",
     description: "BSD socket dispatch — invokes proto_ops callbacks on connect/accept/send/recv",
-    matchesChainSteps: ["sys_connect", "__sys_connect", "sys_accept4", "__sys_accept4", "sys_sendmsg", "sock_sendmsg", "sys_recvmsg", "sock_recvmsg"],
+    matchesChainSteps: [
+      "sys_connect",
+      "__sys_connect",
+      "sys_accept4",
+      "__sys_accept4",
+      "sys_sendmsg",
+      "sock_sendmsg",
+      "sys_recvmsg",
+      "sock_recvmsg",
+    ],
   },
 
   // ── Netfilter ───────────────────────────────────────────────────────────

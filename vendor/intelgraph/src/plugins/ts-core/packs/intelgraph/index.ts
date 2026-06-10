@@ -25,26 +25,25 @@ import type { TsPatternPack } from "../types.js"
 
 const intelgraphPack: TsPatternPack = {
   name: "intelgraph",
-  description:
-    "intelgraph-specific TypeScript patterns (extractor plugins, tool registry, daemon lifecycle).",
+  description: "intelgraph-specific TypeScript patterns (extractor plugins, tool registry, daemon lifecycle).",
 
   contributesEdgeKinds: ["logs_event"],
 
   logPatterns: [
     // intelgraph uses src/logging/logger.ts exclusively
-    { name: "log",      level: "INFO",  messageArgIndex: 1 },  // log("INFO", "message", ctx)
-    { name: "logError", level: "ERROR", messageArgIndex: 0 },  // logError("message", err)
+    { name: "log", level: "INFO", messageArgIndex: 1 }, // log("INFO", "message", ctx)
+    { name: "logError", level: "ERROR", messageArgIndex: 0 }, // logError("message", err)
     // Logger class methods
-    { name: "logger.info",  level: "INFO",  messageArgIndex: 0 },
+    { name: "logger.info", level: "INFO", messageArgIndex: 0 },
     { name: "logger.debug", level: "DEBUG", messageArgIndex: 0 },
-    { name: "logger.warn",  level: "WARN",  messageArgIndex: 0 },
+    { name: "logger.warn", level: "WARN", messageArgIndex: 0 },
     { name: "logger.error", level: "ERROR", messageArgIndex: 0 },
     // process.stderr.write is used for user-visible messages
     { name: "process.stderr.write", level: "INFO", messageArgIndex: 0 },
     // console.* (generic, any TS project)
-    { name: "console.log",   level: "INFO",  messageArgIndex: 0 },
+    { name: "console.log", level: "INFO", messageArgIndex: 0 },
     { name: "console.error", level: "ERROR", messageArgIndex: 0 },
-    { name: "console.warn",  level: "WARN",  messageArgIndex: 0 },
+    { name: "console.warn", level: "WARN", messageArgIndex: 0 },
     { name: "console.debug", level: "DEBUG", messageArgIndex: 0 },
   ],
 

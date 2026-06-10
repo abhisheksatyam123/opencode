@@ -13,10 +13,7 @@ import { ServerConnection } from "./context/server"
 
 const DEFAULT_SERVER_URL_KEY = "opencode.settings.dat:defaultServerUrl"
 
-
-
 const getRootNotFoundError = () => en["error.dev.rootNotFound"]
-
 
 const getStorage = (key: string) => {
   if (typeof localStorage === "undefined") return null

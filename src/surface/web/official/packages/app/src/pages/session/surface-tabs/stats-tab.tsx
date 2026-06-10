@@ -38,7 +38,6 @@ function ratio(value: number, max: number) {
   return Math.max(1, Math.min(100, (value / max) * 100))
 }
 
-
 type ContextSegment = {
   name: string
   tokens: number
@@ -102,15 +101,16 @@ function contextCells(segments: ContextSegment[], limit: number) {
       end += segment.tokens
       if (cursor <= end) return segment
     }
-    return segments[segments.length - 1] ?? {
-      name: "free space",
-      detail: "available",
-      tokens: safeLimit,
-      ...contextSegmentColor("free space", 0),
-    }
+    return (
+      segments[segments.length - 1] ?? {
+        name: "free space",
+        detail: "available",
+        tokens: safeLimit,
+        ...contextSegmentColor("free space", 0),
+      }
+    )
   })
 }
-
 
 function ContextHistogram(props: { segments: ContextSegment[]; limit: number }) {
   return (
@@ -120,7 +120,10 @@ function ContextHistogram(props: { segments: ContextSegment[]; limit: number }) 
         <For each={props.segments.slice(0, 8)}>
           {(segment) => (
             <div class="grid grid-cols-[8rem_1fr_4.5rem] items-center gap-2 text-11-regular">
-              <div class="truncate text-text-weak" title={segment.detail ? `${segment.name} · ${segment.detail}` : segment.name}>
+              <div
+                class="truncate text-text-weak"
+                title={segment.detail ? `${segment.name} · ${segment.detail}` : segment.name}
+              >
                 {segment.name}
               </div>
               <div class="h-2 overflow-hidden rounded bg-surface-raised-base">
@@ -155,7 +158,9 @@ function StatCard(props: { label: string; value: string; detail?: string; color:
 
 function ContextWindow(props: { context: SurfaceContextWindowStats }) {
   const limit = createMemo(() => props.context.inputLimit ?? props.context.hardLimit ?? props.context.used)
-  const usedPct = createMemo(() => props.context.usedPctInput ?? props.context.usedPctHard ?? ratio(props.context.used, limit()))
+  const usedPct = createMemo(
+    () => props.context.usedPctInput ?? props.context.usedPctHard ?? ratio(props.context.used, limit()),
+  )
   const free = createMemo(() => Math.max(0, limit() - props.context.used))
   const segments = createMemo(() => contextSegments(props.context, limit()))
   const cells = createMemo(() => contextCells(segments(), limit()))
@@ -203,15 +208,20 @@ function ContextWindow(props: { context: SurfaceContextWindowStats }) {
       <ContextHistogram segments={segments()} limit={limit()} />
       <div class="mt-2 grid gap-2 text-12-regular sm:grid-cols-3">
         <div>
-          <span class="text-text-weak">available</span> <span class="font-mono text-text-base">{compact.format(free())}</span>
+          <span class="text-text-weak">available</span>{" "}
+          <span class="font-mono text-text-base">{compact.format(free())}</span>
         </div>
         <div>
           <span class="text-text-weak">soft cap</span>{" "}
-          <span class="font-mono text-text-base">{props.context.softLimit ? compact.format(props.context.softLimit) : "—"}</span>
+          <span class="font-mono text-text-base">
+            {props.context.softLimit ? compact.format(props.context.softLimit) : "—"}
+          </span>
         </div>
         <div>
           <span class="text-text-weak">output reserve</span>{" "}
-          <span class="font-mono text-text-base">{props.context.outputReserve ? compact.format(props.context.outputReserve) : "—"}</span>
+          <span class="font-mono text-text-base">
+            {props.context.outputReserve ? compact.format(props.context.outputReserve) : "—"}
+          </span>
         </div>
       </div>
     </div>
@@ -237,9 +247,7 @@ function TokenBreakdown(props: { tokens: SurfaceTokenCounts }) {
       </div>
       <div class="mb-3 flex h-4 overflow-hidden rounded bg-surface-raised-base">
         <For each={rows()}>
-          {([, value, color]) => (
-            <div style={{ width: `${ratio(value, all())}%`, "background-color": color }} />
-          )}
+          {([, value, color]) => <div style={{ width: `${ratio(value, all())}%`, "background-color": color }} />}
         </For>
       </div>
       <div class="grid gap-2 sm:grid-cols-2">
@@ -261,7 +269,10 @@ function LLMCalls(props: { calls: SurfaceLLMCallStats[] }) {
   return (
     <div class="rounded border border-border-weaker-base bg-surface-base p-3">
       <div class="mb-3 text-13-medium text-text-strong">LLM calls</div>
-      <Show when={props.calls.length > 0} fallback={<div class="text-12-regular text-text-weak">No LLM calls yet.</div>}>
+      <Show
+        when={props.calls.length > 0}
+        fallback={<div class="text-12-regular text-text-weak">No LLM calls yet.</div>}
+      >
         <div class="overflow-auto">
           <table class="w-full min-w-[36rem] text-left text-12-regular">
             <thead class="text-11-mono uppercase text-text-weak">
@@ -319,7 +330,9 @@ export function SurfaceStatsTab(props: { sessionID?: string }) {
       <div class="mb-3 flex items-start justify-between gap-3">
         <div>
           <h2 class="text-16-medium text-text-strong">Stats</h2>
-          <p class="text-12-regular text-text-weak">Current session context, LLM calls, tool calls, tokens, and cost.</p>
+          <p class="text-12-regular text-text-weak">
+            Current session context, LLM calls, tool calls, tokens, and cost.
+          </p>
         </div>
         <button
           type="button"
@@ -337,7 +350,9 @@ export function SurfaceStatsTab(props: { sessionID?: string }) {
           <div class="text-12-regular text-text-weak">Loading stats…</div>
         </Match>
         <Match when={stats.error}>
-          <div class="rounded border border-danger/30 bg-danger/10 p-3 text-12-regular text-danger">{String(stats.error)}</div>
+          <div class="rounded border border-danger/30 bg-danger/10 p-3 text-12-regular text-danger">
+            {String(stats.error)}
+          </div>
         </Match>
         <Match when={stats()} keyed>
           {(data) => {
@@ -345,12 +360,40 @@ export function SurfaceStatsTab(props: { sessionID?: string }) {
             return (
               <div class="flex flex-col gap-3">
                 <div class="grid grid-cols-2 gap-3 lg:grid-cols-6">
-                  <StatCard label="Context" value={fmtPct(ctx.usedPctInput ?? ctx.usedPctHard)} detail={`${compact.format(ctx.used)} used`} color="bg-warning" />
-                  <StatCard label="LLM calls" value={number.format(ctx.callCount)} detail={`${compact.format(ctx.avgCallTokens)} avg tokens`} color="bg-accent" />
-                  <StatCard label="Tool calls" value={number.format(ctx.totalToolCalls ?? 0)} detail={`${compact.format(ctx.totalToolCallTokens ?? 0)} tokens`} color="bg-info" />
-                  <StatCard label="Tools / LLM" value={String(ctx.avgToolCallsPerLLM ?? 0)} detail={`max ${ctx.maxToolCallsPerLLM ?? 0}`} color="bg-success" />
-                  <StatCard label="Tokens" value={compact.format(total(data.aggregate.tokens))} color="bg-surface-base-active" />
-                  <StatCard label="Cost" value={money.format(data.aggregate.cost)} color="bg-surface-raised-base-active" />
+                  <StatCard
+                    label="Context"
+                    value={fmtPct(ctx.usedPctInput ?? ctx.usedPctHard)}
+                    detail={`${compact.format(ctx.used)} used`}
+                    color="bg-warning"
+                  />
+                  <StatCard
+                    label="LLM calls"
+                    value={number.format(ctx.callCount)}
+                    detail={`${compact.format(ctx.avgCallTokens)} avg tokens`}
+                    color="bg-accent"
+                  />
+                  <StatCard
+                    label="Tool calls"
+                    value={number.format(ctx.totalToolCalls ?? 0)}
+                    detail={`${compact.format(ctx.totalToolCallTokens ?? 0)} tokens`}
+                    color="bg-info"
+                  />
+                  <StatCard
+                    label="Tools / LLM"
+                    value={String(ctx.avgToolCallsPerLLM ?? 0)}
+                    detail={`max ${ctx.maxToolCallsPerLLM ?? 0}`}
+                    color="bg-success"
+                  />
+                  <StatCard
+                    label="Tokens"
+                    value={compact.format(total(data.aggregate.tokens))}
+                    color="bg-surface-base-active"
+                  />
+                  <StatCard
+                    label="Cost"
+                    value={money.format(data.aggregate.cost)}
+                    color="bg-surface-raised-base-active"
+                  />
                 </div>
                 <ContextWindow context={ctx} />
                 <TokenBreakdown tokens={data.aggregate.tokens} />

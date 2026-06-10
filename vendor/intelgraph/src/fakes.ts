@@ -83,10 +83,7 @@ export type {
   TypeBatch,
   EdgeBatch,
 } from "./intelligence/contracts/extraction-adapter.js"
-export type {
-  IQueryNodeAdapter,
-  LegacyFlatResponse,
-} from "./intelligence/contracts/query-node-adapter.js"
+export type { IQueryNodeAdapter, LegacyFlatResponse } from "./intelligence/contracts/query-node-adapter.js"
 export type {
   IIndirectCallerIngestion,
   RuntimeCallerInput,
@@ -118,11 +115,7 @@ export type {
 } from "./intelligence/contracts/common.js"
 export type { IDaemonManager } from "./daemon/ports.js"
 export type { ILogger } from "./logging/ports.js"
-export type {
-  IConfigLoader,
-  IntelgraphConfig,
-  IndexState,
-} from "./config/ports.js"
+export type { IConfigLoader, IntelgraphConfig, IndexState } from "./config/ports.js"
 export type { IPluginRegistry } from "./plugins/ports.js"
 export type {
   IToolDispatcher,

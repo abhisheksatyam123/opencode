@@ -89,22 +89,22 @@ export interface ToolDispatchResult {
 
 export type AppCommandMap = {
   // Query layer — [draft]
-  "query":                Command<"query",                QueryRequest,            NormalizedQueryResponse>
-  "db.lookup":            Command<"db.lookup",            QueryRequest,            DbLookupResult>
+  query: Command<"query", QueryRequest, NormalizedQueryResponse>
+  "db.lookup": Command<"db.lookup", QueryRequest, DbLookupResult>
 
   // Ingest / extraction layer — [draft]
-  "ingest":               Command<"ingest",               IngestRequest,           RunnerReport>
-  "ingest.extractFile":   Command<"ingest.extractFile",   ExtractFileRequest,      FileExtractionReport>
+  ingest: Command<"ingest", IngestRequest, RunnerReport>
+  "ingest.extractFile": Command<"ingest.extractFile", ExtractFileRequest, FileExtractionReport>
 
   // Snapshot lifecycle — [draft]
-  "snapshot.begin":       Command<"snapshot.begin",       BeginSnapshotRequest,    SnapshotId>
-  "snapshot.commit":      Command<"snapshot.commit",      SnapshotId,              void>
-  "snapshot.fail":        Command<"snapshot.fail",        FailSnapshotRequest,     void>
-  "snapshot.getLatest":   Command<"snapshot.getLatest",   GetLatestSnapshotRequest, SnapshotId | null>
+  "snapshot.begin": Command<"snapshot.begin", BeginSnapshotRequest, SnapshotId>
+  "snapshot.commit": Command<"snapshot.commit", SnapshotId, void>
+  "snapshot.fail": Command<"snapshot.fail", FailSnapshotRequest, void>
+  "snapshot.getLatest": Command<"snapshot.getLatest", GetLatestSnapshotRequest, SnapshotId | null>
 
   // LSP / infrastructure — [stub]
-  "lsp.getClient":        Command<"lsp.getClient",        void,                    unknown>  // ILanguageClient | null — typed once lsp/ports.ts exists
+  "lsp.getClient": Command<"lsp.getClient", void, unknown> // ILanguageClient | null — typed once lsp/ports.ts exists
 
   // Tool dispatch — [stub]
-  "tool.dispatch":        Command<"tool.dispatch",        ToolDispatchRequest,     ToolDispatchResult>
+  "tool.dispatch": Command<"tool.dispatch", ToolDispatchRequest, ToolDispatchResult>
 }
