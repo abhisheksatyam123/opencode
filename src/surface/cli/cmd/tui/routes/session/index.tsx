@@ -2149,24 +2149,28 @@ export function Session() {
                     }
 
                     // Helper to get consistent colors for components across TUI stats elements.
-                    const getComponentColor = (name: string, index: number): RGBA => {
-                      const colors = [
-                        theme.accent, // tool calls
-                        theme.warning, // system prompt
-                        theme.success, // user input
-                        theme.secondary, // assistant reasoning / text
-                        theme.border, // files
-                        theme.textMuted, // other
-                      ]
-                      if (name.includes("system")) return theme.warning
-                      if (name.includes("user")) return theme.success
-                      if (name.includes("tool")) return theme.accent
-                      if (name.includes("text") || name.includes("reasoning") || name.includes("assistant"))
+                    const getComponentColor = (name: string): RGBA => {
+                      if (
+                        name.includes("system") ||
+                        name.includes("agent") ||
+                        name.includes("summary") ||
+                        name.includes("mention")
+                      ) {
+                        return theme.warning
+                      }
+                      if (name.includes("user")) {
+                        return theme.success
+                      }
+                      if (name.includes("tool")) {
+                        return theme.accent
+                      }
+                      if (name.includes("text") || name.includes("reasoning") || name.includes("assistant")) {
                         return theme.secondary
-                      if (name.includes("file") || name.includes("patch") || name.includes("snapshot"))
+                      }
+                      if (name.includes("file") || name.includes("patch") || name.includes("snapshot")) {
                         return theme.border
-                      if (name === "free" || name.includes("free space")) return theme.textMuted
-                      return colors[index % colors.length]
+                      }
+                      return theme.textMuted
                     }
 
                     // A beautiful 2D representation of the context window as colored block tiles.
@@ -2214,9 +2218,9 @@ export function Session() {
                       const cells: Array<{ char: string; fg: RGBA }> = []
                       const safeLimit = Math.max(1, limit)
 
-                      const getStyle = (name: string, index: number) => {
+                      const getStyle = (name: string) => {
                         if (name === "free" || name.includes("free space")) return { char: "░", fg: theme.textMuted }
-                        return { char: "█", fg: getComponentColor(name, index) }
+                        return { char: "█", fg: getComponentColor(name) }
                       }
 
                       for (let index = 0; index < totalBlocks; index++) {
@@ -2230,8 +2234,7 @@ export function Session() {
                             break
                           }
                         }
-                        const segmentIndex = segments.indexOf(matchedSegment)
-                        const style = getStyle(matchedSegment.name, segmentIndex)
+                        const style = getStyle(matchedSegment.name)
                         cells.push({ char: style.char, fg: style.fg })
                       }
 
@@ -2418,7 +2421,7 @@ export function Session() {
                                   <box flexDirection="column" gap={0} flexShrink={0} marginTop={1}>
                                     <For each={snapshot().context.components}>
                                       {(component, index) => {
-                                        const color = getComponentColor(component.name, index())
+                                        const color = getComponentColor(component.name)
                                         return (
                                           <box flexDirection="row" gap={2} flexShrink={0} alignItems="center">
                                             <text fg={theme.textMuted} width={18}>
