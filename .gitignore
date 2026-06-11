@@ -80,3 +80,4 @@ docker-compose.intelligence.local.yml
 /tmp/
 /TODO-qgenie-responses.md
 nvim-config
+.aider*
