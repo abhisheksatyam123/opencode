@@ -2175,7 +2175,8 @@ export function Session() {
 
                     // A beautiful 2D representation of the context window as colored block tiles.
                     const renderContextMap = (context: ContextWindowStats) => {
-                      const totalWidth = 40
+                      // Dynamically calculate width based on terminal space, keeping it clean and readable.
+                      const totalWidth = Math.max(30, Math.min(60, contentWidth() - 8))
                       const totalHeight = 4
                       const totalBlocks = totalWidth * totalHeight
                       const limit =
@@ -2244,13 +2245,59 @@ export function Session() {
                         lines.push(cells.slice(i * totalWidth, (i + 1) * totalWidth))
                       }
 
+                      // Calculate usage warnings and borders
+                      const usedPct = limit > 0 ? (used / limit) * 100 : 0
+                      const borderColor = usedPct >= 90 ? theme.error : usedPct >= 70 ? theme.warning : theme.border
+
+                      // Helper to sum tokens by category
+                      const getCategoryTokens = (cat: string) => {
+                        let sum = 0
+                        for (const item of rawDistribution) {
+                          const name = item.name.toLowerCase()
+                          if (
+                            cat === "system" &&
+                            (name.includes("system") ||
+                              name.includes("agent") ||
+                              name.includes("summary") ||
+                              name.includes("mention"))
+                          ) {
+                            sum += item.tokens
+                          } else if (cat === "user" && name.includes("user")) {
+                            sum += item.tokens
+                          } else if (cat === "tools" && name.includes("tool")) {
+                            sum += item.tokens
+                          } else if (
+                            cat === "assistant" &&
+                            (name.includes("text") || name.includes("reasoning") || name.includes("assistant"))
+                          ) {
+                            sum += item.tokens
+                          } else if (
+                            cat === "files" &&
+                            (name.includes("file") || name.includes("patch") || name.includes("snapshot"))
+                          ) {
+                            sum += item.tokens
+                          } else if (cat === "unattributed" && name.includes("unattributed")) {
+                            sum += item.tokens
+                          }
+                        }
+                        return sum
+                      }
+
+                      const unattributedTokens = getCategoryTokens("unattributed")
+
                       return (
                         <box flexDirection="column" flexShrink={0} marginTop={1} marginBottom={1}>
+                          <box flexDirection="row" justifyContent="space-between" marginBottom={0}>
+                            <text fg={theme.textMuted}>usage map</text>
+                            <text fg={borderColor}>
+                              <span style={{ bold: true }}>{Math.round(usedPct)}%</span>
+                            </text>
+                          </box>
                           <box
                             flexDirection="column"
                             gap={0}
                             border={["top", "bottom", "left", "right"]}
-                            borderColor={theme.border}
+                            borderColor={borderColor}
                             paddingLeft={1}
                             paddingRight={1}
                             flexShrink={0}
@@ -2266,27 +2313,40 @@ export function Session() {
                           <box flexDirection="row" gap={2} marginTop={1} flexWrap="wrap">
                             <box flexDirection="row" gap={1}>
                               <text fg={theme.warning}>█</text>
-                              <text fg={theme.textMuted}>system</text>
+                              <text fg={theme.text}>system</text>
+                              <text fg={theme.textMuted}>{fmt(getCategoryTokens("system"))}</text>
                             </box>
                             <box flexDirection="row" gap={1}>
                               <text fg={theme.success}>█</text>
-                              <text fg={theme.textMuted}>user input</text>
+                              <text fg={theme.text}>user input</text>
+                              <text fg={theme.textMuted}>{fmt(getCategoryTokens("user"))}</text>
                             </box>
                             <box flexDirection="row" gap={1}>
                               <text fg={theme.accent}>█</text>
-                              <text fg={theme.textMuted}>tools</text>
+                              <text fg={theme.text}>tools</text>
+                              <text fg={theme.textMuted}>{fmt(getCategoryTokens("tools"))}</text>
                             </box>
                             <box flexDirection="row" gap={1}>
                               <text fg={theme.secondary}>█</text>
-                              <text fg={theme.textMuted}>assistant</text>
+                              <text fg={theme.text}>assistant</text>
+                              <text fg={theme.textMuted}>{fmt(getCategoryTokens("assistant"))}</text>
                             </box>
                             <box flexDirection="row" gap={1}>
                               <text fg={theme.border}>█</text>
-                              <text fg={theme.textMuted}>files/patches</text>
+                              <text fg={theme.text}>files/patches</text>
+                              <text fg={theme.textMuted}>{fmt(getCategoryTokens("files"))}</text>
                             </box>
+                            <Show when={unattributedTokens > 0}>
+                              <box flexDirection="row" gap={1}>
+                                <text fg={theme.textMuted}>█</text>
+                                <text fg={theme.text}>other</text>
+                                <text fg={theme.textMuted}>{fmt(unattributedTokens)}</text>
+                              </box>
+                            </Show>
                             <box flexDirection="row" gap={1}>
                               <text fg={theme.textMuted}>░</text>
-                              <text fg={theme.textMuted}>free space</text>
+                              <text fg={theme.text}>free space</text>
+                              <text fg={theme.textMuted}>{fmt(freeTokens)}</text>
                             </box>
                           </box>
                         </box>
