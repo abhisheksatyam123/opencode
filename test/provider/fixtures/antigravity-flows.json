@@ -1,0 +1,170 @@
+{
+  "capturedAt": "2026-06-12T16:47:28+05:30",
+  "source": "mitmproxy",
+  "description": "Captured Antigravity API request/response patterns for testing",
+  "flows": [
+    {
+      "id": "5cefaa8d-3912-4202-bcf5-c81c8589c63f",
+      "description": "Standard Gemini streamGenerateContent via Antigravity proxy",
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "Authorization": "Bearer ya29.REDACTED_TOKEN",
+          "Content-Type": "application/json",
+          "User-Agent": "opencode"
+        },
+        "body": {
+          "project": "tuned-keel-d72qv",
+          "requestId": "opencode/1718197648000",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "What is the capital of France?"
+                  }
+                ]
+              }
+            ],
+            "generationConfig": {
+              "temperature": 1,
+              "topP": 0.95,
+              "topK": 40,
+              "maxOutputTokens": 8192,
+              "responseMimeType": "text/plain"
+            },
+            "safetySettings": [
+              {
+                "category": "HARM_CATEGORY_HARASSMENT",
+                "threshold": "BLOCK_NONE"
+              },
+              {
+                "category": "HARM_CATEGORY_HATE_SPEECH",
+                "threshold": "BLOCK_NONE"
+              }
+            ]
+          },
+          "model": "gemini-2.5-flash",
+          "userAgent": "opencode",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "text/event-stream",
+          "Transfer-Encoding": "chunked",
+          "Cache-Control": "no-cache"
+        },
+        "sseChunks": [
+          "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"The capital of France is \"}],\"role\":\"model\"},\"safetyRatings\":[{\"category\":\"HARM_CATEGORY_HARASSMENT\",\"probability\":\"NEGLIGIBLE\"}]}],\"modelVersion\":\"gemini-2.5-flash\"}",
+          "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"**Paris**.\"}],\"role\":\"model\"},\"finishReason\":\"STOP\",\"safetyRatings\":[{\"category\":\"HARM_CATEGORY_HARASSMENT\",\"probability\":\"NEGLIGIBLE\"}]}],\"usageMetadata\":{\"promptTokenCount\":8,\"candidatesTokenCount\":6,\"totalTokenCount\":14},\"modelVersion\":\"gemini-2.5-flash\"}",
+          "data: [DONE]"
+        ]
+      }
+    },
+    {
+      "id": "tool-call-flow",
+      "description": "Gemini request with tool/function calling via Antigravity",
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "Authorization": "Bearer ya29.REDACTED_TOKEN",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "project": "tuned-keel-d72qv",
+          "requestId": "opencode/1718197650000",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "Read the file package.json"
+                  }
+                ]
+              }
+            ],
+            "tools": [
+              {
+                "functionDeclarations": [
+                  {
+                    "name": "read_file",
+                    "description": "Read file contents",
+                    "parameters": {
+                      "type": "OBJECT",
+                      "properties": {
+                        "path": {
+                          "type": "STRING",
+                          "description": "File path to read"
+                        }
+                      },
+                      "required": ["path"]
+                    }
+                  }
+                ]
+              }
+            ],
+            "generationConfig": {
+              "temperature": 1,
+              "maxOutputTokens": 8192
+            }
+          },
+          "model": "gemini-2.5-flash",
+          "userAgent": "opencode",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "text/event-stream"
+        },
+        "sseChunks": [
+          "data: {\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"name\":\"read_file\",\"args\":{\"path\":\"package.json\"}}}],\"role\":\"model\"}}],\"modelVersion\":\"gemini-2.5-flash\"}",
+          "data: {\"candidates\":[{\"content\":{\"parts\":[],\"role\":\"model\"},\"finishReason\":\"STOP\"}],\"usageMetadata\":{\"promptTokenCount\":45,\"candidatesTokenCount\":12,\"totalTokenCount\":57},\"modelVersion\":\"gemini-2.5-flash\"}",
+          "data: [DONE]"
+        ]
+      }
+    },
+    {
+      "id": "auth-error-flow",
+      "description": "Request with invalid/expired credentials",
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "Authorization": "Bearer EXPIRED_TOKEN",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "project": "tuned-keel-d72qv",
+          "requestId": "opencode/1718197655000",
+          "request": {
+            "contents": [{"role": "user", "parts": [{"text": "test"}]}]
+          },
+          "model": "gemini-2.5-flash",
+          "userAgent": "opencode",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "error": {
+            "code": 401,
+            "message": "Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential.",
+            "status": "UNAUTHENTICATED"
+          }
+        }
+      }
+    }
+  ]
+}

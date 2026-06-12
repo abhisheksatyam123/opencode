@@ -307,7 +307,7 @@ export namespace Session {
           .add(new Decimal(tokens.output).mul(costInfo?.output ?? 0).div(1_000_000))
           .add(new Decimal(tokens.cache.read).mul(costInfo?.cache?.read ?? 0).div(1_000_000))
           .add(new Decimal(tokens.cache.write).mul(costInfo?.cache?.write ?? 0).div(1_000_000))
-          // Pricing model gap: until models.dev exposes reasoning-token prices,
+          // Pricing model gap: until config exposes reasoning-token prices,
           // charge reasoning tokens at the same rate as output tokens
           .add(new Decimal(tokens.reasoning).mul(costInfo?.output ?? 0).div(1_000_000))
           .toNumber(),

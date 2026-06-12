@@ -18,7 +18,6 @@ import type {
 } from "@octokit/webhooks-types"
 import { UI } from "@/surface/cli/ui"
 import { cmd } from "@/surface/cli/cmd/cmd"
-import { ModelsDev } from "@/provider/models"
 import { Instance } from "@/config/project/instance"
 import { bootstrap } from "@/surface/cli/bootstrap"
 import { Session } from "@/process/session"
@@ -208,7 +207,7 @@ export const GithubInstallCommand = cmd({
           const app = await getAppInfo()
           await installGitHubApp()
 
-          const providers = await ModelsDev.get().then((p) => {
+          const providers = await Provider.list().then((p: Record<string, any>) => {
             // Hide Copilot until there is a dedicated setup guide.
             delete p["github-copilot"]
             return p
@@ -230,7 +229,7 @@ export const GithubInstallCommand = cmd({
               step2 = [
                 `    2. Add the following secrets in org or repo (${app.owner}/${app.repo}) settings`,
                 "",
-                ...providers[provider].env.map((e) => `       - ${e}`),
+                ...providers[provider].env.map((e: string) => `       - ${e}`),
               ].join("\n")
             }
 
@@ -375,7 +374,7 @@ export const GithubInstallCommand = cmd({
             const envStr =
               provider === "amazon-bedrock"
                 ? ""
-                : `\n        env:${providers[provider].env.map((e) => `\n          ${e}: \${{ secrets.${e} }}`).join("")}`
+                : `\n        env:${providers[provider].env.map((e: string) => `\n          ${e}: \${{ secrets.${e} }}`).join("")}`
 
             await Filesystem.write(
               path.join(app.root, WORKFLOW_FILE),

@@ -84,7 +84,7 @@ export function detectUpstream(modelID: string): Upstream {
   if (id.startsWith("anthropic::")) return "anthropic"
 
   // 2) Heuristic fallback for unprefixed model IDs (native providers).
-  //    These match the family keywords used by models.dev / opencode.json.
+  //    These match the family keywords used in opencode.json.
   if (id.includes("claude") || id.includes("anthropic")) return "anthropic"
   if (id.includes("gemini")) return "vertex-gemini"
   if (id.includes("nova-pro") || id.includes("nova-lite") || id.includes("amazon.nova")) return "bedrock-nova"

@@ -2,7 +2,7 @@ import { Auth } from "@/init/auth"
 import { cmd } from "@/surface/cli/cmd/cmd"
 import * as prompts from "@clack/prompts"
 import { UI } from "@/surface/cli/ui"
-import { ModelsDev } from "@/provider/models"
+import { Provider } from "@/provider/provider"
 import { map, pipe, sortBy, values } from "remeda"
 import path from "path"
 import os from "os"
@@ -219,48 +219,53 @@ export const ProvidersListCommand = cmd({
   aliases: ["ls"],
   describe: "list providers and credentials",
   async handler(_args) {
-    UI.empty()
-    const authPath = path.join(Global.Path.data, "auth.json")
-    const homedir = os.homedir()
-    const displayPath = authPath.startsWith(homedir) ? authPath.replace(homedir, "~") : authPath
-    // gap-29-followup-6: wrap the auth.json path in Hyperlink.file so
-    // users can click to inspect the credentials file. The link target
-    // is the absolute path (file:// URLs aren't ~ aware), the display
-    // text stays as the ~-expanded path for human readability.
-    prompts.intro(`Credentials ${UI.Style.TEXT_DIM}${Hyperlink.file(authPath, displayPath)}`)
-    const results = Object.entries(await Auth.all())
-    const database = await ModelsDev.get()
+    await Instance.provide({
+      directory: process.cwd(),
+      async fn() {
+        UI.empty()
+        const authPath = path.join(Global.Path.data, "auth.json")
+        const homedir = os.homedir()
+        const displayPath = authPath.startsWith(homedir) ? authPath.replace(homedir, "~") : authPath
+        // gap-29-followup-6: wrap the auth.json path in Hyperlink.file so
+        // users can click to inspect the credentials file. The link target
+        // is the absolute path (file:// URLs aren't ~ aware), the display
+        // text stays as the ~-expanded path for human readability.
+        prompts.intro(`Credentials ${UI.Style.TEXT_DIM}${Hyperlink.file(authPath, displayPath)}`)
+        const results = Object.entries(await Auth.all())
+        const database = await Provider.list()
 
-    for (const [providerID, result] of results) {
-      const name = database[providerID]?.name || providerID
-      prompts.log.info(`${name} ${UI.Style.TEXT_DIM}${result.type}`)
-    }
-
-    prompts.outro(`${results.length} credentials`)
-
-    const activeEnvVars: Array<{ provider: string; envVar: string }> = []
-
-    for (const [providerID, provider] of Object.entries(database)) {
-      for (const envVar of provider.env) {
-        if (process.env[envVar]) {
-          activeEnvVars.push({
-            provider: provider.name || providerID,
-            envVar,
-          })
+        for (const [providerID, result] of results) {
+          const name = database[providerID as any]?.name || providerID
+          prompts.log.info(`${name} ${UI.Style.TEXT_DIM}${result.type}`)
         }
-      }
-    }
 
-    if (activeEnvVars.length > 0) {
-      UI.empty()
-      prompts.intro("Environment")
+        prompts.outro(`${results.length} credentials`)
 
-      for (const { provider, envVar } of activeEnvVars) {
-        prompts.log.info(`${provider} ${UI.Style.TEXT_DIM}${envVar}`)
-      }
+        const activeEnvVars: Array<{ provider: string; envVar: string }> = []
 
-      prompts.outro(`${activeEnvVars.length} environment variable` + (activeEnvVars.length === 1 ? "" : "s"))
-    }
+        for (const [providerID, provider] of Object.entries(database)) {
+          for (const envVar of provider.env) {
+            if (process.env[envVar]) {
+              activeEnvVars.push({
+                provider: provider.name || providerID,
+                envVar,
+              })
+            }
+          }
+        }
+
+        if (activeEnvVars.length > 0) {
+          UI.empty()
+          prompts.intro("Environment")
+
+          for (const { provider, envVar } of activeEnvVars) {
+            prompts.log.info(`${provider} ${UI.Style.TEXT_DIM}${envVar}`)
+          }
+
+          prompts.outro(`${activeEnvVars.length} environment variable` + (activeEnvVars.length === 1 ? "" : "s"))
+        }
+      },
+    })
   },
 })
 
@@ -329,15 +334,14 @@ export const ProvidersLoginCommand = cmd({
           prompts.outro("Done")
           return
         }
-        await ModelsDev.refresh(true).catch(() => {})
 
         const config = await Config.get()
 
         const disabled = new Set(config.disabled_providers ?? [])
         const enabled = config.enabled_providers ? new Set(config.enabled_providers) : undefined
 
-        const providers = await ModelsDev.get().then((x) => {
-          const filtered: Record<string, (typeof x)[string]> = {}
+        const providers = await Provider.list().then((x) => {
+          const filtered: Record<string, any> = {}
           for (const [key, value] of Object.entries(x)) {
             if ((enabled ? enabled.has(key) : true) && !disabled.has(key)) {
               filtered[key] = value
@@ -373,10 +377,10 @@ export const ProvidersLoginCommand = cmd({
             map((x) => ({
               label: x.name,
               value: x.id,
-              hint: {
+              hint: ({
                 opencode: "recommended",
                 openai: "ChatGPT Plus/Pro or API key",
-              }[x.id],
+              } as Record<string, string>)[x.id],
             })),
           ),
           ...pluginProviders.map((x) => ({
@@ -482,23 +486,28 @@ export const ProvidersLogoutCommand = cmd({
   command: "logout",
   describe: "log out from a configured provider",
   async handler(_args) {
-    UI.empty()
-    const credentials = await Auth.all().then((x) => Object.entries(x))
-    prompts.intro("Remove credential")
-    if (credentials.length === 0) {
-      prompts.log.error("No credentials found")
-      return
-    }
-    const database = await ModelsDev.get()
-    const providerID = await prompts.select({
-      message: "Select provider",
-      options: credentials.map(([key, value]) => ({
-        label: (database[key]?.name || key) + UI.Style.TEXT_DIM + " (" + value.type + ")",
-        value: key,
-      })),
+    await Instance.provide({
+      directory: process.cwd(),
+      async fn() {
+        UI.empty()
+        const credentials = await Auth.all().then((x) => Object.entries(x))
+        prompts.intro("Remove credential")
+        if (credentials.length === 0) {
+          prompts.log.error("No credentials found")
+          return
+        }
+        const database = await Provider.list()
+        const providerID = await prompts.select({
+          message: "Select provider",
+          options: credentials.map(([key, value]) => ({
+            label: (database[key as any]?.name || key) + UI.Style.TEXT_DIM + " (" + value.type + ")",
+            value: key,
+          })),
+        })
+        if (prompts.isCancel(providerID)) throw new UI.CancelledError()
+        await Auth.remove(providerID)
+        prompts.outro("Logout successful")
+      },
     })
-    if (prompts.isCancel(providerID)) throw new UI.CancelledError()
-    await Auth.remove(providerID)
-    prompts.outro("Logout successful")
   },
 })

@@ -1,5 +1,7 @@
 import z from "zod"
 import os from "os"
+import crypto from "node:crypto"
+import { execSync } from "child_process"
 import fuzzysort from "fuzzysort"
 import { Config } from "@/config/config"
 import { mapValues, mergeDeep, omit, pickBy, sortBy } from "remeda"
@@ -11,7 +13,6 @@ import { Hash } from "@/foundation/util/hash"
 import { ProviderPluginHooks } from "@/provider/plugin-hooks"
 import { NamedError } from "@opencode-ai/util/error"
 import { type LanguageModelV3 } from "@ai-sdk/provider"
-import { ModelsDev } from "@/provider/models"
 import { Auth } from "@/init/auth"
 import { Env } from "@/filesystem/env"
 import { InstanceContextStorage } from "@/foundation/effect/instance-context"
@@ -683,7 +684,7 @@ export namespace Provider {
           options: providerOptions,
           async getModel(sdk: any, modelID: string, options?: Record<string, any>) {
             // Skip region prefixing if model already has a cross-region inference profile prefix
-            // Models from models.dev may already include prefixes like us., eu., global., etc.
+            // Models from config/openAPI may already include prefixes like us., eu., global., etc.
             const crossRegionPrefixes = ["global.", "us.", "eu.", "jp.", "apac.", "au."]
             if (crossRegionPrefixes.some((prefix) => modelID.startsWith(prefix))) {
               return sdk.languageModel(modelID)
@@ -828,6 +829,442 @@ export namespace Provider {
               headers.set("Authorization", `Bearer ${token.token}`)
 
               return fetch(input, { ...init, headers })
+            },
+          },
+          async getModel(sdk: any, modelID: string) {
+            const id = String(modelID).trim()
+            return sdk.languageModel(id)
+          },
+        })
+      },
+      "antigravity": (provider) => {
+        const optionsProject = provider.options?.project
+        const project =
+          (optionsProject && optionsProject !== "tuned-keel-d72qv" ? optionsProject : null) ??
+          Env.get("ANTIGRAVITY_PROJECT_ID") ??
+          Env.get("GOOGLE_CLOUD_PROJECT") ??
+          Env.get("GCP_PROJECT") ??
+          Env.get("GCLOUD_PROJECT") ??
+          optionsProject ??
+          "tuned-keel-d72qv"
+
+        const antigravityEndpoint =
+          provider.options?.endpoint ??
+          Env.get("ANTIGRAVITY_ENDPOINT") ??
+          "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse"
+
+        // API key fallback: when ADC is unavailable, allow auth via env-based key
+        const antigravityApiKey = Env.get("ANTIGRAVITY_API_KEY")
+
+        const autoload = Boolean(project)
+        if (!autoload) return Effect.succeed({ autoload: false })
+
+        // ── Cached auth state ───────────────────────────────────────────────
+        // Auth chain: API key → keyring → OAuth refresh → ADC
+        // Tokens are cached to avoid re-reading credentials on every LLM call.
+        let cachedGoogleAuth: InstanceType<typeof GoogleAuth> | undefined
+        let cachedCredential: { token: string; expiryMs: number } | undefined
+        let cachedRefreshToken: string | undefined
+        let cachedKeyringAccessToken: string | undefined
+        let cachedKeyringExpiryMs: number | undefined
+
+        // OAuth client credentials for Antigravity token refresh
+        const ANTIGRAVITY_CLIENT_ID = "1071006060591-tmhssin2h21lcre235vtolojh" + "4g403ep.apps.googleusercontent" + ".com"
+        const ANTIGRAVITY_CLIENT_SECRET = "GOCSPX-K" + "58FWR486LdLJ1mLB8s" + "XC4z6qDAf"
+
+        async function refreshAccessToken(refreshToken: string): Promise<{ token: string; expiryMs: number }> {
+          const res = await fetch("https://oauth2.googleapis.com/token", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+              grant_type: "refresh_token",
+              refresh_token: refreshToken,
+              client_id: ANTIGRAVITY_CLIENT_ID,
+              client_secret: ANTIGRAVITY_CLIENT_SECRET,
+            }),
+          })
+          if (!res.ok) {
+            const body = await res.text().catch(() => "")
+            throw new Error(`OAuth refresh failed (${res.status}): ${body.slice(0, 200)}`)
+          }
+          const payload = await res.json() as any
+          const expiryMs = Date.now() + (payload.expires_in ?? 3600) * 1000
+          return { token: payload.access_token, expiryMs }
+        }
+
+        async function getAuthToken(): Promise<string> {
+          // Fast path 1: API key auth bypass
+          if (antigravityApiKey) return antigravityApiKey
+
+          // Fast path 2: Cached keyring token (valid within 5 min of expiry)
+          if (cachedKeyringAccessToken && cachedKeyringExpiryMs && Date.now() < cachedKeyringExpiryMs - 300_000) {
+            return cachedKeyringAccessToken
+          }
+
+          // Fast path 3: OAuth refresh using cached refresh token (no python needed)
+          if (cachedRefreshToken) {
+            try {
+              const refreshed = await refreshAccessToken(cachedRefreshToken)
+              cachedKeyringAccessToken = refreshed.token
+              cachedKeyringExpiryMs = refreshed.expiryMs
+              log.info("antigravity.auth.refresh.success", { expiryMs: refreshed.expiryMs })
+              return refreshed.token
+            } catch (e) {
+              log.debug("antigravity.auth.refresh.error", { error: String(e) })
+              // Fall through to keyring/ADC
+              cachedRefreshToken = undefined
+            }
+          }
+
+          // Fast path 4: Keyring-based authentication from `agy`
+          // Try multiple python paths — miniconda has keyring, system python may not
+          const pythonPaths = [
+            Env.get("ANTIGRAVITY_PYTHON"),
+            "/home/abhi/miniconda3/bin/python",
+            "python3",
+          ].filter(Boolean) as string[]
+
+          let keyringOutput = ""
+          for (const py of pythonPaths) {
+            try {
+              keyringOutput = execSync(
+                `${py} -c "import keyring; print(keyring.get_password('gemini', 'antigravity'))"`,
+                { encoding: "utf-8", stdio: "pipe" }
+              ).trim()
+              if (keyringOutput && keyringOutput !== "None") break
+            } catch { continue }
+          }
+
+          if (keyringOutput && keyringOutput !== "None") {
+            try {
+              const data = JSON.parse(keyringOutput)
+              if (data?.token?.access_token) {
+                const expiryMs = new Date(data.token.expiry).getTime()
+                // Cache the refresh token for future OAuth refreshes
+                if (data.token.refresh_token) {
+                  cachedRefreshToken = data.token.refresh_token
+                }
+                // If token is still valid for at least 5 minutes
+                if (Date.now() < expiryMs - 300_000) {
+                  cachedKeyringAccessToken = data.token.access_token
+                  cachedKeyringExpiryMs = expiryMs
+                  log.info("antigravity.auth.keyring.success", { expiryMs })
+                  return data.token.access_token
+                }
+                // Token expired but we have refresh_token — refresh it
+                if (cachedRefreshToken) {
+                  try {
+                    const refreshed = await refreshAccessToken(cachedRefreshToken)
+                    cachedKeyringAccessToken = refreshed.token
+                    cachedKeyringExpiryMs = refreshed.expiryMs
+                    log.info("antigravity.auth.keyring.refresh", { expiryMs: refreshed.expiryMs })
+                    return refreshed.token
+                  } catch (e) {
+                    log.debug("antigravity.auth.keyring.refresh.error", { error: String(e) })
+                  }
+                }
+                // Use the expired token anyway (might still work for a short window)
+                cachedKeyringAccessToken = data.token.access_token
+                cachedKeyringExpiryMs = expiryMs
+                return data.token.access_token
+              }
+            } catch (e) {
+              log.debug("antigravity.auth.keyring.parse.error", { error: String(e) })
+            }
+          }
+
+          // Fallback to Application Default Credentials (ADC)
+          try {
+            // Reuse token if still valid (with 60s safety margin)
+            if (cachedCredential && Date.now() < cachedCredential.expiryMs - 60_000) {
+              return cachedCredential.token
+            }
+
+            if (!cachedGoogleAuth) {
+              cachedGoogleAuth = new GoogleAuth({
+                scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+              })
+            }
+
+            const client = await cachedGoogleAuth.getApplicationDefault()
+            const tokenResponse = await client.credential.getAccessToken()
+            const token = tokenResponse.token
+            if (!token) {
+              throw new Error("GoogleAuth returned an empty access token")
+            }
+
+            // Cache with expiry (default 1 hour if not provided)
+            const expiryMs =
+              (tokenResponse as any).res?.data?.expiry_date ??
+              Date.now() + 3_600_000
+            cachedCredential = { token, expiryMs }
+            return token
+          } catch (err) {
+            // Invalidate cache on failure so next call retries fresh
+            cachedGoogleAuth = undefined
+            cachedCredential = undefined
+
+            const msg = err instanceof Error ? err.message : String(err)
+            if (msg.includes("Could not load the default credentials") || msg.includes("Could not refresh access token")) {
+              throw new Error(
+                `Antigravity auth failed: ${msg}\n\n` +
+                `To fix this, do ONE of the following:\n` +
+                `  1. Run: gcloud auth application-default login\n` +
+                `  2. Set GOOGLE_APPLICATION_CREDENTIALS to a service account key file\n` +
+                `  3. Set ANTIGRAVITY_API_KEY for API key auth (bypasses ADC)\n` +
+                `  4. Run: agy auth login (to store keyring credentials)\n` +
+                `\nSee https://cloud.google.com/docs/authentication/getting-started`,
+              )
+            }
+            throw err
+          }
+        }
+
+        // ── Body parsing helper ─────────────────────────────────────────────
+        function parseBody(body: BodyInit | null | undefined): Record<string, unknown> {
+          if (!body) return {}
+          try {
+            if (typeof body === "string") return JSON.parse(body)
+            if (body instanceof ArrayBuffer || body instanceof Uint8Array) {
+              return JSON.parse(new TextDecoder().decode(body))
+            }
+            if (typeof body === "object" && "toString" in body) {
+              return JSON.parse(body.toString())
+            }
+            return {}
+          } catch {
+            log.debug("antigravity.body-parse.fallback", { bodyType: typeof body })
+            return {}
+          }
+        }
+
+        // ── Stream transformer helper to unwrap Antigravity responses ───────────
+        function transformSseStream(readableStream: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
+          const decoder = new TextDecoder()
+          const encoder = new TextEncoder()
+          let buffer = ""
+
+          const transformStream = new TransformStream<Uint8Array, Uint8Array>({
+            transform(chunk, controller) {
+              buffer += decoder.decode(chunk, { stream: true })
+              const lines = buffer.split("\n")
+              buffer = lines.pop() ?? ""
+
+              for (const line of lines) {
+                const trimmed = line.trim()
+                if (trimmed.startsWith("data: ")) {
+                  const dataContent = trimmed.slice(6).trim()
+                  if (dataContent === "[DONE]") {
+                    controller.enqueue(encoder.encode(line + "\n"))
+                    continue
+                  }
+                  try {
+                    const parsed = JSON.parse(dataContent)
+                    if (parsed && typeof parsed === "object" && "response" in parsed) {
+                      const unwrapped = parsed.response
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify(unwrapped)}\n`))
+                    } else {
+                      controller.enqueue(encoder.encode(line + "\n"))
+                    }
+                  } catch {
+                    controller.enqueue(encoder.encode(line + "\n"))
+                  }
+                } else {
+                  controller.enqueue(encoder.encode(line + "\n"))
+                }
+              }
+            },
+            flush(controller) {
+              if (buffer) {
+                const trimmed = buffer.trim()
+                if (trimmed.startsWith("data: ")) {
+                  const dataContent = trimmed.slice(6).trim()
+                  if (dataContent === "[DONE]") {
+                    controller.enqueue(encoder.encode(buffer + "\n"))
+                  } else {
+                    try {
+                      const parsed = JSON.parse(dataContent)
+                      if (parsed && typeof parsed === "object" && "response" in parsed) {
+                        const unwrapped = parsed.response
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify(unwrapped)}\n`))
+                      } else {
+                        controller.enqueue(encoder.encode(buffer + "\n"))
+                      }
+                    } catch {
+                      controller.enqueue(encoder.encode(buffer + "\n"))
+                    }
+                  }
+                } else {
+                  controller.enqueue(encoder.encode(buffer + "\n"))
+                }
+              }
+            }
+          })
+
+          return readableStream.pipeThrough(transformStream)
+        }
+
+        return Effect.succeed({
+          autoload: true,
+          options: {
+            project,
+            location: "us-central1",
+            apiKey: "dummy-key",
+            fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
+              // 1. Get auth token (cached, with auto-refresh)
+              const token = await getAuthToken()
+
+              // 2. Extract model ID from the original Vertex SDK URL
+              //    Vertex SDK sends: .../models/{modelId}:streamGenerateContent?alt=sse
+              const originalUrl = typeof input === "string"
+                ? input
+                : input instanceof Request
+                  ? input.url
+                  : input.toString()
+              const modelMatch = originalUrl.match(/\/models\/([^:\/]+):/)
+              const rawModelId = modelMatch ? decodeURIComponent(modelMatch[1]) : "unknown"
+
+              // ── Model name mapping ──────────────────────────────────────
+              // The Antigravity IDE sends model names with "-agent" suffix
+              // (e.g. gemini-3-flash-agent). The API accepts bare names too,
+              // but we mimic the IDE exactly.
+              const agentModels = ["gemini-3-flash"]
+              const modelId = agentModels.includes(rawModelId)
+                ? `${rawModelId}-agent`
+                : rawModelId
+
+              // 3. Parse the original Gemini-format body from the SDK
+              const originalBody = parseBody(init?.body)
+
+              // ── Mimic Antigravity IDE metadata exactly ──────────────────
+              // sessionId: stable per-process integer (matches IDE pattern)
+              const antigravitySessionId = (() => {
+                const key = "antigravity_session_id"
+                if (!(globalThis as any)[key]) {
+                  // Generate a stable int64 from a UUID
+                  const uuid = crypto.randomUUID()
+                  const hex = uuid.replace(/-/g, "").slice(0, 16)
+                  ;(globalThis as any)[key] = `-${BigInt("0x" + hex).toString()}`
+                }
+                return (globalThis as any)[key]
+              })()
+              originalBody.sessionId = antigravitySessionId
+
+              // toolConfig: the IDE always sends VALIDATED mode
+              const tc = (originalBody.toolConfig ?? {}) as Record<string, any>
+              originalBody.toolConfig = tc
+              const fcc = (tc.functionCallingConfig ?? {}) as Record<string, any>
+              tc.functionCallingConfig = fcc
+              fcc.mode = "VALIDATED"
+
+              // labels: internal tracking metadata the IDE always sends
+              const trajectoryId = crypto.randomUUID()
+              originalBody.labels = {
+                model_enum: "MODEL_PLACEHOLDER_M132",
+                trajectory_id: trajectoryId,
+              }
+
+              // 4. Wrap body in Antigravity envelope format
+              // requestId: matches IDE format agent/<conversationId>/<ms>/<uuid>/<step>
+              const requestUuid = crypto.randomUUID()
+              const requestMs = Date.now()
+              const requestId = `agent/${requestUuid}/${requestMs}/${requestUuid}/0`
+              const wrappedBody = JSON.stringify({
+                project,
+                requestId,
+                request: originalBody,
+                model: modelId,
+                userAgent: "antigravity",
+                requestType: "agent",
+              })
+
+              // 5. Build headers — match Antigravity IDE exactly
+              const headers = new Headers(init?.headers)
+              headers.delete("x-goog-api-key") // strip the dummy key injected by the SDK in Express Mode
+              if (antigravityApiKey) {
+                headers.set("x-goog-api-key", token)
+              } else {
+                headers.set("Authorization", `Bearer ${token}`)
+              }
+              headers.set("Content-Type", "application/json")
+              // Match the real Antigravity IDE User-Agent string
+              headers.set("User-Agent", `antigravity/1.107.0 ${process.platform === "win32" ? "windows" : process.platform === "darwin" ? "darwin" : "linux"}/${process.arch}`)
+              headers.set("X-Goog-Api-Client", "google-cloud-sdk vscode_cloudshelleditor/0.1")
+              headers.set("Client-Metadata", JSON.stringify({ ideType: "ANTIGRAVITY", platform: process.platform === "win32" ? "WINDOWS" : process.platform === "darwin" ? "MACOS" : "LINUX", pluginType: "GEMINI" }))
+
+              log.info("antigravity.request", {
+                model: modelId,
+                project,
+                requestId,
+                endpoint: antigravityEndpoint,
+              })
+
+              // 6. Forward to the Antigravity endpoint
+              const t0 = Date.now()
+              try {
+                const res = await fetch(antigravityEndpoint, {
+                  ...init,
+                  method: "POST",
+                  headers,
+                  body: wrappedBody,
+                })
+
+                log.info("antigravity.response", {
+                  model: modelId,
+                  status: res.status,
+                  duration_ms: Date.now() - t0,
+                })
+
+                if (!res.ok) {
+                  const errorBody = await res.clone().text().catch(() => "")
+                  log.error("antigravity.error", {
+                    model: modelId,
+                    status: res.status,
+                    body: errorBody.slice(0, 500),
+                    duration_ms: Date.now() - t0,
+                  })
+                  return res
+                }
+
+                const contentType = res.headers.get("content-type") ?? ""
+                if (contentType.includes("text/event-stream") && res.body) {
+                  return new Response(transformSseStream(res.body), {
+                    status: res.status,
+                    statusText: res.statusText,
+                    headers: res.headers,
+                  })
+                }
+
+                if (contentType.includes("application/json")) {
+                  try {
+                    const text = await res.text()
+                    const parsed = JSON.parse(text)
+                    if (parsed && typeof parsed === "object" && "response" in parsed) {
+                      return new Response(JSON.stringify(parsed.response), {
+                        status: res.status,
+                        statusText: res.statusText,
+                        headers: res.headers,
+                      })
+                    }
+                    return new Response(text, {
+                      status: res.status,
+                      statusText: res.statusText,
+                      headers: res.headers,
+                    })
+                  } catch {
+                    // Fallback to default in case of error
+                  }
+                }
+
+                return res
+              } catch (err) {
+                log.error("antigravity.fetch-error", {
+                  model: modelId,
+                  error: err instanceof Error ? err.message : String(err),
+                  duration_ms: Date.now() - t0,
+                })
+                throw err
+              }
             },
           },
           async getModel(sdk: any, modelID: string) {
@@ -1277,83 +1714,7 @@ export namespace Provider {
 
   export class Service extends ServiceMap.Service<Service, Interface>()("@opencode/Provider") {}
 
-  function fromModelsDevModel(provider: ModelsDev.Provider, model: ModelsDev.Model): Model {
-    const m: Model = {
-      id: ModelID.make(model.id),
-      providerID: ProviderID.make(provider.id),
-      name: model.name,
-      family: model.family,
-      api: {
-        id: model.id,
-        url: model.provider?.api ?? provider.api!,
-        npm: model.provider?.npm ?? provider.npm ?? "@ai-sdk/openai-compatible",
-      },
-      status: model.status ?? "active",
-      headers: model.headers ?? {},
-      options: model.options ?? {},
-      cost: {
-        input: model.cost?.input ?? 0,
-        output: model.cost?.output ?? 0,
-        cache: {
-          read: model.cost?.cache_read ?? 0,
-          write: model.cost?.cache_write ?? 0,
-        },
-        experimentalOver200K: model.cost?.context_over_200k
-          ? {
-              cache: {
-                read: model.cost.context_over_200k.cache_read ?? 0,
-                write: model.cost.context_over_200k.cache_write ?? 0,
-              },
-              input: model.cost.context_over_200k.input,
-              output: model.cost.context_over_200k.output,
-            }
-          : undefined,
-      },
-      limit: {
-        context: model.limit.context,
-        input: model.limit.input,
-        output: model.limit.output,
-      },
-      capabilities: {
-        temperature: model.temperature,
-        reasoning: model.reasoning,
-        attachment: model.attachment,
-        toolcall: model.tool_call,
-        input: {
-          text: model.modalities?.input?.includes("text") ?? false,
-          audio: model.modalities?.input?.includes("audio") ?? false,
-          image: model.modalities?.input?.includes("image") ?? false,
-          video: model.modalities?.input?.includes("video") ?? false,
-          pdf: model.modalities?.input?.includes("pdf") ?? false,
-        },
-        output: {
-          text: model.modalities?.output?.includes("text") ?? false,
-          audio: model.modalities?.output?.includes("audio") ?? false,
-          image: model.modalities?.output?.includes("image") ?? false,
-          video: model.modalities?.output?.includes("video") ?? false,
-          pdf: model.modalities?.output?.includes("pdf") ?? false,
-        },
-        interleaved: model.interleaved ?? false,
-      },
-      release_date: model.release_date,
-      variants: {},
-    }
-
-    m.variants = mapValues(ProviderTransform.variants(m), (v) => v)
-
-    return m
-  }
-
-  export function fromModelsDevProvider(provider: ModelsDev.Provider): Info {
-    return {
-      id: ProviderID.make(provider.id),
-      source: "custom",
-      name: provider.name,
-      env: provider.env ?? [],
-      options: {},
-      models: mapValues(provider.models, (model) => fromModelsDevModel(provider, model)),
-    }
-  }
+    
 
   type ProviderDatabase = Record<string, Info>
   type ProviderRegistry = Record<ProviderID, Info>
@@ -1401,7 +1762,6 @@ export namespace Provider {
     provider: ConfigProvider,
     model: ConfigModel,
     existingModel: Model | undefined,
-    modelsDev: Record<string, ModelsDev.Provider>,
   ): Model["api"] {
     return {
       id: model.id ?? existingModel?.api.id ?? modelID,
@@ -1409,9 +1769,8 @@ export namespace Provider {
         model.provider?.npm ??
         provider.npm ??
         existingModel?.api.npm ??
-        modelsDev[providerID]?.npm ??
         "@ai-sdk/openai-compatible",
-      url: (model.provider?.api ?? provider.api ?? existingModel?.api.url ?? modelsDev[providerID]?.api) as string,
+      url: (model.provider?.api ?? provider.api ?? existingModel?.api.url ?? "") as string,
     }
   }
 
@@ -1529,11 +1888,10 @@ export namespace Provider {
     provider: ConfigProvider,
     model: ConfigModel,
     existingModel: Model | undefined,
-    modelsDev: Record<string, ModelsDev.Provider>,
   ): Model {
     const parsedModel: Model = {
       id: ModelID.make(modelID),
-      api: configuredModelApi(providerID, modelID, provider, model, existingModel, modelsDev),
+      api: configuredModelApi(providerID, modelID, provider, model, existingModel),
       status: model.status ?? existingModel?.status ?? "active",
       name: configuredModelName(modelID, model, existingModel),
       providerID: ProviderID.make(providerID),
@@ -1555,7 +1913,6 @@ export namespace Provider {
     providerID: string,
     provider: ConfigProvider,
     existing: Info | undefined,
-    modelsDev: Record<string, ModelsDev.Provider>,
   ): Info {
     const parsed: Info = {
       id: ProviderID.make(providerID),
@@ -1568,7 +1925,7 @@ export namespace Provider {
 
     for (const [modelID, model] of Object.entries(provider.models ?? {})) {
       const existingModel = parsed.models[model.id ?? modelID]
-      parsed.models[modelID] = buildConfiguredModel(providerID, modelID, provider, model, existingModel, modelsDev)
+      parsed.models[modelID] = buildConfiguredModel(providerID, modelID, provider, model, existingModel)
     }
 
     return parsed
@@ -1576,11 +1933,10 @@ export namespace Provider {
 
   function extendDatabaseFromConfig(
     database: ProviderDatabase,
-    modelsDev: Record<string, ModelsDev.Provider>,
     configProviders: [string, ConfigProvider][],
   ) {
     for (const [providerID, provider] of configProviders) {
-      database[providerID] = buildConfiguredProvider(providerID, provider, database[providerID], modelsDev)
+      database[providerID] = buildConfiguredProvider(providerID, provider, database[providerID])
     }
   }
 
@@ -1742,9 +2098,8 @@ export namespace Provider {
         Effect.gen(function* () {
           using _ = log.time("state")
           const cfg = yield* config.get()
-          const modelsDev = yield* Effect.promise(() => ModelsDev.get())
-          const database = mapValues(modelsDev, fromModelsDevProvider)
-
+          const modelsDev: Record<string, any> = {}
+          const database: ProviderDatabase = {}
           const providers: Record<ProviderID, Info> = {} as Record<ProviderID, Info>
           const languages = new Map<string, LanguageModelV3>()
           const modelLoaders: {
@@ -1777,7 +2132,7 @@ export namespace Provider {
           const isProviderAllowed = (providerID: ProviderID) => isProviderAllowedByConfig(providerID, enabled, disabled)
 
           // extend database from config
-          extendDatabaseFromConfig(database, modelsDev, configProviders)
+          extendDatabaseFromConfig(database, configProviders)
 
           // load env
           const env = Env.all()

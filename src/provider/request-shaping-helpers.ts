@@ -1,7 +1,6 @@
 import type { ModelMessage } from "ai"
 import type { JSONSchema7 } from "@ai-sdk/provider"
 import type { Provider } from "@/provider/provider"
-import type { ModelsDev } from "@/provider/models"
 import { compactToolCallId } from "@/provider/tool-call-id"
 import type { QualcommModelRoute } from "@/provider/qualcomm"
 import {
@@ -10,7 +9,7 @@ import {
   qualcommRouteForModel,
 } from "@/provider/qualcomm"
 
-type Modality = NonNullable<ModelsDev.Model["modalities"]>["input"][number]
+type Modality = "text" | "audio" | "image" | "video" | "pdf"
 
 function mapToolCallIdsInMessages(msgs: ModelMessage[], mapID: (id: string) => string): ModelMessage[] {
   return msgs.map((msg): ModelMessage => {

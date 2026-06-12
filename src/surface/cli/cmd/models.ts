@@ -2,7 +2,6 @@ import type { Argv } from "yargs"
 import { Instance } from "@/config/project/instance"
 import { Provider } from "@/provider/provider"
 import { ProviderID } from "@/provider/schema"
-import { ModelsDev } from "@/provider/models"
 import { cmd } from "@/surface/cli/cmd/cmd"
 import { UI } from "@/surface/cli/ui"
 import { EOL } from "os"
@@ -15,7 +14,7 @@ const MODELS_SPEC: SubcmdSpec = {
   optional: [
     { flag: "<provider>", desc: "Filter to a single provider ID (e.g. anthropic, openai)" },
     { flag: "--verbose", desc: "Include model metadata (costs, context limits)" },
-    { flag: "--refresh", desc: "Refresh the models cache from models.dev before listing" },
+    { flag: "--refresh", desc: "Refresh model information (no-op, models come from config)" },
   ],
   examples: ["models", "models anthropic", "models --verbose", "models --refresh"],
   seeAlso: ["providers", "account"],
@@ -36,15 +35,14 @@ export const ModelsCommand = cmd({
         type: "boolean",
       })
       .option("refresh", {
-        describe: "refresh the models cache from models.dev",
+        describe: "refresh model information (no-op, models come from config)",
         type: "boolean",
       })
       .fail(makeYargsFailHandler(MODELS_SPEC))
   },
   handler: async (args) => {
     if (args.refresh) {
-      await ModelsDev.refresh(true)
-      UI.println(UI.Style.TEXT_SUCCESS_BOLD + "Models cache refreshed" + UI.Style.TEXT_NORMAL)
+      UI.println(UI.Style.TEXT_SUCCESS_BOLD + "Models pulled from config" + UI.Style.TEXT_NORMAL)
     }
 
     await Instance.provide({

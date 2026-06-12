@@ -4,7 +4,7 @@ import { pathToFileURL } from "url"
 import os from "os"
 import { Process } from "@/foundation/util/process"
 import z from "zod"
-import { ModelsDev } from "@/provider/models"
+
 import { mergeDeep, pipe, unique } from "remeda"
 import { Global } from "@/filesystem/global"
 import fsNode from "fs/promises"
@@ -765,14 +765,57 @@ export namespace Config {
   })
   export type Layout = z.infer<typeof Layout>
 
-  export const Provider = ModelsDev.Provider.partial()
+  export const Provider = z.object({
+    api: z.string().optional(),
+    name: z.string().optional(),
+    env: z.array(z.string()).optional(),
+    id: z.string().optional(),
+    npm: z.string().optional(),
+  })
     .extend({
       whitelist: z.array(z.string()).optional(),
       blacklist: z.array(z.string()).optional(),
       models: z
         .record(
           z.string(),
-          ModelsDev.Model.partial().extend({
+          z.object({
+    id: z.string().optional(),
+    name: z.string().optional(),
+    family: z.string().optional(),
+    release_date: z.string().optional(),
+    attachment: z.boolean().optional(),
+    reasoning: z.boolean().optional(),
+    temperature: z.boolean().optional(),
+    tool_call: z.boolean().optional(),
+    interleaved: z.union([z.literal(true), z.object({ field: z.enum(["reasoning_content", "reasoning_details"]) }).strict()]).optional(),
+    cost: z.object({
+      input: z.number().optional(),
+      output: z.number().optional(),
+      cache_read: z.number().optional(),
+      cache_write: z.number().optional(),
+      context_over_200k: z.object({
+        input: z.number(),
+        output: z.number(),
+        cache_read: z.number().optional(),
+        cache_write: z.number().optional(),
+      }).optional(),
+    }).optional(),
+    limit: z.object({
+      context: z.number().optional(),
+      input: z.number().optional(),
+      output: z.number().optional(),
+    }).optional(),
+    modalities: z.object({
+      input: z.array(z.enum(["text", "audio", "image", "video", "pdf"])).optional(),
+      output: z.array(z.enum(["text", "audio", "image", "video", "pdf"])).optional(),
+    }).optional(),
+    experimental: z.boolean().optional(),
+    status: z.enum(["alpha", "beta", "deprecated"]).optional(),
+    options: z.record(z.string(), z.any()).optional(),
+    headers: z.record(z.string(), z.string()).optional(),
+    provider: z.object({ npm: z.string().optional(), api: z.string().optional() }).optional(),
+    variants: z.record(z.string(), z.record(z.string(), z.any())).optional(),
+  }).extend({
             tier: z
               .enum(["tier0", "tier1", "tier2"])
               .optional()
