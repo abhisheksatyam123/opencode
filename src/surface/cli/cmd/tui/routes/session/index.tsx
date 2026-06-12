@@ -2176,7 +2176,7 @@ export function Session() {
                     // A beautiful 2D representation of the context window as colored block tiles.
                     const renderContextMap = (context: ContextWindowStats) => {
                       // Dynamically calculate width based on terminal space, keeping it clean and readable.
-                      const totalWidth = Math.max(30, Math.min(60, contentWidth() - 8))
+                      const totalWidth = Math.max(30, contentWidth() - 8)
                       const totalHeight = 4
                       const totalBlocks = totalWidth * totalHeight
                       const limit =
@@ -2204,12 +2204,23 @@ export function Session() {
                         })
                       }
 
-                      const freeTokens = Math.max(0, limit - used)
+                      const softLimit = context.softLimit || Math.round(limit * 0.8)
+                      const freeTokens = Math.max(0, softLimit - used)
+                      const bufferTokens = Math.max(0, limit - Math.max(used, softLimit))
+
                       if (freeTokens > 0) {
                         rawDistribution.push({
                           name: "free",
                           detail: "available",
                           tokens: freeTokens,
+                        })
+                      }
+
+                      if (bufferTokens > 0) {
+                        rawDistribution.push({
+                          name: "buffer",
+                          detail: "autocompact buffer",
+                          tokens: bufferTokens,
                         })
                       }
 
@@ -2220,7 +2231,12 @@ export function Session() {
                       const safeLimit = Math.max(1, limit)
 
                       const getStyle = (name: string) => {
-                        if (name === "free" || name.includes("free space")) return { char: "░", fg: theme.textMuted }
+                        if (name === "free" || name.includes("free space")) {
+                          return { char: "░", fg: theme.textMuted }
+                        }
+                        if (name === "buffer" || name.includes("autocompact buffer")) {
+                          return { char: "▒", fg: theme.error }
+                        }
                         return { char: "█", fg: getComponentColor(name) }
                       }
 
@@ -2348,6 +2364,13 @@ export function Session() {
                               <text fg={theme.text}>free space</text>
                               <text fg={theme.textMuted}>{fmt(freeTokens)}</text>
                             </box>
+                            <Show when={bufferTokens > 0}>
+                              <box flexDirection="row" gap={1}>
+                                <text fg={theme.error}>▒</text>
+                                <text fg={theme.text}>autocompact buffer</text>
+                                <text fg={theme.textMuted}>{fmt(bufferTokens)}</text>
+                              </box>
+                            </Show>
                           </box>
                         </box>
                       )
@@ -2399,6 +2422,7 @@ export function Session() {
                             const aggregate = () => snapshot().aggregate
                             const total = () => totalTokens(aggregate().tokens)
                             const cacheTotal = () => aggregate().tokens.cache.read + aggregate().tokens.cache.write
+                            const barWidth = Math.max(20, Math.min(80, contentWidth() - 50))
                             return (
                               <>
                                 <box flexDirection="column" gap={0} flexShrink={0} marginBottom={1}>
@@ -2487,7 +2511,7 @@ export function Session() {
                                             <text fg={theme.textMuted} width={18}>
                                               {component.name}
                                             </text>
-                                            {tokenBar(pct(component.tokens, snapshot().context.used), color, 20)}
+                                            {tokenBar(pct(component.tokens, snapshot().context.used), color, barWidth)}
                                             <text fg={theme.text} width={9}>
                                               {fmt(component.tokens)}
                                             </text>
@@ -2543,7 +2567,7 @@ export function Session() {
                                     <text fg={theme.textMuted} width={9}>
                                       input
                                     </text>
-                                    {tokenBar(pct(aggregate().tokens.input, total()), theme.accent)}
+                                    {tokenBar(pct(aggregate().tokens.input, total()), theme.accent, barWidth)}
                                     <text fg={theme.text}>{fmt(aggregate().tokens.input)}</text>
                                     <text fg={theme.textMuted}>({pct(aggregate().tokens.input, total())}%)</text>
                                   </box>
@@ -2551,7 +2575,7 @@ export function Session() {
                                     <text fg={theme.textMuted} width={9}>
                                       output
                                     </text>
-                                    {tokenBar(pct(aggregate().tokens.output, total()), theme.success)}
+                                    {tokenBar(pct(aggregate().tokens.output, total()), theme.success, barWidth)}
                                     <text fg={theme.text}>{fmt(aggregate().tokens.output)}</text>
                                     <text fg={theme.textMuted}>({pct(aggregate().tokens.output, total())}%)</text>
                                   </box>
@@ -2560,7 +2584,7 @@ export function Session() {
                                       <text fg={theme.textMuted} width={9}>
                                         reason
                                       </text>
-                                      {tokenBar(pct(aggregate().tokens.reasoning, total()), theme.secondary)}
+                                      {tokenBar(pct(aggregate().tokens.reasoning, total()), theme.secondary, barWidth)}
                                       <text fg={theme.text}>{fmt(aggregate().tokens.reasoning)}</text>
                                       <text fg={theme.textMuted}>({pct(aggregate().tokens.reasoning, total())}%)</text>
                                     </box>
@@ -2570,7 +2594,7 @@ export function Session() {
                                       <text fg={theme.textMuted} width={9}>
                                         cache
                                       </text>
-                                      {tokenBar(pct(cacheTotal(), total()), theme.warning)}
+                                      {tokenBar(pct(cacheTotal(), total()), theme.warning, barWidth)}
                                       <text fg={theme.text}>{fmt(cacheTotal())}</text>
                                       <text fg={theme.textMuted}>
                                         r:{fmt(aggregate().tokens.cache.read)} w:{fmt(aggregate().tokens.cache.write)}
