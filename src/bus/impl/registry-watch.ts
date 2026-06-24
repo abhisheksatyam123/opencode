@@ -114,7 +114,7 @@ export namespace WatchManager {
       log.warn("watch.dir.missing", {
         kind,
         dir,
-        message: "vault subtree does not exist; watcher not started. Re-call start() after BootstrapSeed.run().",
+        message: "vault subtree does not exist; watcher not started.",
       })
       return { dispose: () => {} }
     }

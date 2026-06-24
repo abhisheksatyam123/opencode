@@ -40,7 +40,6 @@ import { SessionTable } from "@/process/session/session.sql"
 import { Phase } from "@/workflow/phase"
 import { RuntimeRole } from "@/workflow/runtime-role"
 import { DispatchReason } from "@/workflow/dispatch-reason"
-import { BootstrapSeed } from "@/workflow/bootstrap-seed"
 import { ToolCard } from "@/tool/card"
 import { Policy } from "@/permission/policy"
 import { InitRegistry } from "@/init"
@@ -208,16 +207,6 @@ const cli = yargs(args)
       process.stderr.write("Database migration complete." + EOL)
     }
 
-    // Bootstrap seeds minimal vault cards on first boot (or whenever one
-    // of the atomic subtrees is empty). This keeps registries populated
-    // unless the operator explicitly clears the vault. Failures are
-    // swallowed so boot continues and registry load() falls back to
-    // in-code defaults.
-    await BootstrapSeed.run().catch((err) => {
-      Log.Default.warn("bootstrap-seed.run.failed", {
-        err: err instanceof Error ? err.message : String(err),
-      })
-    })
 
     // InitRegistry wraps each registry load() in a ServiceLoader and
     // preserves WARN-only failure semantics: loaders do not throw on their
