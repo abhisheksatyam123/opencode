@@ -49,6 +49,8 @@ import { CacheBreakDetector } from "@/provider/cache-break-detector"
 import { TokenBudget } from "@/process/session/token-budget"
 import { TrajectoryRegulator } from "@/process/session/trajectory-regulator"
 import { TokenEstimate } from "@/process/session/token-estimate"
+import { Policy } from "@/permission/policy"
+import { DEFAULT_TRIGGER_TOKENS } from "@/process/session/overflow"
 import { ModelRouter } from "@/provider/model-router"
 import { Shell } from "@/filesystem/shell/shell"
 import { AppFileSystem } from "@/filesystem"
@@ -2507,6 +2509,10 @@ export namespace SessionPrompt {
                     tools,
                     model,
                     reservedTokens: cfg.compaction?.reserved,
+                    triggerTokens:
+                      cfg.compaction?.trigger_tokens ??
+                      Policy.get("compaction")?.values.token_threshold ??
+                      DEFAULT_TRIGGER_TOKENS,
                   })
                   if (estimate.overflow) {
                     if (consecutiveCompactionFailures >= MAX_CONSECUTIVE_COMPACTION_FAILURES) {

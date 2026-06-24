@@ -18,6 +18,8 @@ import { Auth } from "@/init/auth"
 import { Installation } from "@/init/installation"
 import { ContextManagement } from "@/process/session/context-management"
 import { TokenEstimate } from "@/process/session/token-estimate"
+import { Policy } from "@/permission/policy"
+import { DEFAULT_TRIGGER_TOKENS } from "@/process/session/overflow"
 import * as Upstream from "@/provider/upstream"
 import { normalizeProviderQualifiedToolName } from "@/tool/name"
 
@@ -238,6 +240,10 @@ export namespace LLM {
         tools,
         model: input.model,
         reservedTokens: cfg.compaction?.reserved,
+        triggerTokens:
+          cfg.compaction?.trigger_tokens ??
+          Policy.get("compaction")?.values.token_threshold ??
+          DEFAULT_TRIGGER_TOKENS,
       })
       if (est.overflow) {
         l.warn("pre-call token estimate exceeds usable context", {

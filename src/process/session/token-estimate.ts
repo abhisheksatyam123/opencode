@@ -137,6 +137,7 @@ export namespace TokenEstimate {
     tools: Record<string, Tool>
     model: Provider.Model
     reservedTokens?: number
+    triggerTokens?: number
   }): { estimated: number; overflow: boolean; usable: number } {
     // Mirror overflow.ts: if context is unknown/unlimited (0), never overflow.
     const context = input.model.limit.context
@@ -146,16 +147,19 @@ export namespace TokenEstimate {
 
     // Mirror overflow.ts's `reserved` + `usable` calculation exactly so the
     // pre-call estimate and the post-call check use the same threshold.
-    // The old code used a flat 20k reserved against `context - 20k`, which
-    // diverged from overflow.ts's `context - maxOutputTokens(model)` and
-    // caused the estimator to fire much earlier (or always, when context=0).
-    //
-    // When reservedTokens is explicitly provided, use it directly.
-    // Otherwise mirror overflow.ts: reserve maxOutputTokens(model) tokens.
     const maxOutput = ProviderTransform.maxOutputTokens(input.model)
-    const reserved = input.reservedTokens !== undefined ? input.reservedTokens : maxOutput
-    const usable = input.model.limit.input ? input.model.limit.input - reserved : context - reserved
+    const reserved =
+      input.reservedTokens !== undefined
+        ? input.reservedTokens
+        : Math.min(20000, maxOutput)
+    const usable = input.model.limit.input ? input.model.limit.input - reserved : context - maxOutput
 
-    return { estimated, overflow: estimated >= usable, usable }
+    const triggerTokens = input.triggerTokens
+    const limit =
+      triggerTokens !== undefined && triggerTokens > 0
+        ? Math.min(usable, triggerTokens)
+        : usable
+
+    return { estimated, overflow: estimated >= limit, usable: limit }
   }
 }
