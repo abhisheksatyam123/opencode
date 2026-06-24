@@ -3,8 +3,7 @@ import { stream } from "hono/streaming"
 import { describeRoute, validator, resolver } from "hono-openapi"
 import { SessionID, MessageID, PartID } from "@/process/session/schema"
 import { Config } from "@/config/config"
-import { Policy } from "@/permission/policy"
-import { DEFAULT_TRIGGER_TOKENS } from "@/process/session/overflow"
+import { getCompactionTriggerTokens } from "@/process/session/overflow"
 import z from "zod"
 import { Session } from "@/process/session"
 import { MessageV2 } from "@/process/session/message-v2"
@@ -237,10 +236,7 @@ async function contextWindowStats(input: {
       (hardLimit && outputReserve !== undefined ? Math.max(0, hardLimit - outputReserve) : undefined)
     : undefined
   const cfg = await Config.get()
-  const triggerTokens =
-    cfg.compaction?.trigger_tokens ??
-    Policy.get("compaction")?.values.token_threshold ??
-    DEFAULT_TRIGGER_TOKENS
+  const triggerTokens = getCompactionTriggerTokens(cfg)
 
   const softLimit = triggerTokens > 0 && inputLimit
     ? Math.min(Math.floor(inputLimit * 0.8), triggerTokens)
