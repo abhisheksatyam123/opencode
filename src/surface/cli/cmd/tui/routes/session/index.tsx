@@ -2142,8 +2142,10 @@ export function Session() {
                       const filled = Math.max(0, Math.min(width, filledPct > 0 && rawFilled === 0 ? 1 : rawFilled))
                       return (
                         <box flexDirection="row" flexShrink={0}>
+                          <text fg={theme.textMuted}>[</text>
                           <text fg={fg}>{"█".repeat(filled)}</text>
                           <text fg={theme.backgroundElement}>{"░".repeat(width - filled)}</text>
+                          <text fg={theme.textMuted}>]</text>
                         </box>
                       )
                     }
@@ -2182,8 +2184,8 @@ export function Session() {
                             return (
                               <>
                                 <box flexDirection="column" gap={0} flexShrink={0} marginBottom={1}>
-                                  <text fg={theme.textMuted}>
-                                    <span style={{ bold: true }}>CONTEXT WINDOW</span>
+                                  <text fg={theme.accent}>
+                                    <span style={{ bold: true }}>⎔ CONTEXT WINDOW</span>
                                   </text>
                                   <box flexDirection="row" gap={2} flexShrink={0}>
                                     <text fg={theme.text}>
@@ -2244,8 +2246,8 @@ export function Session() {
                                 </box>
 
                                 <box flexDirection="column" gap={0} flexShrink={0} marginTop={1}>
-                                  <text fg={theme.textMuted}>
-                                    <span style={{ bold: true }}>SESSION TOTALS</span>
+                                  <text fg={theme.accent}>
+                                    <span style={{ bold: true }}>⎔ SESSION TOTALS</span>
                                   </text>
                                   <box flexDirection="row" gap={1} flexShrink={0}>
                                     <text fg={theme.textMuted}>├─ </text>
