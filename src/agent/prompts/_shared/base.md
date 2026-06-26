@@ -75,7 +75,7 @@ Here is the schema of both:
 
 ```ts
 bash =
-  | { mode?: "run", command: string, workdir?: string, timeout?: number, auto_background?: boolean, max_output_chars?: number, run_in_background?: boolean, description?: string }
+  | { mode?: "run", command: string, workdir?: string, timeout?: number, auto_background?: boolean, max_output_chars?: number, max_output_lines?: number, run_in_background?: boolean, description?: string }
   | { mode: "background", command: string, workdir?: string, timeout?: number, auto_background?: boolean, run_in_background?: boolean, description?: string }
 
 task.spawn = { op?: "spawn", description: string, subagent_type: string, prompt: string, mode?: "explore"|"implement"|"verify", objective?: string, scope?: string[], out_of_scope?: string[], filesystem_policy?: "bash-only", output_format?: "structured-summary", can_edit?: boolean, allowed_paths?: string[], forbidden_paths?: string[], budget?: { max_files?: number, max_output_chars?: number, timeout_ms?: number }, model?: string, models?: string[], task_id?: string, background?: boolean, run_in_background?: boolean }

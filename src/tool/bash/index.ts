@@ -1995,6 +1995,7 @@ async function applyBashOutputBudget(
   command: string,
   result: { title: string; metadata: any; output: string },
   requestedMaxOutputChars?: number,
+  requestedMaxOutputLines?: number,
 ) {
   if (shouldCompactWriteOutput(command, result)) {
     const output = "Write command completed successfully; output suppressed."
@@ -2012,18 +2013,28 @@ async function applyBashOutputBudget(
     }
   }
 
+  let output = result.output
+  let truncatedByLines = false
+  if (requestedMaxOutputLines !== undefined && requestedMaxOutputLines > 0) {
+    const lines = output.split(/\r?\n/)
+    if (lines.length > requestedMaxOutputLines) {
+      output = lines.slice(0, requestedMaxOutputLines).join("\n") + `\n... [output truncated by lines, total lines: ${lines.length}]`
+      truncatedByLines = true
+    }
+  }
+
   const readData = shouldUseReadDataBudget(command)
   const requestedMaxChars = normalizeRequestedOutputChars(requestedMaxOutputChars)
   const defaultMaxChars = readData ? READ_DATA_MAX_CHARS : Truncate.MAX_CHARS
   const maxChars = requestedMaxChars ?? defaultMaxChars
-  const truncated = await Truncate.output(result.output, { maxChars })
+  const truncated = await Truncate.output(output, { maxChars })
   return {
     ...result,
     output: truncated.content,
     metadata: {
       ...result.metadata,
       output: preview(truncated.content),
-      truncated: truncated.truncated,
+      truncated: truncated.truncated || truncatedByLines,
       output_budget_chars: maxChars,
       output_budget_mode: requestedMaxChars !== undefined ? "custom" : readData ? "read_data" : "default",
       ...(requestedMaxChars !== undefined ? { output_budget_requested: true } : {}),
@@ -2134,6 +2145,12 @@ export const BashTool = Tool.define("bash", async () => {
         .describe(
           `Optional inline output character budget for run results. Default ${Truncate.MAX_CHARS} chars, or ${READ_DATA_MAX_CHARS} for simple read/search/list commands. Increase only when necessary; large values can bloat context.`,
         )
+        .optional(),
+      max_output_lines: z
+        .number()
+        .int()
+        .positive()
+        .describe("Optional inline output line budget for run results. Truncates output to this number of lines if provided.")
         .optional(),
       description: z.string().describe("5-10 word purpose; do not echo command.").optional(),
     }),
@@ -2359,7 +2376,7 @@ export const BashTool = Tool.define("bash", async () => {
         },
         ctx,
       )
-      const boundedPrimary = await applyBashOutputBudget(command, primary, params.max_output_chars)
+      const boundedPrimary = await applyBashOutputBudget(command, primary, params.max_output_chars, params.max_output_lines)
 
       if (
         shouldRetryWithPython3ForPathlib({
@@ -2391,7 +2408,7 @@ export const BashTool = Tool.define("bash", async () => {
             },
             ctx,
           )
-          return applyBashOutputBudget(fallbackCommand, fallback, params.max_output_chars)
+          return applyBashOutputBudget(fallbackCommand, fallback, params.max_output_chars, params.max_output_lines)
         }
       }
 
