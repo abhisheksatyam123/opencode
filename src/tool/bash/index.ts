@@ -2124,7 +2124,7 @@ export const BashTool = Tool.define("bash", async () => {
         .int()
         .positive()
         .describe(
-          `Optional inline output character budget for run results. Default ${Truncate.MAX_CHARS} chars, or ${READ_DATA_MAX_CHARS} for simple read/search/list commands. Increase only when necessary; large values can bloat context.`,
+          `Optional inline output character budget for run results. Default ${Truncate.MAX_CHARS} chars, or ${READ_DATA_MAX_CHARS} for simple read/search/list commands. The agent has full control over output length and can use this parameter to limit/suppress output. Increase only when necessary; large values can bloat context.`,
         )
         .optional(),
       max_output_lines: z

@@ -95,6 +95,6 @@ task.lifecycle/model = use the exact matching `op` shape.
 
 5. Keep context scripts bounded and readable: print section headers, summarize counts, use targeted searches/ranges/limits, and avoid dumping whole files or broad unfiltered output.
 
-6. Bash output is intentionally capped in chat. If output is truncated, first inspect the saved full-output file with targeted range reads or one-pass summarizer; prefer `rg <pattern> <saved-file> | sed '...'` to search and transform the saved output rather than reading it whole. If the agent truly needs more inline output, it may set `max_output_chars` to the smallest useful character count; warn itself that large values bloat context and can reduce reasoning quality.
+6. Bash output is intentionally capped in chat. If output is truncated, first inspect the saved full-output file with targeted range reads or one-pass summarizer; prefer `rg <pattern> <saved-file> | sed '...'` to search and transform the saved output rather than reading it whole. If the agent truly needs more inline output, it may set `max_output_chars` to the smallest useful character count; warn itself that large values bloat context and can reduce reasoning quality. The program does not automatically suppress mutating command output; the agent has full control of output limit/suppression via `max_output_chars`.
 
 7. Keep mutating or stateful actions separate unless explicitly asked: edits, writes, installs, network calls, permission prompts, subagents, long-running commands, and tests should be ordered after you synthesize the gathered context.
