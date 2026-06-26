@@ -1976,12 +1976,7 @@ function stripQuotedShellText(command: string) {
     .replace(/`[^`]*`/g, "``")
 }
 
-function shouldCompactWriteOutput(command: string, result: { metadata: any; output: string }) {
-  if (result.metadata.exit !== 0) return false
-  if (result.output.trim() !== "") return false
-  const shellSyntax = stripQuotedShellText(stripSafeWrappers(stripLeadingComments(command)))
-  return isMutatingCommand(shellSyntax) !== null
-}
+
 
 function normalizeRequestedOutputChars(value: number | undefined): number | undefined {
   if (value === undefined) return undefined
@@ -1997,21 +1992,7 @@ async function applyBashOutputBudget(
   requestedMaxOutputChars?: number,
   requestedMaxOutputLines?: number,
 ) {
-  if (shouldCompactWriteOutput(command, result)) {
-    const output = "Write command completed successfully; output suppressed."
-    return {
-      ...result,
-      output,
-      metadata: {
-        ...result.metadata,
-        output,
-        truncated: false,
-        compact_write: true,
-        output_budget_chars: Truncate.MAX_CHARS,
-        output_budget_mode: "write_compact",
-      },
-    }
-  }
+
 
   let output = result.output
   let truncatedByLines = false

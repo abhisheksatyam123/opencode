@@ -2148,237 +2148,6 @@ export function Session() {
                       )
                     }
 
-                    // Helper to get consistent colors for components across TUI stats elements.
-                    const getComponentColor = (name: string): RGBA => {
-                      if (
-                        name.includes("system") ||
-                        name.includes("agent") ||
-                        name.includes("summary") ||
-                        name.includes("mention")
-                      ) {
-                        return theme.warning
-                      }
-                      if (name.includes("user")) {
-                        return theme.success
-                      }
-                      if (name.includes("tool")) {
-                        return theme.accent
-                      }
-                      if (name.includes("text") || name.includes("reasoning") || name.includes("assistant")) {
-                        return theme.secondary
-                      }
-                      if (name.includes("file") || name.includes("patch") || name.includes("snapshot")) {
-                        return theme.border
-                      }
-                      return theme.textMuted
-                    }
-
-                    // A beautiful 2D representation of the context window as colored block tiles.
-                    const renderContextMap = (context: ContextWindowStats) => {
-                      // Dynamically calculate width based on terminal space, keeping it clean and readable.
-                      const totalWidth = Math.max(30, contentWidth() - 8)
-                      const totalHeight = 4
-                      const totalBlocks = totalWidth * totalHeight
-                      const limit =
-                        context.inputLimit || context.hardLimit || context.used || context.estimatedTotal || 1
-                      const used = Math.min(Math.max(0, context.used), Math.max(1, limit))
-
-                      // Distribute blocks among different components proportionally.
-                      const source = context.components.filter((c) => c.tokens > 0)
-                      const componentTotal = source.reduce((sum, c) => sum + c.tokens, 0)
-                      const scale = componentTotal > used && componentTotal > 0 ? used / componentTotal : 1
-
-                      const rawDistribution = source.map((c) => ({
-                        name: c.name,
-                        detail: c.detail,
-                        tokens: Math.max(0, Math.round(c.tokens * scale)),
-                      }))
-
-                      const represented = rawDistribution.reduce((sum, c) => sum + c.tokens, 0)
-                      const unattributed = Math.max(0, used - represented)
-                      if (unattributed > 0) {
-                        rawDistribution.push({
-                          name: "unattributed used",
-                          detail: "model-reported prompt tokens",
-                          tokens: unattributed,
-                        })
-                      }
-
-                      const softLimit = context.softLimit || Math.round(limit * 0.8)
-                      const freeTokens = Math.max(0, softLimit - used)
-                      const bufferTokens = Math.max(0, limit - Math.max(used, softLimit))
-
-                      if (freeTokens > 0) {
-                        rawDistribution.push({
-                          name: "free",
-                          detail: "available",
-                          tokens: freeTokens,
-                        })
-                      }
-
-                      if (bufferTokens > 0) {
-                        rawDistribution.push({
-                          name: "buffer",
-                          detail: "autocompact buffer",
-                          tokens: bufferTokens,
-                        })
-                      }
-
-                      const segments = rawDistribution.filter((c) => c.tokens > 0)
-
-                      // Build the 2D cells map
-                      const cells: Array<{ char: string; fg: RGBA }> = []
-                      const safeLimit = Math.max(1, limit)
-
-                      const getStyle = (name: string) => {
-                        if (name === "free" || name.includes("free space")) {
-                          return { char: "░", fg: theme.textMuted }
-                        }
-                        if (name === "buffer" || name.includes("autocompact buffer")) {
-                          return { char: "▒", fg: theme.error }
-                        }
-                        return { char: "█", fg: getComponentColor(name) }
-                      }
-
-                      for (let index = 0; index < totalBlocks; index++) {
-                        const cursor = ((index + 0.5) / totalBlocks) * safeLimit
-                        let end = 0
-                        let matchedSegment = segments[segments.length - 1] ?? { name: "free", tokens: safeLimit }
-                        for (const segment of segments) {
-                          end += segment.tokens
-                          if (cursor <= end) {
-                            matchedSegment = segment
-                            break
-                          }
-                        }
-                        const style = getStyle(matchedSegment.name)
-                        cells.push({ char: style.char, fg: style.fg })
-                      }
-
-                      // Split into lines of totalWidth
-                      const lines: Array<Array<{ char: string; fg: RGBA }>> = []
-                      for (let i = 0; i < totalHeight; i++) {
-                        lines.push(cells.slice(i * totalWidth, (i + 1) * totalWidth))
-                      }
-
-                      // Calculate usage warnings and borders
-                      const usedPct = limit > 0 ? (used / limit) * 100 : 0
-                      const borderColor = usedPct >= 90 ? theme.error : usedPct >= 70 ? theme.warning : theme.border
-
-                      // Helper to sum tokens by category
-                      const getCategoryTokens = (cat: string) => {
-                        let sum = 0
-                        for (const item of rawDistribution) {
-                          const name = item.name.toLowerCase()
-                          if (
-                            cat === "system" &&
-                            (name.includes("system") ||
-                              name.includes("agent") ||
-                              name.includes("summary") ||
-                              name.includes("mention"))
-                          ) {
-                            sum += item.tokens
-                          } else if (cat === "user" && name.includes("user")) {
-                            sum += item.tokens
-                          } else if (cat === "tools" && name.includes("tool")) {
-                            sum += item.tokens
-                          } else if (
-                            cat === "assistant" &&
-                            (name.includes("text") || name.includes("reasoning") || name.includes("assistant"))
-                          ) {
-                            sum += item.tokens
-                          } else if (
-                            cat === "files" &&
-                            (name.includes("file") || name.includes("patch") || name.includes("snapshot"))
-                          ) {
-                            sum += item.tokens
-                          } else if (cat === "unattributed" && name.includes("unattributed")) {
-                            sum += item.tokens
-                          }
-                        }
-                        return sum
-                      }
-
-                      const unattributedTokens = getCategoryTokens("unattributed")
-
-                      return (
-                        <box flexDirection="column" flexShrink={0} marginTop={1} marginBottom={1}>
-                          <box flexDirection="row" justifyContent="space-between" marginBottom={0}>
-                            <text fg={theme.textMuted}>usage map</text>
-                            <text fg={borderColor}>
-                              <span style={{ bold: true }}>{Math.round(usedPct)}%</span>
-                            </text>
-                          </box>
-                          <box
-                            flexDirection="column"
-                            gap={0}
-                            border={["top", "bottom", "left", "right"]}
-                            borderColor={borderColor}
-                            paddingLeft={1}
-                            paddingRight={1}
-                            flexShrink={0}
-                          >
-                            <For each={lines}>
-                              {(line) => (
-                                <box flexDirection="row" gap={0}>
-                                  <For each={line}>{(cell) => <text fg={compColor(cell.fg)}>{cell.char}</text>}</For>
-                                </box>
-                              )}
-                            </For>
-                          </box>
-                          <box flexDirection="row" gap={2} marginTop={1} flexWrap="wrap">
-                            <box flexDirection="row" gap={1}>
-                              <text fg={theme.warning}>█</text>
-                              <text fg={theme.text}>system</text>
-                              <text fg={theme.textMuted}>{fmt(getCategoryTokens("system"))}</text>
-                            </box>
-                            <box flexDirection="row" gap={1}>
-                              <text fg={theme.success}>█</text>
-                              <text fg={theme.text}>user input</text>
-                              <text fg={theme.textMuted}>{fmt(getCategoryTokens("user"))}</text>
-                            </box>
-                            <box flexDirection="row" gap={1}>
-                              <text fg={theme.accent}>█</text>
-                              <text fg={theme.text}>tools</text>
-                              <text fg={theme.textMuted}>{fmt(getCategoryTokens("tools"))}</text>
-                            </box>
-                            <box flexDirection="row" gap={1}>
-                              <text fg={theme.secondary}>█</text>
-                              <text fg={theme.text}>assistant</text>
-                              <text fg={theme.textMuted}>{fmt(getCategoryTokens("assistant"))}</text>
-                            </box>
-                            <box flexDirection="row" gap={1}>
-                              <text fg={theme.border}>█</text>
-                              <text fg={theme.text}>files/patches</text>
-                              <text fg={theme.textMuted}>{fmt(getCategoryTokens("files"))}</text>
-                            </box>
-                            <Show when={unattributedTokens > 0}>
-                              <box flexDirection="row" gap={1}>
-                                <text fg={theme.textMuted}>█</text>
-                                <text fg={theme.text}>other</text>
-                                <text fg={theme.textMuted}>{fmt(unattributedTokens)}</text>
-                              </box>
-                            </Show>
-                            <box flexDirection="row" gap={1}>
-                              <text fg={theme.textMuted}>░</text>
-                              <text fg={theme.text}>free space</text>
-                              <text fg={theme.textMuted}>{fmt(freeTokens)}</text>
-                            </box>
-                            <Show when={bufferTokens > 0}>
-                              <box flexDirection="row" gap={1}>
-                                <text fg={theme.error}>▒</text>
-                                <text fg={theme.text}>autocompact buffer</text>
-                                <text fg={theme.textMuted}>{fmt(bufferTokens)}</text>
-                              </box>
-                            </Show>
-                          </box>
-                        </box>
-                      )
-                    }
-
-                    // Simple helper to avoid type errors when styling
-                    const compColor = (rgba: RGBA): RGBA => rgba
-
                     return (
                       <box
                         flexDirection="column"
@@ -2388,24 +2157,6 @@ export function Session() {
                         paddingTop={1}
                         paddingBottom={2}
                       >
-                        <box flexDirection="column" gap={0} flexShrink={0} marginBottom={1}>
-                          <text fg={theme.textMuted}>
-                            <span style={{ bold: true }}>CONTEXT</span>
-                          </text>
-                          <box flexDirection="row" gap={3} flexShrink={0}>
-                            <text fg={theme.text}>{contextLabel()}</text>
-                            <Show when={contextUsage().model}>
-                              {(model) => <text fg={theme.textMuted}>{model()}</text>}
-                            </Show>
-                            <text fg={theme.accent}>
-                              {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
-                                sessionCost(),
-                              )}{" "}
-                              spent
-                            </text>
-                          </box>
-                        </box>
-
                         <Show when={stats.error}>
                           <text fg={theme.error}>Failed to load stats: {String(stats.error)}</text>
                         </Show>
@@ -2422,7 +2173,12 @@ export function Session() {
                             const aggregate = () => snapshot().aggregate
                             const total = () => totalTokens(aggregate().tokens)
                             const cacheTotal = () => aggregate().tokens.cache.read + aggregate().tokens.cache.write
-                            const barWidth = Math.max(20, Math.min(80, contentWidth() - 50))
+                            const barWidth = Math.max(20, Math.min(60, contentWidth() - 25))
+
+                            const limit = snapshot().context.hardLimit || snapshot().context.inputLimit || snapshot().context.used || 1
+                            const used = snapshot().context.used
+                            const usedPct = Math.round((used / limit) * 100)
+
                             return (
                               <>
                                 <box flexDirection="column" gap={0} flexShrink={0} marginBottom={1}>
@@ -2434,281 +2190,111 @@ export function Session() {
                                       {snapshot().context.providerID}/{snapshot().context.modelID}
                                     </text>
                                     <Show when={snapshot().context.modelName}>
-                                      <text fg={theme.textMuted}>{snapshot().context.modelName}</text>
+                                      <text fg={theme.textMuted}>({snapshot().context.modelName})</text>
                                     </Show>
                                   </box>
-                                  <box flexDirection="row" gap={2} flexShrink={0}>
-                                    <text fg={theme.accent}>{snapshot().context.callCount} LLM calls</text>
-                                    <text fg={theme.textMuted}>·</text>
-                                    <text fg={theme.text}>{snapshot().context.totalToolCalls ?? 0} tool calls</text>
-                                    <text fg={theme.textMuted}>·</text>
-                                    <text fg={theme.text}>
-                                      {snapshot().context.avgToolCallsPerLLM ?? 0} tools/LLM avg
-                                    </text>
-                                    <text fg={theme.textMuted}>·</text>
-                                    <text fg={theme.textMuted}>max {snapshot().context.maxToolCallsPerLLM ?? 0}</text>
-                                  </box>
-                                  {renderContextMap(snapshot().context)}
-                                  <box flexDirection="row" gap={2} flexShrink={0} alignItems="center">
-                                    <text fg={theme.textMuted} width={12}>
-                                      soft cap
+                                  
+                                  <box flexDirection="row" gap={2} flexShrink={0} marginTop={1} alignItems="center">
+                                    <text fg={theme.textMuted} width={8}>
+                                      Usage:
                                     </text>
                                     <text fg={theme.text}>
-                                      {fmt(snapshot().context.used)}
-                                      <Show when={snapshot().context.softLimit}>
-                                        {(limit) => <> / {fmt(limit())}</>}
-                                      </Show>
+                                      {fmt(used)} / {fmt(limit)} ({usedPct}%)
                                     </text>
-                                    <Show when={snapshot().context.availableSoft !== undefined}>
-                                      <text fg={theme.textMuted}>
-                                        {fmt(snapshot().context.availableSoft!)} before degradation
-                                      </text>
-                                    </Show>
                                   </box>
-                                  <box flexDirection="row" gap={2} flexShrink={0} alignItems="center">
-                                    <text fg={theme.textMuted} width={12}>
-                                      max input
-                                    </text>
-                                    <Show when={snapshot().context.inputLimit}>
-                                      {(limit) => (
-                                        <text fg={theme.text}>
-                                          {fmt(snapshot().context.availableInput ?? 0)} / {fmt(limit())} left
-                                        </text>
-                                      )}
-                                    </Show>
-                                    <Show when={snapshot().context.outputReserve}>
-                                      <text fg={theme.textMuted}>
-                                        output reserve {fmt(snapshot().context.outputReserve!)}
-                                      </text>
-                                    </Show>
+                                  
+                                  <box flexDirection="row" flexShrink={0} marginTop={1} marginBottom={1}>
+                                    {tokenBar(usedPct, usedPct >= 90 ? theme.error : usedPct >= 70 ? theme.warning : theme.accent, barWidth)}
                                   </box>
-                                  <box flexDirection="row" gap={2} flexShrink={0} alignItems="center">
-                                    <text fg={theme.textMuted} width={12}>
-                                      hard window
-                                    </text>
-                                    <Show when={snapshot().context.hardLimit}>
-                                      {(limit) => (
-                                        <text fg={theme.text}>
-                                          {fmt(snapshot().context.availableHard ?? 0)} / {fmt(limit())} left
-                                        </text>
-                                      )}
-                                    </Show>
-                                  </box>
-                                  <text fg={theme.textMuted}>
-                                    soft cap is 80% of max input; above it long-context quality/latency can degrade
-                                    before hard limit
-                                  </text>
-                                  <text fg={theme.textMuted}>
-                                    used is latest model-reported prompt tokens; component rows are estimates from
-                                    stored messages
-                                  </text>
+
                                   <box flexDirection="column" gap={0} flexShrink={0} marginTop={1}>
                                     <For each={snapshot().context.components}>
                                       {(component, index) => {
-                                        const color = getComponentColor(component.name)
+                                        const isLast = () => index() === snapshot().context.components.length - 1
+                                        const bullet = () => isLast() ? "└─ " : "├─ "
                                         return (
-                                          <box flexDirection="row" gap={2} flexShrink={0} alignItems="center">
-                                            <text fg={theme.textMuted} width={18}>
-                                              {component.name}
-                                            </text>
-                                            {tokenBar(pct(component.tokens, snapshot().context.used), color, barWidth)}
-                                            <text fg={theme.text} width={9}>
-                                              {fmt(component.tokens)}
-                                            </text>
-                                            <text fg={theme.textMuted} width={7}>
-                                              {component.pct}%
-                                            </text>
+                                          <box flexDirection="row" gap={1} flexShrink={0}>
+                                            <text fg={theme.textMuted}>{bullet()}</text>
+                                            <text fg={theme.text} width={18}>{component.name}</text>
+                                            <text fg={theme.textMuted} width={8}>{fmt(component.tokens)}</text>
+                                            <text fg={theme.textMuted}>({component.pct}%)</text>
                                             <Show when={component.detail}>
-                                              <text fg={theme.textMuted}>{component.detail}</text>
+                                              <text fg={theme.textMuted}> · {component.detail}</text>
                                             </Show>
                                           </box>
                                         )
                                       }}
                                     </For>
                                   </box>
-                                  <Show when={snapshot().context.tools.length > 0}>
-                                    <box flexDirection="column" gap={0} flexShrink={0} marginTop={1}>
-                                      <text fg={theme.textMuted}>top tools</text>
-                                      <For each={snapshot().context.tools}>
-                                        {(tool) => (
-                                          <box flexDirection="row" gap={2} flexShrink={0}>
-                                            <text fg={theme.textMuted} width={18}>
-                                              {tool.name}
-                                            </text>
-                                            <text fg={theme.text}>{fmt(tool.totalTokens)}</text>
-                                            <text fg={theme.textMuted}>
-                                              {tool.calls} calls · in {fmt(tool.inputTokens)} · out{" "}
-                                              {fmt(tool.outputTokens)}
-                                            </text>
-                                          </box>
-                                        )}
-                                      </For>
-                                    </box>
-                                  </Show>
-                                </box>
 
-                                <box flexDirection="column" gap={0} flexShrink={0} marginBottom={1}>
-                                  <text fg={theme.textMuted}>
-                                    <span style={{ bold: true }}>SUMMARY</span>
-                                  </text>
-                                  <box flexDirection="row" gap={3} flexShrink={0}>
-                                    <text fg={theme.accent}>${aggregate().cost.toFixed(4)} cost</text>
-                                    <text fg={theme.text}>{fmt(total())} tokens</text>
-                                    <text fg={theme.textMuted}>{aggregate().agentCount} agents</text>
-                                    <text fg={theme.textMuted}>{aggregate().messageCount} messages</text>
+                                  <box flexDirection="row" gap={2} flexShrink={0} marginTop={1}>
+                                    <text fg={theme.textMuted}>Limits:</text>
+                                    <Show when={snapshot().context.softLimit}>
+                                      <text fg={theme.text}>soft cap {fmt(snapshot().context.softLimit!)}</text>
+                                    </Show>
+                                    <Show when={snapshot().context.inputLimit}>
+                                      <text fg={theme.textMuted}>·</text>
+                                      <text fg={theme.text}>max input {fmt(snapshot().context.inputLimit!)}</text>
+                                    </Show>
+                                    <Show when={snapshot().context.hardLimit}>
+                                      <text fg={theme.textMuted}>·</text>
+                                      <text fg={theme.text}>hard limit {fmt(snapshot().context.hardLimit!)}</text>
+                                    </Show>
                                   </box>
                                 </box>
 
-                                <box flexDirection="column" gap={0} flexShrink={0} marginBottom={1}>
+                                <box flexDirection="column" gap={0} flexShrink={0} marginTop={1}>
                                   <text fg={theme.textMuted}>
-                                    <span style={{ bold: true }}>TOKEN BREAKDOWN</span>
+                                    <span style={{ bold: true }}>SESSION TOTALS</span>
                                   </text>
-                                  <box flexDirection="row" gap={2} flexShrink={0} alignItems="center">
-                                    <text fg={theme.textMuted} width={9}>
-                                      input
+                                  <box flexDirection="row" gap={1} flexShrink={0}>
+                                    <text fg={theme.textMuted}>├─ </text>
+                                    <text fg={theme.text} width={14}>Total Tokens:</text>
+                                    <text fg={theme.accent} width={8}>{fmt(total())}</text>
+                                    <text fg={theme.textMuted}>
+                                      (Input: {fmt(aggregate().tokens.input)}, Output: {fmt(aggregate().tokens.output)})
                                     </text>
-                                    {tokenBar(pct(aggregate().tokens.input, total()), theme.accent, barWidth)}
-                                    <text fg={theme.text}>{fmt(aggregate().tokens.input)}</text>
-                                    <text fg={theme.textMuted}>({pct(aggregate().tokens.input, total())}%)</text>
                                   </box>
-                                  <box flexDirection="row" gap={2} flexShrink={0} alignItems="center">
-                                    <text fg={theme.textMuted} width={9}>
-                                      output
-                                    </text>
-                                    {tokenBar(pct(aggregate().tokens.output, total()), theme.success, barWidth)}
-                                    <text fg={theme.text}>{fmt(aggregate().tokens.output)}</text>
-                                    <text fg={theme.textMuted}>({pct(aggregate().tokens.output, total())}%)</text>
-                                  </box>
-                                  <Show when={aggregate().tokens.reasoning > 0}>
-                                    <box flexDirection="row" gap={2} flexShrink={0} alignItems="center">
-                                      <text fg={theme.textMuted} width={9}>
-                                        reason
-                                      </text>
-                                      {tokenBar(pct(aggregate().tokens.reasoning, total()), theme.secondary, barWidth)}
-                                      <text fg={theme.text}>{fmt(aggregate().tokens.reasoning)}</text>
-                                      <text fg={theme.textMuted}>({pct(aggregate().tokens.reasoning, total())}%)</text>
-                                    </box>
-                                  </Show>
                                   <Show when={cacheTotal() > 0}>
-                                    <box flexDirection="row" gap={2} flexShrink={0} alignItems="center">
-                                      <text fg={theme.textMuted} width={9}>
-                                        cache
-                                      </text>
-                                      {tokenBar(pct(cacheTotal(), total()), theme.warning, barWidth)}
-                                      <text fg={theme.text}>{fmt(cacheTotal())}</text>
+                                    <box flexDirection="row" gap={1} flexShrink={0}>
+                                      <text fg={theme.textMuted}>├─ </text>
+                                      <text fg={theme.text} width={14}>Cache:</text>
                                       <text fg={theme.textMuted}>
-                                        r:{fmt(aggregate().tokens.cache.read)} w:{fmt(aggregate().tokens.cache.write)}
+                                        read: {fmt(aggregate().tokens.cache.read)} · write: {fmt(aggregate().tokens.cache.write)}
                                       </text>
                                     </box>
                                   </Show>
-                                </box>
-
-                                <Show when={snapshot().agents.length > 0}>
-                                  <box flexDirection="column" gap={0} flexShrink={0} marginBottom={1}>
-                                    <text fg={theme.textMuted}>
-                                      <span style={{ bold: true }}>AGENTS ({snapshot().agents.length})</span>
-                                    </text>
-                                    <For each={snapshot().agents}>
-                                      {(agent) => {
-                                        const agentTotal = () => totalTokens(agent.tokens)
-                                        return (
-                                          <box
-                                            flexDirection="column"
-                                            gap={0}
-                                            flexShrink={0}
-                                            marginTop={1}
-                                            border={["left"]}
-                                            customBorderChars={SplitBorder.customBorderChars}
-                                            borderColor={agent.isRoot ? theme.accent : theme.border}
-                                            paddingLeft={1}
-                                          >
-                                            <box flexDirection="row" gap={1} flexShrink={0}>
-                                              <text fg={agent.isRoot ? theme.accent : theme.text}>
-                                                <span style={{ bold: true }}>{agent.title}</span>
-                                              </text>
-                                              <Show when={agent.isRoot}>
-                                                <text fg={theme.textMuted}>root</text>
-                                              </Show>
-                                              <Show when={agent.providerID || agent.modelID}>
-                                                <text fg={theme.textMuted}>
-                                                  {agent.providerID}/{agent.modelID}
-                                                </text>
-                                              </Show>
-                                            </box>
-                                            <box flexDirection="row" gap={3} flexShrink={0}>
-                                              <text fg={theme.text}> {fmt(agentTotal())} tokens</text>
-                                              <text fg={agent.cost > 0 ? theme.accent : theme.textMuted}>
-                                                ${agent.cost.toFixed(4)}
-                                              </text>
-                                              <text fg={theme.textMuted}>{agent.messageCount} messages</text>
-                                              <Show when={agent.contextUsagePct !== undefined}>
-                                                <text fg={theme.textMuted}>ctx {agent.contextUsagePct}%</text>
-                                              </Show>
-                                            </box>
-                                          </box>
-                                        )
-                                      }}
-                                    </For>
-                                  </box>
-                                </Show>
-
-                                <Show when={snapshot().timeline.length > 0}>
-                                  <box flexDirection="column" flexShrink={0} marginBottom={1}>
-                                    <text fg={theme.textMuted}>
-                                      <span style={{ bold: true }}>TURN TIMELINE ({snapshot().timeline.length})</span>
-                                    </text>
-                                    <text fg={theme.textMuted}>
-                                      Root user turns ordered by time; child-agent usage is summarized above, not
-                                      repeated here.
-                                    </text>
-                                    <box flexDirection="row" gap={0} flexShrink={0} marginTop={1}>
-                                      <text fg={theme.textMuted} width={6}>
-                                        #
-                                      </text>
-                                      <text fg={theme.textMuted} width={14}>
-                                        share
-                                      </text>
-                                      <text fg={theme.textMuted} width={9}>
-                                        tokens
-                                      </text>
-                                      <text fg={theme.textMuted} width={10}>
-                                        cost
-                                      </text>
-                                      <text fg={theme.textMuted} width={9}>
-                                        in
-                                      </text>
-                                      <text fg={theme.textMuted} width={9}>
-                                        out
-                                      </text>
+                                  <Show when={aggregate().tokens.reasoning > 0}>
+                                    <box flexDirection="row" gap={1} flexShrink={0}>
+                                      <text fg={theme.textMuted}>├─ </text>
+                                      <text fg={theme.text} width={14}>Reasoning:</text>
+                                      <text fg={theme.textMuted}>{fmt(aggregate().tokens.reasoning)}</text>
                                     </box>
-                                    <box flexShrink={0} border={["top"]} borderColor={theme.border} />
-                                    <For each={snapshot().timeline}>
-                                      {(turn) => {
-                                        const turnTotal = sumTokens(turn.tokens)
-                                        return (
-                                          <box flexDirection="row" gap={0} flexShrink={0} alignItems="center">
-                                            <text fg={theme.accent} width={6}>
-                                              T{turn.turnIndex + 1}
-                                            </text>
-                                            <box width={14}>{tokenBar(pct(turnTotal, total()), theme.accent, 12)}</box>
-                                            <text fg={theme.text} width={9}>
-                                              {fmt(turnTotal)}
-                                            </text>
-                                            <text fg={theme.text} width={10}>
-                                              ${turn.cost.toFixed(4)}
-                                            </text>
-                                            <text fg={theme.textMuted} width={9}>
-                                              {fmt(turn.tokens.input)}
-                                            </text>
-                                            <text fg={theme.textMuted} width={9}>
-                                              {fmt(turn.tokens.output)}
-                                            </text>
-                                          </box>
-                                        )
-                                      }}
-                                    </For>
+                                  </Show>
+                                  <box flexDirection="row" gap={1} flexShrink={0}>
+                                    <text fg={theme.textMuted}>├─ </text>
+                                    <text fg={theme.text} width={14}>Total Cost:</text>
+                                    <text fg={theme.accent}>
+                                      {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
+                                        aggregate().cost,
+                                      )}
+                                    </text>
                                   </box>
-                                </Show>
+                                  <box flexDirection="row" gap={1} flexShrink={0}>
+                                    <text fg={theme.textMuted}>├─ </text>
+                                    <text fg={theme.text} width={14}>Messages:</text>
+                                    <text fg={theme.textMuted}>
+                                      {aggregate().messageCount} messages across {aggregate().agentCount} agent{aggregate().agentCount === 1 ? "" : "s"}
+                                    </text>
+                                  </box>
+                                  <box flexDirection="row" gap={1} flexShrink={0}>
+                                    <text fg={theme.textMuted}>└─ </text>
+                                    <text fg={theme.text} width={14}>LLM Calls:</text>
+                                    <text fg={theme.textMuted}>
+                                      {snapshot().context.callCount} calls ({snapshot().context.totalToolCalls ?? 0} tool calls)
+                                    </text>
+                                  </box>
+                                </box>
                               </>
                             )
                           }}
