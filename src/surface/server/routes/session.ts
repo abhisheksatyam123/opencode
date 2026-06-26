@@ -4,6 +4,7 @@ import { describeRoute, validator, resolver } from "hono-openapi"
 import { SessionID, MessageID, PartID } from "@/process/session/schema"
 import { Config } from "@/config/config"
 import { getCompactionTriggerTokens } from "@/process/session/overflow"
+import { addTokens, contextWindowStats, normalizeTokens, promptTokenTotal, numeric, tokenTotal } from "@/process/session/stats"
 import z from "zod"
 import { Session } from "@/process/session"
 import { MessageV2 } from "@/process/session/message-v2"
@@ -145,214 +146,6 @@ function emptyTokens() {
       read: 0,
       write: 0,
     },
-  }
-}
-
-function numeric(value: unknown) {
-  return typeof value === "number" && Number.isFinite(value) ? value : 0
-}
-
-function record(value: unknown) {
-  return value && typeof value === "object" ? (value as Record<string, unknown>) : {}
-}
-
-function normalizeTokens(value: unknown): z.infer<typeof TokenCounts> {
-  const root = record(value)
-  const cache = record(root.cache)
-  return {
-    input: numeric(root.input),
-    output: numeric(root.output),
-    reasoning: numeric(root.reasoning),
-    cache: {
-      read: numeric(cache.read),
-      write: numeric(cache.write),
-    },
-  }
-}
-
-function addTokens(target: z.infer<typeof TokenCounts>, next: z.infer<typeof TokenCounts>) {
-  target.input += next.input
-  target.output += next.output
-  target.reasoning += next.reasoning
-  target.cache.read += next.cache.read
-  target.cache.write += next.cache.write
-}
-
-function tokenTotal(tokens: z.infer<typeof TokenCounts>) {
-  return tokens.input + tokens.output + tokens.reasoning + tokens.cache.read + tokens.cache.write
-}
-
-function promptTokenTotal(tokens: z.infer<typeof TokenCounts>) {
-  return tokens.input + tokens.cache.read + tokens.cache.write
-}
-
-type ContextComponent = { name: string; tokens: number; detail?: string }
-
-function addContextComponent(map: Map<string, ContextComponent>, name: string, tokens: number, detail?: string) {
-  if (!Number.isFinite(tokens) || tokens <= 0) return
-  const rounded = Math.round(tokens)
-  const existing = map.get(name)
-  if (existing) {
-    existing.tokens += rounded
-    if (detail && !existing.detail) existing.detail = detail
-  } else {
-    map.set(name, { name, tokens: rounded, detail })
-  }
-}
-
-function estimateString(value: unknown) {
-  if (typeof value !== "string" || value.length === 0) return 0
-  return Token.estimate(value)
-}
-
-function estimateJson(value: unknown) {
-  try {
-    return Token.estimate(JSON.stringify(value) ?? "")
-  } catch {
-    return Token.estimate(String(value ?? ""))
-  }
-}
-
-async function contextWindowStats(input: {
-  messages: MessageV2.WithParts[]
-  providers: Record<string, Provider.Info>
-}) {
-  const components = new Map<string, ContextComponent>()
-  const infos = input.messages.map((msg) => msg.info)
-  const latestAssistant = infos
-    .filter((msg): msg is MessageV2.Assistant => msg.role === "assistant")
-    .toSorted((a, b) => b.time.created - a.time.created)[0]
-  const latestUser = infos
-    .filter((msg): msg is MessageV2.User => msg.role === "user")
-    .toSorted((a, b) => b.time.created - a.time.created)[0]
-
-  const providerID = latestAssistant?.providerID ?? latestUser?.model.providerID ?? ""
-  const modelID = latestAssistant?.modelID ?? latestUser?.model.modelID ?? ""
-  const model = providerID && modelID ? input.providers[providerID]?.models[modelID] : undefined
-  const hardLimit = model?.limit.context || undefined
-  const outputReserve = model ? ProviderTransform.maxOutputTokens(model) : undefined
-  const inputLimit = model
-    ? model.limit.input ||
-      (hardLimit && outputReserve !== undefined ? Math.max(0, hardLimit - outputReserve) : undefined)
-    : undefined
-  const cfg = await Config.get()
-  const triggerTokens = getCompactionTriggerTokens(cfg)
-
-  const softLimit = triggerTokens > 0 && inputLimit
-    ? Math.min(Math.floor(inputLimit * 0.8), triggerTokens)
-    : inputLimit
-      ? Math.floor(inputLimit * 0.8)
-      : undefined
-
-  if (model) {
-    const env = await SystemPrompt.environmentStable(model).catch(() => [] as string[])
-    addContextComponent(
-      components,
-      "system prompt",
-      env.reduce((sum, part) => sum + estimateString(part), 0),
-      "environment",
-    )
-    addContextComponent(components, "system prompt", estimateString(SystemPrompt.environmentVolatile()), "environment")
-  }
-  if (latestUser?.agent) {
-    const agent = await Agent.get(latestUser.agent).catch(() => undefined)
-    addContextComponent(components, "system prompt", estimateString(agent?.prompt), "agent")
-  }
-  addContextComponent(components, "system prompt", estimateString(latestUser?.system), "custom")
-
-  for (const message of input.messages) {
-    if (message.info.role === "user") {
-      addContextComponent(components, "summaries", estimateString(message.info.summary?.body), "compaction")
-    }
-    for (const part of message.parts) {
-      if (part.type === "text") {
-        addContextComponent(
-          components,
-          message.info.role === "user" ? "user input" : "assistant text",
-          estimateString(part.text),
-        )
-        continue
-      }
-      if (part.type === "reasoning") {
-        addContextComponent(components, "assistant reasoning", estimateString(part.text))
-        continue
-      }
-      if (part.type === "file") {
-        addContextComponent(
-          components,
-          "files",
-          estimateString(part.source?.text.value) || estimateString(part.filename),
-        )
-        continue
-      }
-      if (part.type === "agent") {
-        addContextComponent(
-          components,
-          "agent mentions",
-          estimateString(part.name) + estimateString(part.source?.value),
-        )
-        continue
-      }
-      if (part.type === "patch") {
-        addContextComponent(components, "patches", estimateJson(part.files))
-        continue
-      }
-      if (part.type === "snapshot") {
-        addContextComponent(components, "snapshots", estimateString(part.snapshot))
-      }
-    }
-  }
-
-  const tools = TokenAttribution.analyze(input.messages)
-  addContextComponent(components, "tool calls", tools.totalTokens, `${tools.totalCalls} calls`)
-
-  const assistantMessages = input.messages.filter((msg) => msg.info.role === "assistant")
-  const callCount = assistantMessages.length
-  const toolCallsByAssistant = assistantMessages.map((msg) => msg.parts.filter((part) => part.type === "tool").length)
-  const totalToolCalls = toolCallsByAssistant.reduce((sum, calls) => sum + calls, 0)
-  const maxToolCallsPerLLM = toolCallsByAssistant.reduce((max, calls) => Math.max(max, calls), 0)
-  const avgToolCallsPerLLM = callCount > 0 ? Math.round((totalToolCalls / callCount) * 10) / 10 : 0
-  const estimatedTotal = Array.from(components.values()).reduce((sum, part) => sum + part.tokens, 0)
-  const avgCallTokens = callCount > 0 ? Math.round(estimatedTotal / callCount) : 0
-  const latestPrompt = latestAssistant ? promptTokenTotal(normalizeTokens(latestAssistant.tokens)) : 0
-  const used = latestPrompt || estimatedTotal
-  const availableHard = hardLimit ? Math.max(0, hardLimit - used) : undefined
-  const availableInput = inputLimit ? Math.max(0, inputLimit - used) : undefined
-  const availableSoft = softLimit ? Math.max(0, softLimit - used) : undefined
-  const usedPctHard = hardLimit ? Math.round((used / hardLimit) * 100) : undefined
-  const usedPctInput = inputLimit ? Math.round((used / inputLimit) * 100) : undefined
-  const usedPctSoft = softLimit ? Math.round((used / softLimit) * 100) : undefined
-  const pctBase = Math.max(1, used)
-
-  return {
-    providerID: providerID || undefined,
-    modelID: modelID || undefined,
-    modelName: model?.name,
-    hardLimit,
-    inputLimit,
-    outputReserve,
-    softLimit,
-    used,
-    availableHard,
-    availableInput,
-    availableSoft,
-    usedPctHard,
-    usedPctInput,
-    usedPctSoft,
-    estimatedTotal,
-    callCount,
-    avgCallTokens,
-    totalToolCalls,
-    totalToolCallTokens: tools.totalTokens,
-    avgToolCallsPerLLM,
-    maxToolCallsPerLLM,
-    components: Array.from(components.values())
-      .toSorted((a, b) => b.tokens - a.tokens)
-      .map((part) => ({
-        ...part,
-        pct: Math.round((part.tokens / pctBase) * 1000) / 10,
-      })),
-    tools: tools.tools.slice(0, 8),
   }
 }
 
@@ -633,7 +426,33 @@ export const SessionRoutes = (_serverPermissionMode?: "default" | "plan" | "bypa
             }
           })
 
-        const context = await contextWindowStats({ messages: rootMessages, providers })
+        const statsInfos = rootMessages.map((msg) => msg.info)
+        const statsLatestAssistant = statsInfos
+          .filter((msg): msg is MessageV2.Assistant => msg.role === "assistant")
+          .toSorted((a, b) => b.time.created - a.time.created)[0]
+        const statsLatestUser = statsInfos
+          .filter((msg): msg is MessageV2.User => msg.role === "user")
+          .toSorted((a, b) => b.time.created - a.time.created)[0]
+
+        const statsProviderID = statsLatestAssistant?.providerID ?? statsLatestUser?.model.providerID ?? ""
+        const statsModelID = statsLatestAssistant?.modelID ?? statsLatestUser?.model.modelID ?? ""
+        const statsModel = statsProviderID && statsModelID ? providers[statsProviderID]?.models[statsModelID] : undefined
+
+        const envStable = statsModel ? await SystemPrompt.environmentStable(statsModel).catch(() => [] as string[]) : undefined
+        const envVolatile = statsModel ? SystemPrompt.environmentVolatile() : undefined
+        const agentPrompt = statsLatestUser?.agent ? await Agent.get(statsLatestUser.agent).then((a) => a?.prompt).catch(() => undefined) : undefined
+
+        const cfg = await Config.get()
+        const triggerTokens = getCompactionTriggerTokens(cfg)
+
+        const context = await contextWindowStats({
+          messages: rootMessages,
+          providers,
+          triggerTokens,
+          envStable,
+          envVolatile,
+          agentPrompt,
+        })
 
         return c.json({
           sessionID: root.id,

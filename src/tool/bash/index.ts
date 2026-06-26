@@ -1079,6 +1079,15 @@ export function isMutatingCommand(cmd: string): string | null {
   // Pipe to write utilities
   if (/\|\s*(?:tee|dd|sponge)\b/.test(cmd)) return "pipe to write utility (tee/dd/sponge)"
 
+  const trimmed = cmd.trim()
+  const isInterpreter = /^(?:poetry\s+run\s+|xvfb-run\s+)?\b(?:python[0-9.]*|node|bun|tsx|ts-node|vitest|eslint|tsgo)\b/.test(trimmed) || /^\/usr\/bin\/python/.test(trimmed)
+  if (isInterpreter) {
+    if (/\b(?:npm|yarn|pnpm|bun)\s+(?:install|add|remove|uninstall|update|upgrade|link|publish)\b/.test(cmd))
+      return "package manager mutation"
+    if (/\bpip\s+(?:install|uninstall|download)\b/.test(cmd)) return "pip mutation"
+    return null
+  }
+
   // Destructive filesystem commands
   const destructive = [
     /\brm\s+(?!.*--help)/,
@@ -1967,8 +1976,9 @@ function stripQuotedShellText(command: string) {
     .replace(/`[^`]*`/g, "``")
 }
 
-function shouldCompactWriteOutput(command: string, result: { metadata: any }) {
+function shouldCompactWriteOutput(command: string, result: { metadata: any; output: string }) {
   if (result.metadata.exit !== 0) return false
+  if (result.output.trim() !== "") return false
   const shellSyntax = stripQuotedShellText(stripSafeWrappers(stripLeadingComments(command)))
   return isMutatingCommand(shellSyntax) !== null
 }
