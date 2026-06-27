@@ -1,8 +1,13 @@
 import { ComponentProps } from "solid-js"
 
-const mark = ["█▀▀█    ", "█  █ ▀▀ ", "▀▀▀█▀   "]
-const wordmark = ["█▀▀█   -   █▀▀▀ █▀▀█ █▀▀▄ █▀▀ ", "█  █   -   █    █  █ █  █ █▀▀ ", "▀▀▀█▀      ▀▀▀▀ ▀▀▀▀ ▀▀▀  ▀▀▀ "]
-const logoBlue = "var(--icon-agent-build-base)"
+const mark = ["█▀▀█    ",
+              "█  █ ▀▀ ",
+              "▀▀▀█▀   "]
+
+const wordmark = ["█▀▀█       █▀▀▀ █▀▀█ █▀▀▄ █▀▀ ",
+                  "█  █  ▀▀   █    █  █ █  █ █▀▀ ",
+                  "▀▀▀█▀      ▀▀▀▀ ▀▀▀▀ ▀▀▀  ▀▀▀ "]
+const zimaBlue = "#16B8F3"
 const defaultFill = "var(--icon-strong-base)"
 
 function TextLogo(props: { lines: string[]; class?: string; viewBox: string; size: number; bluePrefix?: number }) {
@@ -30,7 +35,7 @@ function TextLogo(props: { lines: string[]; class?: string; viewBox: string; siz
           const suffix = prefixSize > 0 ? line.slice(prefixSize) : line
           return (
             <tspan x="0" dy={index === 0 ? 0 : props.size * 1.08}>
-              {prefix ? <tspan fill={logoBlue}>{prefix}</tspan> : null}
+              {prefix ? <tspan fill={zimaBlue}>{prefix}</tspan> : null}
               <tspan fill={defaultFill}>{suffix}</tspan>
             </tspan>
           )
@@ -69,7 +74,7 @@ export const Splash = (props: Pick<ComponentProps<"svg">, "ref" | "class">) => {
           const suffix = line.slice(8)
           return (
             <tspan x="0" dy={index === 0 ? 0 : 20}>
-              <tspan fill={logoBlue}>{prefix}</tspan>
+              <tspan fill={zimaBlue}>{prefix}</tspan>
               <tspan fill={defaultFill}>{suffix}</tspan>
             </tspan>
           )

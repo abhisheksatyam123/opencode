@@ -11,7 +11,7 @@ const SHADOW_MARKER = new RegExp(`[${marks}]`)
 
 export function Logo() {
   const { theme } = useTheme()
-  const left = RGBA.fromInts(24, 62, 180)
+  const zimaBlue = RGBA.fromInts(22, 184, 243) // #16B8F3
   const right = RGBA.fromInts(72, 124, 255)
 
   const renderLine = (line: string, fg: RGBA, bold: boolean): JSX.Element[] => {
@@ -77,7 +77,7 @@ export function Logo() {
       <For each={logo.left}>
         {(line, index) => (
           <box flexDirection="row" gap={1}>
-            <box flexDirection="row">{renderLine(line, left, false)}</box>
+            <box flexDirection="row">{renderLine(line, zimaBlue, false)}</box>
             <box flexDirection="row">{renderLine(logo.right[index()], right, true)}</box>
           </box>
         )}

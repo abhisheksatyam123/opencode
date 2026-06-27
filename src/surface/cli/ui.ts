@@ -5,10 +5,10 @@ import { logo as glyphs } from "@/surface/cli/logo"
 
 export namespace UI {
   const wordmark = [
-    `⠀                                ▄     `,
-    `█▀▀█   -   █▀▀▀ █▀▀█ █▀▀▄ █▀▀ `,
-    `█  █   -   █    █  █ █  █ █▀▀ `,
-    `▀▀█▀       ▀▀▀▀ ▀▀▀▀ ▀▀▀  ▀▀▀ `,
+    `⠀                                      `,
+    `█▀▀█       █▀▀▀ █▀▀█ █▀▀▄ █▀▀ `,
+    `█  █  ▀▀   █    █  █ █  █ █▀▀ `,
+    `▀▀▀█▀      ▀▀▀▀ ▀▀▀▀ ▀▀▀  ▀▀▀ `,
   ]
 
   export const CancelledError = NamedError.create("UICancelledError", z.void())
@@ -60,8 +60,8 @@ export namespace UI {
 
     const result: string[] = []
     const reset = "\x1b[0m"
-    const left = {
-      fg: "\x1b[94m",
+    const zimaBlue = {
+      fg: "\x1b[38;2;22;184;243m", // Zima Blue #16B8F3
       shadow: "\x1b[38;5;235m",
       bg: "\x1b[48;5;235m",
     }
@@ -96,7 +96,7 @@ export namespace UI {
     }
     glyphs.left.forEach((row, index) => {
       if (pad) result.push(pad)
-      result.push(draw(row, left.fg, left.shadow, left.bg))
+      result.push(draw(row, zimaBlue.fg, zimaBlue.shadow, zimaBlue.bg))
       result.push(gap)
       const other = glyphs.right[index] ?? ""
       result.push(draw(other, right.fg, right.shadow, right.bg))
