@@ -1080,7 +1080,9 @@ export function isMutatingCommand(cmd: string): string | null {
   if (/\|\s*(?:tee|dd|sponge)\b/.test(cmd)) return "pipe to write utility (tee/dd/sponge)"
 
   const trimmed = cmd.trim()
-  const isInterpreter = /^(?:poetry\s+run\s+|xvfb-run\s+)?\b(?:python[0-9.]*|node|bun|tsx|ts-node|vitest|eslint|tsgo)\b/.test(trimmed) || /^\/usr\/bin\/python/.test(trimmed)
+  const isInterpreter =
+    /^(?:poetry\s+run\s+|xvfb-run\s+)?\b(?:python[0-9.]*|node|bun|tsx|ts-node|vitest|eslint|tsgo)\b/.test(trimmed) ||
+    /^\/usr\/bin\/python/.test(trimmed)
   if (isInterpreter) {
     if (/\b(?:npm|yarn|pnpm|bun)\s+(?:install|add|remove|uninstall|update|upgrade|link|publish)\b/.test(cmd))
       return "package manager mutation"
@@ -1976,8 +1978,6 @@ function stripQuotedShellText(command: string) {
     .replace(/`[^`]*`/g, "``")
 }
 
-
-
 function normalizeRequestedOutputChars(value: number | undefined): number | undefined {
   if (value === undefined) return undefined
   if (!Number.isFinite(value) || value <= 0) {
@@ -1992,14 +1992,14 @@ async function applyBashOutputBudget(
   requestedMaxOutputChars?: number,
   requestedMaxOutputLines?: number,
 ) {
-
-
   let output = result.output
   let truncatedByLines = false
   if (requestedMaxOutputLines !== undefined && requestedMaxOutputLines > 0) {
     const lines = output.split(/\r?\n/)
     if (lines.length > requestedMaxOutputLines) {
-      output = lines.slice(0, requestedMaxOutputLines).join("\n") + `\n... [output truncated by lines, total lines: ${lines.length}]`
+      output =
+        lines.slice(0, requestedMaxOutputLines).join("\n") +
+        `\n... [output truncated by lines, total lines: ${lines.length}]`
       truncatedByLines = true
     }
   }
@@ -2131,7 +2131,9 @@ export const BashTool = Tool.define("bash", async () => {
         .number()
         .int()
         .positive()
-        .describe("Optional inline output line budget for run results. Truncates output to this number of lines if provided.")
+        .describe(
+          "Optional inline output line budget for run results. Truncates output to this number of lines if provided.",
+        )
         .optional(),
       description: z.string().describe("5-10 word purpose; do not echo command.").optional(),
     }),
@@ -2357,7 +2359,12 @@ export const BashTool = Tool.define("bash", async () => {
         },
         ctx,
       )
-      const boundedPrimary = await applyBashOutputBudget(command, primary, params.max_output_chars, params.max_output_lines)
+      const boundedPrimary = await applyBashOutputBudget(
+        command,
+        primary,
+        params.max_output_chars,
+        params.max_output_lines,
+      )
 
       if (
         shouldRetryWithPython3ForPathlib({

@@ -11,11 +11,7 @@ export const COMPACTION_BUFFER = 20_000
 export const DEFAULT_TRIGGER_TOKENS = 400_000
 
 export function getCompactionTriggerTokens(cfg: Config.Info): number {
-  return (
-    cfg.compaction?.trigger_tokens ??
-    Policy.get("compaction")?.values.token_threshold ??
-    DEFAULT_TRIGGER_TOKENS
-  )
+  return cfg.compaction?.trigger_tokens ?? Policy.get("compaction")?.values.token_threshold ?? DEFAULT_TRIGGER_TOKENS
 }
 
 export function getCompactionReservedTokens(cfg: Config.Info, model: Provider.Model): number {

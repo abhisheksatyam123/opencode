@@ -179,11 +179,12 @@ export async function contextWindowStats(input: {
     : undefined
   const triggerTokens = input.triggerTokens ?? 0
 
-  const softLimit = triggerTokens > 0 && inputLimit
-    ? Math.min(Math.floor(inputLimit * 0.8), triggerTokens)
-    : inputLimit
-      ? Math.floor(inputLimit * 0.8)
-      : undefined
+  const softLimit =
+    triggerTokens > 0 && inputLimit
+      ? Math.min(Math.floor(inputLimit * 0.8), triggerTokens)
+      : inputLimit
+        ? Math.floor(inputLimit * 0.8)
+        : undefined
 
   const { estimatedTotal, components, tools } = await calculateEstimatedTotal(input.messages, model, latestUser, {
     envStable: input.envStable,
@@ -194,7 +195,7 @@ export async function contextWindowStats(input: {
   let estimatedBase = estimatedTotal
   if (latestAssistant) {
     const latestAssistantIndex = input.messages.findIndex(
-      (msg) => msg.info.role === "assistant" && msg.info.id === latestAssistant.id
+      (msg) => msg.info.role === "assistant" && msg.info.id === latestAssistant.id,
     )
     if (latestAssistantIndex !== -1) {
       const baseMessages = input.messages.slice(0, latestAssistantIndex + 1)
@@ -213,13 +214,9 @@ export async function contextWindowStats(input: {
 
   const estimatedNew = Math.max(0, estimatedTotal - estimatedBase)
   const latestTokens = latestAssistant ? normalizeTokens(latestAssistant.tokens) : undefined
-  const exactBase = latestTokens
-    ? promptTokenTotal(latestTokens) + latestTokens.output
-    : 0
+  const exactBase = latestTokens ? promptTokenTotal(latestTokens) + latestTokens.output : 0
 
-  const used = exactBase
-    ? exactBase + estimatedNew
-    : estimatedTotal
+  const used = exactBase ? exactBase + estimatedNew : estimatedTotal
 
   const assistantMessages = input.messages.filter((msg) => msg.info.role === "assistant")
   const callCount = assistantMessages.length

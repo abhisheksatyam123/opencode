@@ -2177,7 +2177,11 @@ export function Session() {
                             const cacheTotal = () => aggregate().tokens.cache.read + aggregate().tokens.cache.write
                             const barWidth = Math.max(20, Math.min(60, contentWidth() - 25))
 
-                            const limit = snapshot().context.hardLimit || snapshot().context.inputLimit || snapshot().context.used || 1
+                            const limit =
+                              snapshot().context.hardLimit ||
+                              snapshot().context.inputLimit ||
+                              snapshot().context.used ||
+                              1
                             const used = snapshot().context.used
                             const usedPct = Math.round((used / limit) * 100)
 
@@ -2195,7 +2199,7 @@ export function Session() {
                                       <text fg={theme.textMuted}>({snapshot().context.modelName})</text>
                                     </Show>
                                   </box>
-                                  
+
                                   <box flexDirection="row" gap={2} flexShrink={0} marginTop={1} alignItems="center">
                                     <text fg={theme.textMuted} width={8}>
                                       Usage:
@@ -2204,21 +2208,29 @@ export function Session() {
                                       {fmt(used)} / {fmt(limit)} ({usedPct}%)
                                     </text>
                                   </box>
-                                  
+
                                   <box flexDirection="row" flexShrink={0} marginTop={1} marginBottom={1}>
-                                    {tokenBar(usedPct, usedPct >= 90 ? theme.error : usedPct >= 70 ? theme.warning : theme.accent, barWidth)}
+                                    {tokenBar(
+                                      usedPct,
+                                      usedPct >= 90 ? theme.error : usedPct >= 70 ? theme.warning : theme.accent,
+                                      barWidth,
+                                    )}
                                   </box>
 
                                   <box flexDirection="column" gap={0} flexShrink={0} marginTop={1}>
                                     <For each={snapshot().context.components}>
                                       {(component, index) => {
                                         const isLast = () => index() === snapshot().context.components.length - 1
-                                        const bullet = () => isLast() ? "└─ " : "├─ "
+                                        const bullet = () => (isLast() ? "└─ " : "├─ ")
                                         return (
                                           <box flexDirection="row" gap={1} flexShrink={0}>
                                             <text fg={theme.textMuted}>{bullet()}</text>
-                                            <text fg={theme.text} width={18}>{component.name}</text>
-                                            <text fg={theme.textMuted} width={8}>{fmt(component.tokens)}</text>
+                                            <text fg={theme.text} width={18}>
+                                              {component.name}
+                                            </text>
+                                            <text fg={theme.textMuted} width={8}>
+                                              {fmt(component.tokens)}
+                                            </text>
                                             <text fg={theme.textMuted}>({component.pct}%)</text>
                                             <Show when={component.detail}>
                                               <text fg={theme.textMuted}> · {component.detail}</text>
@@ -2251,8 +2263,12 @@ export function Session() {
                                   </text>
                                   <box flexDirection="row" gap={1} flexShrink={0}>
                                     <text fg={theme.textMuted}>├─ </text>
-                                    <text fg={theme.text} width={14}>Total Tokens:</text>
-                                    <text fg={theme.accent} width={8}>{fmt(total())}</text>
+                                    <text fg={theme.text} width={14}>
+                                      Total Tokens:
+                                    </text>
+                                    <text fg={theme.accent} width={8}>
+                                      {fmt(total())}
+                                    </text>
                                     <text fg={theme.textMuted}>
                                       (Input: {fmt(aggregate().tokens.input)}, Output: {fmt(aggregate().tokens.output)})
                                     </text>
@@ -2260,22 +2276,29 @@ export function Session() {
                                   <Show when={cacheTotal() > 0}>
                                     <box flexDirection="row" gap={1} flexShrink={0}>
                                       <text fg={theme.textMuted}>├─ </text>
-                                      <text fg={theme.text} width={14}>Cache:</text>
+                                      <text fg={theme.text} width={14}>
+                                        Cache:
+                                      </text>
                                       <text fg={theme.textMuted}>
-                                        read: {fmt(aggregate().tokens.cache.read)} · write: {fmt(aggregate().tokens.cache.write)}
+                                        read: {fmt(aggregate().tokens.cache.read)} · write:{" "}
+                                        {fmt(aggregate().tokens.cache.write)}
                                       </text>
                                     </box>
                                   </Show>
                                   <Show when={aggregate().tokens.reasoning > 0}>
                                     <box flexDirection="row" gap={1} flexShrink={0}>
                                       <text fg={theme.textMuted}>├─ </text>
-                                      <text fg={theme.text} width={14}>Reasoning:</text>
+                                      <text fg={theme.text} width={14}>
+                                        Reasoning:
+                                      </text>
                                       <text fg={theme.textMuted}>{fmt(aggregate().tokens.reasoning)}</text>
                                     </box>
                                   </Show>
                                   <box flexDirection="row" gap={1} flexShrink={0}>
                                     <text fg={theme.textMuted}>├─ </text>
-                                    <text fg={theme.text} width={14}>Total Cost:</text>
+                                    <text fg={theme.text} width={14}>
+                                      Total Cost:
+                                    </text>
                                     <text fg={theme.accent}>
                                       {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
                                         aggregate().cost,
@@ -2284,16 +2307,22 @@ export function Session() {
                                   </box>
                                   <box flexDirection="row" gap={1} flexShrink={0}>
                                     <text fg={theme.textMuted}>├─ </text>
-                                    <text fg={theme.text} width={14}>Messages:</text>
+                                    <text fg={theme.text} width={14}>
+                                      Messages:
+                                    </text>
                                     <text fg={theme.textMuted}>
-                                      {aggregate().messageCount} messages across {aggregate().agentCount} agent{aggregate().agentCount === 1 ? "" : "s"}
+                                      {aggregate().messageCount} messages across {aggregate().agentCount} agent
+                                      {aggregate().agentCount === 1 ? "" : "s"}
                                     </text>
                                   </box>
                                   <box flexDirection="row" gap={1} flexShrink={0}>
                                     <text fg={theme.textMuted}>└─ </text>
-                                    <text fg={theme.text} width={14}>LLM Calls:</text>
+                                    <text fg={theme.text} width={14}>
+                                      LLM Calls:
+                                    </text>
                                     <text fg={theme.textMuted}>
-                                      {snapshot().context.callCount} calls ({snapshot().context.totalToolCalls ?? 0} tool calls)
+                                      {snapshot().context.callCount} calls ({snapshot().context.totalToolCalls ?? 0}{" "}
+                                      tool calls)
                                     </text>
                                   </box>
                                 </box>

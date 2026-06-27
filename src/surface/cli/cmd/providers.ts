@@ -377,10 +377,12 @@ export const ProvidersLoginCommand = cmd({
             map((x) => ({
               label: x.name,
               value: x.id,
-              hint: ({
-                opencode: "recommended",
-                openai: "ChatGPT Plus/Pro or API key",
-              } as Record<string, string>)[x.id],
+              hint: (
+                {
+                  opencode: "recommended",
+                  openai: "ChatGPT Plus/Pro or API key",
+                } as Record<string, string>
+              )[x.id],
             })),
           ),
           ...pluginProviders.map((x) => ({

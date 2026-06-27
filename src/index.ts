@@ -207,7 +207,6 @@ const cli = yargs(args)
       process.stderr.write("Database migration complete." + EOL)
     }
 
-
     // InitRegistry wraps each registry load() in a ServiceLoader and
     // preserves WARN-only failure semantics: loaders do not throw on their
     // own, and registries accumulate errors via Registry.errors().

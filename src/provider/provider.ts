@@ -837,7 +837,7 @@ export namespace Provider {
           },
         })
       },
-      "antigravity": (provider) => {
+      antigravity: (provider) => {
         const optionsProject = provider.options?.project
         const project =
           (optionsProject && optionsProject !== "tuned-keel-d72qv" ? optionsProject : null) ??
@@ -869,7 +869,8 @@ export namespace Provider {
         let cachedKeyringExpiryMs: number | undefined
 
         // OAuth client credentials for Antigravity token refresh
-        const ANTIGRAVITY_CLIENT_ID = "1071006060591-tmhssin2h21lcre235vtolojh" + "4g403ep.apps.googleusercontent" + ".com"
+        const ANTIGRAVITY_CLIENT_ID =
+          "1071006060591-tmhssin2h21lcre235vtolojh" + "4g403ep.apps.googleusercontent" + ".com"
         const ANTIGRAVITY_CLIENT_SECRET = "GOCSPX-K" + "58FWR486LdLJ1mLB8s" + "XC4z6qDAf"
 
         async function refreshAccessToken(refreshToken: string): Promise<{ token: string; expiryMs: number }> {
@@ -887,7 +888,7 @@ export namespace Provider {
             const body = await res.text().catch(() => "")
             throw new Error(`OAuth refresh failed (${res.status}): ${body.slice(0, 200)}`)
           }
-          const payload = await res.json() as any
+          const payload = (await res.json()) as any
           const expiryMs = Date.now() + (payload.expires_in ?? 3600) * 1000
           return { token: payload.access_token, expiryMs }
         }
@@ -918,21 +919,21 @@ export namespace Provider {
 
           // Fast path 4: Keyring-based authentication from `agy`
           // Try multiple python paths — miniconda has keyring, system python may not
-          const pythonPaths = [
-            Env.get("ANTIGRAVITY_PYTHON"),
-            "/home/abhi/miniconda3/bin/python",
-            "python3",
-          ].filter(Boolean) as string[]
+          const pythonPaths = [Env.get("ANTIGRAVITY_PYTHON"), "/home/abhi/miniconda3/bin/python", "python3"].filter(
+            Boolean,
+          ) as string[]
 
           let keyringOutput = ""
           for (const py of pythonPaths) {
             try {
               keyringOutput = execSync(
                 `${py} -c "import keyring; print(keyring.get_password('gemini', 'antigravity'))"`,
-                { encoding: "utf-8", stdio: "pipe" }
+                { encoding: "utf-8", stdio: "pipe" },
               ).trim()
               if (keyringOutput && keyringOutput !== "None") break
-            } catch { continue }
+            } catch {
+              continue
+            }
           }
 
           if (keyringOutput && keyringOutput !== "None") {
@@ -994,9 +995,7 @@ export namespace Provider {
             }
 
             // Cache with expiry (default 1 hour if not provided)
-            const expiryMs =
-              (tokenResponse as any).res?.data?.expiry_date ??
-              Date.now() + 3_600_000
+            const expiryMs = (tokenResponse as any).res?.data?.expiry_date ?? Date.now() + 3_600_000
             cachedCredential = { token, expiryMs }
             return token
           } catch (err) {
@@ -1005,15 +1004,18 @@ export namespace Provider {
             cachedCredential = undefined
 
             const msg = err instanceof Error ? err.message : String(err)
-            if (msg.includes("Could not load the default credentials") || msg.includes("Could not refresh access token")) {
+            if (
+              msg.includes("Could not load the default credentials") ||
+              msg.includes("Could not refresh access token")
+            ) {
               throw new Error(
                 `Antigravity auth failed: ${msg}\n\n` +
-                `To fix this, do ONE of the following:\n` +
-                `  1. Run: gcloud auth application-default login\n` +
-                `  2. Set GOOGLE_APPLICATION_CREDENTIALS to a service account key file\n` +
-                `  3. Set ANTIGRAVITY_API_KEY for API key auth (bypasses ADC)\n` +
-                `  4. Run: agy auth login (to store keyring credentials)\n` +
-                `\nSee https://cloud.google.com/docs/authentication/getting-started`,
+                  `To fix this, do ONE of the following:\n` +
+                  `  1. Run: gcloud auth application-default login\n` +
+                  `  2. Set GOOGLE_APPLICATION_CREDENTIALS to a service account key file\n` +
+                  `  3. Set ANTIGRAVITY_API_KEY for API key auth (bypasses ADC)\n` +
+                  `  4. Run: agy auth login (to store keyring credentials)\n` +
+                  `\nSee https://cloud.google.com/docs/authentication/getting-started`,
               )
             }
             throw err
@@ -1098,7 +1100,7 @@ export namespace Provider {
                   controller.enqueue(encoder.encode(buffer + "\n"))
                 }
               }
-            }
+            },
           })
 
           return readableStream.pipeThrough(transformStream)
@@ -1116,11 +1118,8 @@ export namespace Provider {
 
               // 2. Extract model ID from the original Vertex SDK URL
               //    Vertex SDK sends: .../models/{modelId}:streamGenerateContent?alt=sse
-              const originalUrl = typeof input === "string"
-                ? input
-                : input instanceof Request
-                  ? input.url
-                  : input.toString()
+              const originalUrl =
+                typeof input === "string" ? input : input instanceof Request ? input.url : input.toString()
               const modelMatch = originalUrl.match(/\/models\/([^:\/]+):/)
               const rawModelId = modelMatch ? decodeURIComponent(modelMatch[1]) : "unknown"
 
@@ -1129,9 +1128,7 @@ export namespace Provider {
               // (e.g. gemini-3-flash-agent). The API accepts bare names too,
               // but we mimic the IDE exactly.
               const agentModels = ["gemini-3-flash"]
-              const modelId = agentModels.includes(rawModelId)
-                ? `${rawModelId}-agent`
-                : rawModelId
+              const modelId = agentModels.includes(rawModelId) ? `${rawModelId}-agent` : rawModelId
 
               // 3. Parse the original Gemini-format body from the SDK
               const originalBody = parseBody(init?.body)
@@ -1188,9 +1185,20 @@ export namespace Provider {
               }
               headers.set("Content-Type", "application/json")
               // Match the real Antigravity IDE User-Agent string
-              headers.set("User-Agent", `antigravity/1.107.0 ${process.platform === "win32" ? "windows" : process.platform === "darwin" ? "darwin" : "linux"}/${process.arch}`)
+              headers.set(
+                "User-Agent",
+                `antigravity/1.107.0 ${process.platform === "win32" ? "windows" : process.platform === "darwin" ? "darwin" : "linux"}/${process.arch}`,
+              )
               headers.set("X-Goog-Api-Client", "google-cloud-sdk vscode_cloudshelleditor/0.1")
-              headers.set("Client-Metadata", JSON.stringify({ ideType: "ANTIGRAVITY", platform: process.platform === "win32" ? "WINDOWS" : process.platform === "darwin" ? "MACOS" : "LINUX", pluginType: "GEMINI" }))
+              headers.set(
+                "Client-Metadata",
+                JSON.stringify({
+                  ideType: "ANTIGRAVITY",
+                  platform:
+                    process.platform === "win32" ? "WINDOWS" : process.platform === "darwin" ? "MACOS" : "LINUX",
+                  pluginType: "GEMINI",
+                }),
+              )
 
               log.info("antigravity.request", {
                 model: modelId,
@@ -1216,7 +1224,10 @@ export namespace Provider {
                 })
 
                 if (!res.ok) {
-                  const errorBody = await res.clone().text().catch(() => "")
+                  const errorBody = await res
+                    .clone()
+                    .text()
+                    .catch(() => "")
                   log.error("antigravity.error", {
                     model: modelId,
                     status: res.status,
@@ -1714,8 +1725,6 @@ export namespace Provider {
 
   export class Service extends ServiceMap.Service<Service, Interface>()("@opencode/Provider") {}
 
-    
-
   type ProviderDatabase = Record<string, Info>
   type ProviderRegistry = Record<ProviderID, Info>
   type ConfigProvider = Config.Provider
@@ -1765,11 +1774,7 @@ export namespace Provider {
   ): Model["api"] {
     return {
       id: model.id ?? existingModel?.api.id ?? modelID,
-      npm:
-        model.provider?.npm ??
-        provider.npm ??
-        existingModel?.api.npm ??
-        "@ai-sdk/openai-compatible",
+      npm: model.provider?.npm ?? provider.npm ?? existingModel?.api.npm ?? "@ai-sdk/openai-compatible",
       url: (model.provider?.api ?? provider.api ?? existingModel?.api.url ?? "") as string,
     }
   }
@@ -1909,11 +1914,7 @@ export namespace Provider {
     return parsedModel
   }
 
-  function buildConfiguredProvider(
-    providerID: string,
-    provider: ConfigProvider,
-    existing: Info | undefined,
-  ): Info {
+  function buildConfiguredProvider(providerID: string, provider: ConfigProvider, existing: Info | undefined): Info {
     const parsed: Info = {
       id: ProviderID.make(providerID),
       name: provider.name ?? existing?.name ?? providerID,
@@ -1931,10 +1932,7 @@ export namespace Provider {
     return parsed
   }
 
-  function extendDatabaseFromConfig(
-    database: ProviderDatabase,
-    configProviders: [string, ConfigProvider][],
-  ) {
+  function extendDatabaseFromConfig(database: ProviderDatabase, configProviders: [string, ConfigProvider][]) {
     for (const [providerID, provider] of configProviders) {
       database[providerID] = buildConfiguredProvider(providerID, provider, database[providerID])
     }

@@ -765,90 +765,106 @@ export namespace Config {
   })
   export type Layout = z.infer<typeof Layout>
 
-  export const Provider = z.object({
-    api: z.string().optional(),
-    name: z.string().optional(),
-    env: z.array(z.string()).optional(),
-    id: z.string().optional(),
-    npm: z.string().optional(),
-  })
+  export const Provider = z
+    .object({
+      api: z.string().optional(),
+      name: z.string().optional(),
+      env: z.array(z.string()).optional(),
+      id: z.string().optional(),
+      npm: z.string().optional(),
+    })
     .extend({
       whitelist: z.array(z.string()).optional(),
       blacklist: z.array(z.string()).optional(),
       models: z
         .record(
           z.string(),
-          z.object({
-    id: z.string().optional(),
-    name: z.string().optional(),
-    family: z.string().optional(),
-    release_date: z.string().optional(),
-    attachment: z.boolean().optional(),
-    reasoning: z.boolean().optional(),
-    temperature: z.boolean().optional(),
-    tool_call: z.boolean().optional(),
-    interleaved: z.union([z.literal(true), z.object({ field: z.enum(["reasoning_content", "reasoning_details"]) }).strict()]).optional(),
-    cost: z.object({
-      input: z.number().optional(),
-      output: z.number().optional(),
-      cache_read: z.number().optional(),
-      cache_write: z.number().optional(),
-      context_over_200k: z.object({
-        input: z.number(),
-        output: z.number(),
-        cache_read: z.number().optional(),
-        cache_write: z.number().optional(),
-      }).optional(),
-    }).optional(),
-    limit: z.object({
-      context: z.number().optional(),
-      input: z.number().optional(),
-      output: z.number().optional(),
-    }).optional(),
-    modalities: z.object({
-      input: z.array(z.enum(["text", "audio", "image", "video", "pdf"])).optional(),
-      output: z.array(z.enum(["text", "audio", "image", "video", "pdf"])).optional(),
-    }).optional(),
-    experimental: z.boolean().optional(),
-    status: z.enum(["alpha", "beta", "deprecated"]).optional(),
-    options: z.record(z.string(), z.any()).optional(),
-    headers: z.record(z.string(), z.string()).optional(),
-    provider: z.object({ npm: z.string().optional(), api: z.string().optional() }).optional(),
-    variants: z.record(z.string(), z.record(z.string(), z.any())).optional(),
-  }).extend({
-            tier: z
-              .enum(["tier0", "tier1", "tier2"])
-              .optional()
-              .describe(
-                "Capability tier for this model: tier0=highest (orchestration), tier1=delivery (impl/test), tier2=cheap/fast (search/docs).",
-              ),
-            capabilities: z
-              .record(z.string(), z.number().min(0).max(1))
-              .optional()
-              .describe("Capability scores keyed by capability name, values in [0,1]."),
-            context_tokens: z
-              .number()
-              .int()
-              .positive()
-              .optional()
-              .describe("Context window size in tokens for this model."),
-            output_tokens: z.number().int().positive().optional().describe("Maximum output tokens for this model."),
-            endpoint: z
-              .string()
-              .optional()
-              .describe("Provider-specific endpoint path used for config-driven model routing, e.g. /v1/responses."),
-            variants: z
-              .record(
-                z.string(),
-                z
-                  .object({
-                    disabled: z.boolean().optional().describe("Disable this variant for the model"),
-                  })
-                  .catchall(z.any()),
-              )
-              .optional()
-              .describe("Variant-specific configuration"),
-          }),
+          z
+            .object({
+              id: z.string().optional(),
+              name: z.string().optional(),
+              family: z.string().optional(),
+              release_date: z.string().optional(),
+              attachment: z.boolean().optional(),
+              reasoning: z.boolean().optional(),
+              temperature: z.boolean().optional(),
+              tool_call: z.boolean().optional(),
+              interleaved: z
+                .union([
+                  z.literal(true),
+                  z.object({ field: z.enum(["reasoning_content", "reasoning_details"]) }).strict(),
+                ])
+                .optional(),
+              cost: z
+                .object({
+                  input: z.number().optional(),
+                  output: z.number().optional(),
+                  cache_read: z.number().optional(),
+                  cache_write: z.number().optional(),
+                  context_over_200k: z
+                    .object({
+                      input: z.number(),
+                      output: z.number(),
+                      cache_read: z.number().optional(),
+                      cache_write: z.number().optional(),
+                    })
+                    .optional(),
+                })
+                .optional(),
+              limit: z
+                .object({
+                  context: z.number().optional(),
+                  input: z.number().optional(),
+                  output: z.number().optional(),
+                })
+                .optional(),
+              modalities: z
+                .object({
+                  input: z.array(z.enum(["text", "audio", "image", "video", "pdf"])).optional(),
+                  output: z.array(z.enum(["text", "audio", "image", "video", "pdf"])).optional(),
+                })
+                .optional(),
+              experimental: z.boolean().optional(),
+              status: z.enum(["alpha", "beta", "deprecated"]).optional(),
+              options: z.record(z.string(), z.any()).optional(),
+              headers: z.record(z.string(), z.string()).optional(),
+              provider: z.object({ npm: z.string().optional(), api: z.string().optional() }).optional(),
+              variants: z.record(z.string(), z.record(z.string(), z.any())).optional(),
+            })
+            .extend({
+              tier: z
+                .enum(["tier0", "tier1", "tier2"])
+                .optional()
+                .describe(
+                  "Capability tier for this model: tier0=highest (orchestration), tier1=delivery (impl/test), tier2=cheap/fast (search/docs).",
+                ),
+              capabilities: z
+                .record(z.string(), z.number().min(0).max(1))
+                .optional()
+                .describe("Capability scores keyed by capability name, values in [0,1]."),
+              context_tokens: z
+                .number()
+                .int()
+                .positive()
+                .optional()
+                .describe("Context window size in tokens for this model."),
+              output_tokens: z.number().int().positive().optional().describe("Maximum output tokens for this model."),
+              endpoint: z
+                .string()
+                .optional()
+                .describe("Provider-specific endpoint path used for config-driven model routing, e.g. /v1/responses."),
+              variants: z
+                .record(
+                  z.string(),
+                  z
+                    .object({
+                      disabled: z.boolean().optional().describe("Disable this variant for the model"),
+                    })
+                    .catchall(z.any()),
+                )
+                .optional()
+                .describe("Variant-specific configuration"),
+            }),
         )
         .optional(),
       options: z

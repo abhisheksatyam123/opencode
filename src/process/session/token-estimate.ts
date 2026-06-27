@@ -148,17 +148,11 @@ export namespace TokenEstimate {
     // Mirror overflow.ts's `reserved` + `usable` calculation exactly so the
     // pre-call estimate and the post-call check use the same threshold.
     const maxOutput = ProviderTransform.maxOutputTokens(input.model)
-    const reserved =
-      input.reservedTokens !== undefined
-        ? input.reservedTokens
-        : Math.min(20000, maxOutput)
+    const reserved = input.reservedTokens !== undefined ? input.reservedTokens : Math.min(20000, maxOutput)
     const usable = input.model.limit.input ? input.model.limit.input - reserved : context - maxOutput
 
     const triggerTokens = input.triggerTokens
-    const limit =
-      triggerTokens !== undefined && triggerTokens > 0
-        ? Math.min(usable, triggerTokens)
-        : usable
+    const limit = triggerTokens !== undefined && triggerTokens > 0 ? Math.min(usable, triggerTokens) : usable
 
     return { estimated, overflow: estimated >= limit, usable: limit }
   }

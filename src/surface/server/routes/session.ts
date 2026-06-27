@@ -4,7 +4,14 @@ import { describeRoute, validator, resolver } from "hono-openapi"
 import { SessionID, MessageID, PartID } from "@/process/session/schema"
 import { Config } from "@/config/config"
 import { getCompactionTriggerTokens } from "@/process/session/overflow"
-import { addTokens, contextWindowStats, normalizeTokens, promptTokenTotal, numeric, tokenTotal } from "@/process/session/stats"
+import {
+  addTokens,
+  contextWindowStats,
+  normalizeTokens,
+  promptTokenTotal,
+  numeric,
+  tokenTotal,
+} from "@/process/session/stats"
 import z from "zod"
 import { Session } from "@/process/session"
 import { MessageV2 } from "@/process/session/message-v2"
@@ -436,11 +443,18 @@ export const SessionRoutes = (_serverPermissionMode?: "default" | "plan" | "bypa
 
         const statsProviderID = statsLatestAssistant?.providerID ?? statsLatestUser?.model.providerID ?? ""
         const statsModelID = statsLatestAssistant?.modelID ?? statsLatestUser?.model.modelID ?? ""
-        const statsModel = statsProviderID && statsModelID ? providers[statsProviderID]?.models[statsModelID] : undefined
+        const statsModel =
+          statsProviderID && statsModelID ? providers[statsProviderID]?.models[statsModelID] : undefined
 
-        const envStable = statsModel ? await SystemPrompt.environmentStable(statsModel).catch(() => [] as string[]) : undefined
+        const envStable = statsModel
+          ? await SystemPrompt.environmentStable(statsModel).catch(() => [] as string[])
+          : undefined
         const envVolatile = statsModel ? SystemPrompt.environmentVolatile() : undefined
-        const agentPrompt = statsLatestUser?.agent ? await Agent.get(statsLatestUser.agent).then((a) => a?.prompt).catch(() => undefined) : undefined
+        const agentPrompt = statsLatestUser?.agent
+          ? await Agent.get(statsLatestUser.agent)
+              .then((a) => a?.prompt)
+              .catch(() => undefined)
+          : undefined
 
         const cfg = await Config.get()
         const triggerTokens = getCompactionTriggerTokens(cfg)
